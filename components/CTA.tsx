@@ -4,6 +4,7 @@ import { useBrand } from '../contexts/BrandingContext';
 
 const CTA: React.FC = () => {
   const { currentBrand } = useBrand();
+  const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -12,7 +13,7 @@ const CTA: React.FC = () => {
       <div 
         className="absolute inset-0 z-0"
         style={{
-            backgroundImage: 'url("https://i.imgur.com/PIVqisf.jpeg")',
+            backgroundImage: `url("${backgroundImage}")`,
             backgroundAttachment: 'fixed',
             backgroundPosition: 'center',
             backgroundSize: 'cover'

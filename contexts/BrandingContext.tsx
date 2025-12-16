@@ -5,6 +5,7 @@ export type Brand = {
   name: string;
   logoUrl: string;
   mascotUrl?: string;
+  wallpaperUrl?: string;
 };
 
 export const brands: Brand[] = [
@@ -13,12 +14,42 @@ export const brands: Brand[] = [
     name: 'Otter IQ',
     logoUrl: 'https://i.imgur.com/MscrBR9.png',
     mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
+    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+  },
+  {
+    id: 'otter-works',
+    name: 'Otter Works',
+    logoUrl: 'https://i.imgur.com/7wrLUzC.png',
+    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
+    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+  },
+  {
+    id: 'otterworks',
+    name: 'OtterWorks',
+    logoUrl: 'https://i.imgur.com/LBaPxF3.png',
+    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
+    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+  },
+  {
+    id: 'skill-surf',
+    name: 'Skill Surf',
+    logoUrl: 'https://i.imgur.com/mFS7Vig.png',
+    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
+    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+  },
+  {
+    id: 'iq-otter',
+    name: 'IQ Otter',
+    logoUrl: 'https://i.imgur.com/MscrBR9.png',
+    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
+    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
   },
   {
     id: 'snapskill',
     name: 'SnapSkill',
     logoUrl: '/images/logo-alt.png',
     mascotUrl: '/images/snapskill-logo-icon.png',
+    wallpaperUrl: '/images/snapskill-wallpaper.png',
   },
 ];
 

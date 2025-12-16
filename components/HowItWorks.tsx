@@ -1,7 +1,10 @@
 import React from 'react';
 import { FileText, Wand2, BarChart3, Smartphone } from 'lucide-react';
+import { useBrand } from '../contexts/BrandingContext';
 
 const HowItWorks: React.FC = () => {
+  const { currentBrand } = useBrand();
+  const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
   return (
     <section id="how-it-works" className="py-24 relative overflow-hidden">
         
@@ -9,7 +12,7 @@ const HowItWorks: React.FC = () => {
         <div 
             className="absolute inset-0 z-0"
             style={{
-                backgroundImage: 'url("https://i.imgur.com/PIVqisf.jpeg")',
+                backgroundImage: `url("${backgroundImage}")`,
                 backgroundAttachment: 'fixed',
                 backgroundPosition: 'center',
                 backgroundSize: 'cover'

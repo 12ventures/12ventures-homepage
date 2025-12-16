@@ -5,6 +5,7 @@ import { useBrand } from '../contexts/BrandingContext';
 
 const Hero: React.FC = () => {
   const { currentBrand } = useBrand();
+  const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
 
   return (
     <section className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden pt-24 pb-20">
@@ -13,7 +14,7 @@ const Hero: React.FC = () => {
       <div 
         className="absolute inset-0 z-0"
         style={{
-            backgroundImage: 'url("https://i.imgur.com/PIVqisf.jpeg")',
+        backgroundImage: `url("${backgroundImage}")`,
             backgroundAttachment: 'fixed',
             backgroundPosition: 'center',
             backgroundSize: 'cover'
