@@ -51,6 +51,13 @@ export const brands: Brand[] = [
     mascotUrl: '/images/snapskill-logo-icon.png',
     wallpaperUrl: '/images/snapskill-wallpaper.png',
   },
+  {
+    id: 'snapskill2',
+    name: 'SnapSkill 2',
+    logoUrl: '/images/logo-alt.png',
+    mascotUrl: '/images/snapskill-logo-icon.png',
+    wallpaperUrl: '/images/snapskill-wallpaper2.png',
+  },
 ];
 
 interface BrandingContextType {

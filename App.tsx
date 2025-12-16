@@ -45,6 +45,16 @@ const App: React.FC = () => {
             </BrandLayout>
           }
         />
+
+        {/* SnapSkill 2 landing page */}
+        <Route
+          path="/snapskill2"
+          element={
+            <BrandLayout initialBrandId="snapskill2">
+              <LandingPage />
+            </BrandLayout>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
