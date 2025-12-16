@@ -4,14 +4,22 @@ export type Brand = {
   id: string;
   name: string;
   logoUrl: string;
+  mascotUrl?: string;
 };
 
 export const brands: Brand[] = [
-  { id: 'default', name: 'Otter IQ', logoUrl: 'https://i.imgur.com/MscrBR9.png' },
-  { id: 'otter-works', name: 'Otter Works', logoUrl: 'https://i.imgur.com/7wrLUzC.png' },
-  { id: 'otterworks', name: 'OtterWorks', logoUrl: 'https://i.imgur.com/LBaPxF3.png' },
-  { id: 'skill-surf', name: 'Skill Surf', logoUrl: 'https://i.imgur.com/mFS7Vig.png' },
-  { id: 'iq-otter', name: 'IQ Otter', logoUrl: 'https://i.imgur.com/MscrBR9.png' },
+  {
+    id: 'otter-iq',
+    name: 'Otter IQ',
+    logoUrl: 'https://i.imgur.com/MscrBR9.png',
+    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
+  },
+  {
+    id: 'snapskill',
+    name: 'SnapSkill',
+    logoUrl: '/images/logo-alt.png',
+    mascotUrl: '/images/snapskill-logo-icon.png',
+  },
 ];
 
 interface BrandingContextType {
@@ -21,8 +29,21 @@ interface BrandingContextType {
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
 
-export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentBrand, setCurrentBrand] = useState<Brand>(brands[0]);
+interface BrandingProviderProps {
+  children: React.ReactNode;
+  initialBrandId?: string;
+}
+
+export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children, initialBrandId }) => {
+  const getInitialBrand = () => {
+    if (initialBrandId) {
+      const brand = brands.find(b => b.id === initialBrandId);
+      if (brand) return brand;
+    }
+    return brands[0];
+  };
+
+  const [currentBrand, setCurrentBrand] = useState<Brand>(getInitialBrand);
 
   const setBrandId = (id: string) => {
     const brand = brands.find(b => b.id === id);
@@ -32,7 +53,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-     document.title = `${currentBrand.name} - Modernize Nurse Onboarding`;
+     document.title = `${currentBrand.name} - Modernize Workforce Learning`;
   }, [currentBrand]);
 
   return (

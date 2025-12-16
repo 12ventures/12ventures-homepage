@@ -62,7 +62,7 @@ const Hero: React.FC = () => {
                  {/* Mascot Layer - Sizes reduced significantly */}
                  <div className="relative z-20 w-[180px] sm:w-[240px] lg:w-[320px] animate-float">
                     <img 
-                        src="https://i.imgur.com/jdyGGMx.png" 
+                        src={currentBrand.mascotUrl ?? 'https://i.imgur.com/jdyGGMx.png'}
                         alt={`${currentBrand.name} Mascot`}
                         className="w-full h-auto drop-shadow-2xl"
                     />
