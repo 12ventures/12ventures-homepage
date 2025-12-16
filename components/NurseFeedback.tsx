@@ -4,6 +4,7 @@ import { useBrand } from '../contexts/BrandingContext';
 
 const NurseFeedback: React.FC = () => {
   const { currentBrand } = useBrand();
+  const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
 
   const reviews = [
     {
@@ -33,7 +34,7 @@ const NurseFeedback: React.FC = () => {
       <div 
         className="absolute inset-0 z-0"
         style={{
-            backgroundImage: 'url("https://i.imgur.com/PIVqisf.jpeg")',
+            backgroundImage: `url("${backgroundImage}")`,
             backgroundAttachment: 'fixed',
             backgroundPosition: 'center',
             backgroundSize: 'cover'

@@ -3,32 +3,47 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BrandingProvider } from './contexts/BrandingContext';
 import VenturesHome from './components/VenturesHome';
 import LandingPage from './components/LandingPage';
+import DevMenu from './components/DevMenu';
+
+const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode }> = ({ initialBrandId, children }) => (
+  <BrandingProvider initialBrandId={initialBrandId}>
+    {children}
+    <DevMenu />
+  </BrandingProvider>
+);
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
         {/* 12Ventures homepage */}
-        <Route path="/" element={<VenturesHome />} />
-        
-        {/* Otter IQ landing page */}
-        <Route 
-          path="/otter" 
+        <Route
+          path="/"
           element={
-            <BrandingProvider initialBrandId="otter-iq">
-              <LandingPage />
-            </BrandingProvider>
-          } 
+            <BrandLayout initialBrandId="otter-iq">
+              <VenturesHome />
+            </BrandLayout>
+          }
         />
-        
-        {/* SnapSkill landing page */}
-        <Route 
-          path="/snapskill" 
+
+        {/* Otter IQ landing page */}
+        <Route
+          path="/otter"
           element={
-            <BrandingProvider initialBrandId="snapskill">
+            <BrandLayout initialBrandId="otter-iq">
               <LandingPage />
-            </BrandingProvider>
-          } 
+            </BrandLayout>
+          }
+        />
+
+        {/* SnapSkill landing page */}
+        <Route
+          path="/snapskill"
+          element={
+            <BrandLayout initialBrandId="snapskill">
+              <LandingPage />
+            </BrandLayout>
+          }
         />
       </Routes>
     </BrowserRouter>
