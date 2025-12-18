@@ -26,7 +26,7 @@ export const brands: Brand[] = [
   {
     id: 'otterworks',
     name: 'OtterWorks',
-    logoUrl: 'https://i.imgur.com/LBaPxF3.png',
+    logoUrl: 'https://imgur.com/0yz7xSE.png',
     mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
     wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
   },

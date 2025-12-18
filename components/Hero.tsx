@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from './ui/Button';
 import { Calculator, PlayCircle, Bell } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
+import ROICalculatorModal from './ROICalculatorModal';
 
 const Hero: React.FC = () => {
   const { currentBrand } = useBrand();
   const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
 
   return (
     <section className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden pt-24 pb-20">
@@ -42,7 +44,11 @@ const Hero: React.FC = () => {
             </h2>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <Button size="lg" className="group shadow-brand-500/30">
+              <Button 
+                size="lg" 
+                className="group shadow-brand-500/30"
+                onClick={() => setIsCalculatorOpen(true)}
+              >
                 <Calculator className="mr-2 w-5 h-5" />
                 Calculate Your Impact
               </Button>
@@ -107,6 +113,11 @@ const Hero: React.FC = () => {
 
         </div>
       </div>
+
+      <ROICalculatorModal 
+        isOpen={isCalculatorOpen} 
+        onClose={() => setIsCalculatorOpen(false)} 
+      />
     </section>
   );
 };
