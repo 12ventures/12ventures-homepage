@@ -3,12 +3,21 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 export type Brand = {
   id: string;
   name: string;
+  subtitle?: string;
   logoUrl: string;
   mascotUrl?: string;
   wallpaperUrl?: string;
 };
 
 export const brands: Brand[] = [
+  {
+    id: '12-ventures',
+    name: '12 Ventures',
+    subtitle: 'The Home of Innovation',
+    logoUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
+    mascotUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
+    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+  },
   {
     id: 'otter-iq',
     name: 'Otter IQ',
@@ -78,7 +87,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children, in
       const brand = brands.find(b => b.id === initialBrandId);
       if (brand) return brand;
     }
-    return brands[0];
+    return brands.find(b => b.id === '12-ventures') ?? brands[0];
   };
 
   const [currentBrand, setCurrentBrand] = useState<Brand>(getInitialBrand);
@@ -91,7 +100,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children, in
   };
 
   useEffect(() => {
-     document.title = `${currentBrand.name} - Modernize Workforce Learning`;
+     document.title = `${currentBrand.name} - ${currentBrand.subtitle ?? 'Modernize Workforce Learning'}`;
   }, [currentBrand]);
 
   return (
