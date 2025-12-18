@@ -40,6 +40,13 @@ export const brands: Brand[] = [
     wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
   },
   {
+    id: 'otterhealth',
+    name: 'OtterHealth',
+    logoUrl: 'https://i.imgur.com/2x1cku1.png',
+    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
+    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+  },
+  {
     id: 'skill-surf',
     name: 'Skill Surf',
     logoUrl: 'https://i.imgur.com/mFS7Vig.png',
