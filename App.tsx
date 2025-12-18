@@ -20,7 +20,7 @@ const App: React.FC = () => {
         <Route
           path="/"
           element={
-            <BrandLayout initialBrandId="otter-iq">
+            <BrandLayout initialBrandId="12-ventures">
               <VenturesHome />
             </BrandLayout>
           }
