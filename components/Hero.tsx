@@ -36,7 +36,7 @@ const Hero: React.FC = () => {
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left animate-fade-in-up">
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight mb-6 leading-[1.1] text-slate-900 drop-shadow-sm">
-              We help your workforce do their <span className="text-gradient-brand">best work.</span>
+              We help your people do their <span className="text-gradient-brand">best work.</span>
             </h1>
 
             <h2 className="text-xl md:text-2xl text-slate-700 mb-8 max-w-xl font-light leading-relaxed font-medium">
