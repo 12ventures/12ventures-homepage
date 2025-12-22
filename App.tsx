@@ -30,7 +30,7 @@ const App: React.FC = () => {
         <Route
           path="/otter"
           element={
-            <BrandLayout initialBrandId="otter-iq">
+            <BrandLayout initialBrandId="otterworks">
               <LandingPage />
             </BrandLayout>
           }
