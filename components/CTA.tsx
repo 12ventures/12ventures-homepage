@@ -1,6 +1,7 @@
 import React from 'react';
 import Button from './ui/Button';
 import { useBrand } from '../contexts/BrandingContext';
+import { openCalendarBooking } from '../utils/calendar';
 
 const CTA: React.FC = () => {
   const { currentBrand } = useBrand();
@@ -32,7 +33,14 @@ const CTA: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto shadow-xl shadow-brand-500/20">Get Started Now</Button>
-                <Button variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 hover:bg-white border-slate-300">Book a Demo</Button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="w-full sm:w-auto bg-white/50 hover:bg-white border-slate-300"
+                  onClick={openCalendarBooking}
+                >
+                  Book a Demo
+                </Button>
             </div>
         </div>
       </div>
