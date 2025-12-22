@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from './ui/Button';
 import { useBrand } from '../contexts/BrandingContext';
+import { openCalendarBooking } from '../utils/calendar';
 
 const Header: React.FC = () => {
   const { currentBrand } = useBrand();
@@ -33,8 +34,9 @@ const Header: React.FC = () => {
         </nav>
 
         <div className="flex items-center gap-4">
-          <a href="#" className="hidden sm:block text-sm font-medium text-slate-600 hover:text-brand-600">Login</a>
-          <Button size="sm">Get Started</Button>
+          <Button size="sm" onClick={openCalendarBooking}>
+            Book a Demo
+          </Button>
         </div>
       </div>
     </header>

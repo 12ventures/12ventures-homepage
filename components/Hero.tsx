@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Button from './ui/Button';
-import { Calculator, PlayCircle, Bell } from 'lucide-react';
+import { Calculator, Calendar, Bell } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
 import ROICalculatorModal from './ROICalculatorModal';
+import { openCalendarBooking } from '../utils/calendar';
 
 const Hero: React.FC = () => {
   const { currentBrand } = useBrand();
@@ -53,11 +54,11 @@ const Hero: React.FC = () => {
                 Calculate Your Impact
               </Button>
               <button 
-                onClick={() => window.open('https://www.youtube.com/watch?v=2YQNEzxIVTM', '_blank')}
+                onClick={openCalendarBooking}
                 className="inline-flex items-center justify-center rounded-full font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-brand-500 bg-white/80 backdrop-blur-md text-slate-700 border border-slate-300 hover:bg-white hover:text-brand-600 hover:border-slate-400 px-8 py-4 text-lg group shadow-sm"
               >
-                <PlayCircle className="mr-2 w-5 h-5 text-slate-400 group-hover:text-brand-600 transition-colors" />
-                View Demo
+                <Calendar className="mr-2 w-5 h-5 text-slate-400 group-hover:text-brand-600 transition-colors" />
+                Book a Demo
               </button>
             </div>
           </div>
