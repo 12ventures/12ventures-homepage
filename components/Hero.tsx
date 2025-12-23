@@ -1,23 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Button from './ui/Button';
 import { Calculator, Calendar, Bell } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
-import ROICalculatorModal from './ROICalculatorModal';
 import { openCalendarBooking } from '../utils/calendar';
+import { useCalculatorModal } from '../contexts/CalculatorModalContext';
+import ProgressiveBackground from './ui/ProgressiveBackground';
+import ProgressiveImage from './ui/ProgressiveImage';
 
 const Hero: React.FC = () => {
   const { currentBrand } = useBrand();
-  const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
-  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const backgroundImage = currentBrand.wallpaperUrl ?? '/images/otter-wallpaper.png';
+  const backgroundImageLowRes = currentBrand.wallpaperUrlLowRes;
+  const { openCalculatorModal } = useCalculatorModal();
 
   return (
     <section className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden pt-24 pb-20">
       
-      {/* Background Image Layer - iOS-safe */}
-      <div 
+      {/* Background Image Layer - iOS-safe with progressive loading */}
+      <ProgressiveBackground
+        src={backgroundImage}
+        lowResSrc={backgroundImageLowRes}
         className="absolute inset-0 z-0 bg-wallpaper"
-        style={{ backgroundImage: `url("${backgroundImage}")` }}
-      ></div>
+      />
 
       {/* Gradient Overlay: Solid on left for text readability, fully transparent on right for vibrant image */}
       <div className="absolute inset-0 z-0 bg-gradient-to-r from-slate-50 via-slate-50/80 to-transparent"></div>
@@ -41,18 +45,18 @@ const Hero: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button 
-                size="lg" 
-                className="group shadow-brand-500/30"
-                onClick={() => setIsCalculatorOpen(true)}
+                size="lg"
+                className="group !bg-white !text-slate-900 !border !border-slate-200 hover:!border-brand-300 focus:!ring-brand-500 shadow-sm"
+                onClick={openCalculatorModal}
               >
-                <Calculator className="mr-2 w-5 h-5" />
+                <Calculator className="mr-2 w-5 h-5 text-slate-500" />
                 Calculate Your Impact
               </Button>
               <button 
                 onClick={openCalendarBooking}
-                className="inline-flex items-center justify-center rounded-full font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-brand-500 bg-white/80 backdrop-blur-md text-slate-700 border border-slate-300 hover:bg-white hover:text-brand-600 hover:border-slate-400 px-8 py-4 text-lg group shadow-sm"
+                className="inline-flex items-center justify-center rounded-full font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-brand-500 bg-brand-600 text-white border-transparent hover:bg-brand-700 px-8 py-4 text-lg group shadow-sm"
               >
-                <Calendar className="mr-2 w-5 h-5 text-slate-400 group-hover:text-brand-600 transition-colors" />
+                <Calendar className="mr-2 w-5 h-5 text-white" />
                 Book a Demo
               </button>
             </div>
@@ -64,8 +68,9 @@ const Hero: React.FC = () => {
                  
                  {/* Mascot Layer - Sizes reduced significantly */}
                  <div className="relative z-20 w-[180px] sm:w-[240px] lg:w-[320px] animate-float">
-                    <img 
-                        src={currentBrand.mascotUrl ?? 'https://i.imgur.com/jdyGGMx.png'}
+                    <ProgressiveImage 
+                        src={currentBrand.mascotUrl ?? '/images/otter-mascot.png'}
+                        lowResSrc={currentBrand.mascotUrlLowRes}
                         alt={`${currentBrand.name} Mascot`}
                         className="w-full h-auto drop-shadow-2xl"
                     />
@@ -110,10 +115,6 @@ const Hero: React.FC = () => {
         </div>
       </div>
 
-      <ROICalculatorModal 
-        isOpen={isCalculatorOpen} 
-        onClose={() => setIsCalculatorOpen(false)} 
-      />
     </section>
   );
 };

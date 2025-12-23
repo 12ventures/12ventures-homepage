@@ -1,18 +1,22 @@
 import React from 'react';
 import { FileText, Wand2, BarChart3, Smartphone } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
+import ProgressiveBackground from './ui/ProgressiveBackground';
 
 const HowItWorks: React.FC = () => {
   const { currentBrand } = useBrand();
-  const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
+  const backgroundImage = currentBrand.wallpaperUrl ?? '/images/otter-wallpaper.png';
+  const backgroundImageLowRes = currentBrand.wallpaperUrlLowRes;
+  
   return (
     <section id="how-it-works" className="py-24 relative overflow-hidden">
         
-        {/* Background Image Layer - iOS-safe */}
-        <div 
+        {/* Background Image Layer - iOS-safe with progressive loading */}
+        <ProgressiveBackground
+            src={backgroundImage}
+            lowResSrc={backgroundImageLowRes}
             className="absolute inset-0 z-0 bg-wallpaper"
-            style={{ backgroundImage: `url("${backgroundImage}")` }}
-        ></div>
+        />
 
         {/* Gradient Overlay for Text Readability: Solid on left, fading to transparent on right */}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-50 via-slate-50/80 to-transparent z-0"></div>
@@ -32,8 +36,8 @@ const HowItWorks: React.FC = () => {
                                 <FileText className="w-5 h-5 text-slate-500" />
                             </div>
                             <div>
-                                <h4 className="text-xl font-bold text-slate-900 mb-2">1. AI Content Transformation</h4>
-                                <p className="text-slate-800 font-medium">Upload your static manuals. The AI instantly converts them into engaging scripts and questions, streamlining content creation time by 90%.</p>
+                                <h4 className="text-xl font-bold text-slate-900 mb-2">1. AI Knowledge Conversion</h4>
+                                <p className="text-slate-800 font-medium">Upload static manuals, policies, or PDFs. Our AI converts them into structured, engaging illustrations, short-form videos, and assessments, reducing content creation time by up to 90%.</p>
                             </div>
                         </div>
 
@@ -42,8 +46,8 @@ const HowItWorks: React.FC = () => {
                                 <Smartphone className="w-5 h-5 text-brand-500" />
                             </div>
                             <div>
-                                <h4 className="text-xl font-bold text-slate-900 mb-2">2. Gen Z-Friendly Media</h4>
-                                <p className="text-slate-800 font-medium">Content is delivered via interactive quizzes, short-form videos, and comics. Transforms passive viewing into active engagement.</p>
+                                <h4 className="text-xl font-bold text-slate-900 mb-2">2. Behavior Improvement</h4>
+                                <p className="text-slate-800 font-medium">Drive real-world improvements through gamification and performance metrics. Interactive training, quizzes, and feedback loops turn learning into measurable action.</p>
                             </div>
                         </div>
 
@@ -52,8 +56,8 @@ const HowItWorks: React.FC = () => {
                                 <BarChart3 className="w-5 h-5 text-teal-500" />
                             </div>
                             <div>
-                                <h4 className="text-xl font-bold text-slate-900 mb-2">3. Analytics & Reporting</h4>
-                                <p className="text-slate-800 font-medium">Prove knowledge retention with granular data. Validates your training effectiveness and demonstrates clear ROI.</p>
+                                <h4 className="text-xl font-bold text-slate-900 mb-2">3. Intelligent Orchestration</h4>
+                                <p className="text-slate-800 font-medium">The platform continuously connects knowledge and behavior. Training content, engagement data, and performance signals inform each other to create an adaptive learning system that evolves alongside your people.</p>
                             </div>
                         </div>
                     </div>

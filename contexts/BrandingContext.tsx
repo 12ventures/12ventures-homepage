@@ -6,7 +6,9 @@ export type Brand = {
   subtitle?: string;
   logoUrl: string;
   mascotUrl?: string;
+  mascotUrlLowRes?: string;
   wallpaperUrl?: string;
+  wallpaperUrlLowRes?: string;
 };
 
 export const brands: Brand[] = [
@@ -16,49 +18,62 @@ export const brands: Brand[] = [
     subtitle: 'The Home of Innovation',
     logoUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
     mascotUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
-    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+    wallpaperUrl: '/images/otter-wallpaper.png',
+    wallpaperUrlLowRes: '/images/otter-wallpaper-lowres.png',
   },
   {
     id: 'otter-iq',
     name: 'Otter IQ',
     logoUrl: 'https://i.imgur.com/MscrBR9.png',
-    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
-    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+    mascotUrl: '/images/otter-mascot.png',
+    mascotUrlLowRes: '/images/otter-mascot-lowres.png',
+    wallpaperUrl: '/images/otter-wallpaper.png',
+    wallpaperUrlLowRes: '/images/otter-wallpaper-lowres.png',
   },
   {
     id: 'otter-works',
     name: 'Otter Works',
     logoUrl: 'https://i.imgur.com/7wrLUzC.png',
-    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
-    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+    mascotUrl: '/images/otter-mascot.png',
+    mascotUrlLowRes: '/images/otter-mascot-lowres.png',
+    wallpaperUrl: '/images/otter-wallpaper.png',
+    wallpaperUrlLowRes: '/images/otter-wallpaper-lowres.png',
   },
   {
     id: 'otterworks',
     name: 'OtterWorks',
     logoUrl: 'https://imgur.com/0yz7xSE.png',
-    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
-    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+    mascotUrl: '/images/otter-mascot.png',
+    mascotUrlLowRes: '/images/otter-mascot-lowres.png',
+    wallpaperUrl: '/images/otter-wallpaper.png',
+    wallpaperUrlLowRes: '/images/otter-wallpaper-lowres.png',
   },
   {
     id: 'otterhealth',
     name: 'OtterHealth',
     logoUrl: 'https://i.imgur.com/2x1cku1.png',
-    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
-    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+    mascotUrl: '/images/otter-mascot.png',
+    mascotUrlLowRes: '/images/otter-mascot-lowres.png',
+    wallpaperUrl: '/images/otter-wallpaper.png',
+    wallpaperUrlLowRes: '/images/otter-wallpaper-lowres.png',
   },
   {
     id: 'skill-surf',
     name: 'Skill Surf',
     logoUrl: 'https://i.imgur.com/mFS7Vig.png',
-    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
-    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+    mascotUrl: '/images/otter-mascot.png',
+    mascotUrlLowRes: '/images/otter-mascot-lowres.png',
+    wallpaperUrl: '/images/otter-wallpaper.png',
+    wallpaperUrlLowRes: '/images/otter-wallpaper-lowres.png',
   },
   {
     id: 'iq-otter',
     name: 'IQ Otter',
     logoUrl: 'https://i.imgur.com/MscrBR9.png',
-    mascotUrl: 'https://i.imgur.com/jdyGGMx.png',
-    wallpaperUrl: 'https://i.imgur.com/PIVqisf.jpeg',
+    mascotUrl: '/images/otter-mascot.png',
+    mascotUrlLowRes: '/images/otter-mascot-lowres.png',
+    wallpaperUrl: '/images/otter-wallpaper.png',
+    wallpaperUrlLowRes: '/images/otter-wallpaper-lowres.png',
   },
   {
     id: 'snapskill',

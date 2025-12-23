@@ -45,7 +45,7 @@ const Testimonials: React.FC = () => {
                         <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Impact Metrics</h4>
                         <div className="space-y-4">
                             <div>
-                                <div className="text-3xl font-bold text-brand-600">40%</div>
+                            <div className="text-3xl font-bold text-brand-600">50%</div>
                                 <div className="text-sm text-slate-600">Reduction in Onboarding Time</div>
                             </div>
                             <div className="w-full h-px bg-slate-100"></div>
