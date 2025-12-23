@@ -1,8 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BrandingProvider } from './contexts/BrandingContext';
+import { CalculatorModalProvider } from './contexts/CalculatorModalContext';
 import VenturesHome from './components/VenturesHome';
 import LandingPage from './components/LandingPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import DevMenu from './components/DevMenu';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode }> = ({ initialBrandId, children }) => (
@@ -14,49 +17,71 @@ const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode 
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* 12Ventures homepage */}
-        <Route
-          path="/"
-          element={
-            <BrandLayout initialBrandId="12-ventures">
-              <VenturesHome />
-            </BrandLayout>
-          }
-        />
+    <CalculatorModalProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* 12Ventures homepage */}
+          <Route
+            path="/"
+            element={
+              <BrandLayout initialBrandId="12-ventures">
+                <VenturesHome />
+              </BrandLayout>
+            }
+          />
 
-        {/* Otter IQ landing page */}
-        <Route
-          path="/otter"
-          element={
-            <BrandLayout initialBrandId="otterworks">
-              <LandingPage />
-            </BrandLayout>
-          }
-        />
+          {/* Otter IQ landing page */}
+          <Route
+            path="/otter"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <LandingPage />
+              </BrandLayout>
+            }
+          />
 
-        {/* SnapSkill landing page */}
-        <Route
-          path="/snapskill"
-          element={
-            <BrandLayout initialBrandId="snapskill">
-              <LandingPage />
-            </BrandLayout>
-          }
-        />
+          {/* SnapSkill landing page */}
+          <Route
+            path="/snapskill"
+            element={
+              <BrandLayout initialBrandId="snapskill">
+                <LandingPage />
+              </BrandLayout>
+            }
+          />
 
-        {/* SnapSkill 2 landing page */}
-        <Route
-          path="/snapskill2"
-          element={
-            <BrandLayout initialBrandId="snapskill2">
-              <LandingPage />
-            </BrandLayout>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+          {/* SnapSkill 2 landing page */}
+          <Route
+            path="/snapskill2"
+            element={
+              <BrandLayout initialBrandId="snapskill2">
+                <LandingPage />
+              </BrandLayout>
+            }
+          />
+
+          {/* Privacy Policy */}
+          <Route
+            path="/privacy"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <PrivacyPolicy />
+              </BrandLayout>
+            }
+          />
+
+          {/* Terms of Service */}
+          <Route
+            path="/terms"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <TermsOfService />
+              </BrandLayout>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </CalculatorModalProvider>
   );
 };
 

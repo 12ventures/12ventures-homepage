@@ -1,40 +1,44 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
+import ProgressiveBackground from './ui/ProgressiveBackground';
 
 const NurseFeedback: React.FC = () => {
   const { currentBrand } = useBrand();
-  const backgroundImage = currentBrand.wallpaperUrl ?? 'https://i.imgur.com/PIVqisf.jpeg';
+  const backgroundImage = currentBrand.wallpaperUrl ?? '/images/otter-wallpaper.png';
+  const backgroundImageLowRes = currentBrand.wallpaperUrlLowRes;
 
   const reviews = [
     {
-      name: "Sarah J.",
+      name: "Sarah A.",
       role: "MST RN",
       quote: `${currentBrand.name} works perfectly`,
-      avatar: "https://ui-avatars.com/api/?name=Sarah+J&background=0ea5e9&color=fff"
+      avatar: "https://i.imgur.com/2Z81mGb.png"
     },
     {
       name: "Mike T.",
       role: "ED RN",
       quote: "All hospitals should have this",
-      avatar: "https://ui-avatars.com/api/?name=Mike+T&background=2dd4bf&color=fff"
+      
+      avatar: "https://i.imgur.com/E6x4XhP.png"
     },
     {
       name: "Emily R.",
       role: "PCT",
       quote: "Information is clear and straight to the point, while being fun!",
-      avatar: "https://ui-avatars.com/api/?name=Emily+R&background=818cf8&color=fff"
+      avatar: "https://i.imgur.com/mQSDVW0.png"
     }
   ];
 
   return (
     <section className="py-24 relative overflow-hidden border-b border-slate-200">
       
-      {/* Background Image - iOS-safe */}
-      <div 
+      {/* Background Image - iOS-safe with progressive loading */}
+      <ProgressiveBackground
+        src={backgroundImage}
+        lowResSrc={backgroundImageLowRes}
         className="absolute inset-0 z-0 bg-wallpaper"
-        style={{ backgroundImage: `url("${backgroundImage}")` }}
-      ></div>
+      />
 
       {/* No overlay filter for vibrant look */}
 
@@ -58,7 +62,11 @@ const NurseFeedback: React.FC = () => {
                </div>
                <p className="text-slate-900 text-lg mb-8 leading-relaxed font-semibold flex-grow drop-shadow-sm">"{review.quote}"</p>
                <div className="flex items-center gap-4 mt-auto pt-4 border-t border-slate-200/50">
-                 <img src={review.avatar} alt={review.name} className="w-12 h-12 rounded-full border-2 border-white shadow-md" />
+                 <img
+                   src={review.avatar}
+                   alt={review.name}
+                   className="w-12 h-12 rounded-full border-2 border-white shadow-[0_4px_14px_rgba(15,23,42,0.35)] object-cover flex-shrink-0"
+                 />
                  <div>
                    <div className="font-bold text-slate-900">{review.name}</div>
                    <div className="text-xs font-bold text-brand-700 uppercase tracking-wider">{review.role}</div>

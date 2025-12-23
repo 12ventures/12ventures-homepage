@@ -2,9 +2,11 @@ import React from 'react';
 import Button from './ui/Button';
 import { Calculator } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
+import { useCalculatorModal } from '../contexts/CalculatorModalContext';
 
 const Pricing: React.FC = () => {
   const { currentBrand } = useBrand();
+  const { openCalculatorModal } = useCalculatorModal();
 
   return (
     <section id="roi" className="py-24 bg-brand-900 relative overflow-hidden">
@@ -42,7 +44,11 @@ const Pricing: React.FC = () => {
                 </div>
             </div>
 
-            <Button size="lg" className="!bg-white !text-brand-900 hover:!bg-brand-50 shadow-xl w-full sm:w-auto transition-colors">
+            <Button
+              size="lg"
+              className="!bg-white !text-brand-900 hover:!bg-brand-50 shadow-xl w-full sm:w-auto transition-colors"
+              onClick={openCalculatorModal}
+            >
                 <Calculator className="mr-2 w-5 h-5" />
                 Open ROI Calculator
             </Button>

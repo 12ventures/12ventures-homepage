@@ -3,17 +3,22 @@ import { useBrand } from '../contexts/BrandingContext';
 
 const Footer: React.FC = () => {
   const { currentBrand } = useBrand();
+  const currentYear = new Date().getFullYear();
 
   const links = {
-    Platform: ['Features', 'ROI Calculator', 'Security', 'Integrations'],
-    Company: ['About Us', 'Careers', 'Blog', 'Contact'],
-    Resources: ['Case Studies', 'Whitepapers', 'Support', 'Legal'],
+    Platform: [
+      { label: 'Features', href: '#features' },
+      { label: 'ROI Calculator', href: '#roi' },
+    ],
+    Company: [
+      { label: 'Contact', href: 'mailto:hello@12ventures.io' },
+    ],
   };
 
   return (
     <footer className="bg-slate-50 pt-20 pb-10 border-t border-slate-200 text-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div className="col-span-2 md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
                 <img 
@@ -23,7 +28,7 @@ const Footer: React.FC = () => {
                 />
             </div>
             <p className="text-slate-500 max-w-xs mb-6">
-              The all-in-one platform for modern healthcare workforces. Achieve financial resilience through better retention.
+              The all-in-one platform for modern healthcare teams.
             </p>
             <div className="flex gap-4">
                 {/* Social placeholders */}
@@ -39,9 +44,9 @@ const Footer: React.FC = () => {
               <h4 className="font-semibold text-slate-900 mb-4">{category}</h4>
               <ul className="space-y-2">
                 {items.map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-slate-500 hover:text-brand-600 transition-colors">
-                      {item}
+                  <li key={item.label}>
+                    <a href={item.href} className="text-slate-500 hover:text-brand-600 transition-colors">
+                      {item.label}
                     </a>
                   </li>
                 ))}
@@ -51,11 +56,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-slate-500">© 2024 {currentBrand.name} Inc. All rights reserved.</p>
-            <div className="flex gap-6">
-                <a href="#" className="text-slate-500 hover:text-brand-600 transition-colors">Privacy Policy</a>
-                <a href="#" className="text-slate-500 hover:text-brand-600 transition-colors">Terms of Service</a>
-            </div>
+            <p className="text-slate-500">© {currentYear} {currentBrand.name} Inc. All rights reserved.</p>
         </div>
       </div>
     </footer>
