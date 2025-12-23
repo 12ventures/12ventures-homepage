@@ -98,6 +98,48 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
+      
+      /* iOS-safe background wallpaper styles */
+      .bg-wallpaper {
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+        /* Default: fixed on desktop */
+        background-attachment: fixed;
+        /* Force GPU acceleration for smoother rendering */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: transform;
+      }
+      
+      /* iOS/mobile fix: background-attachment: fixed doesn't work on iOS Safari */
+      /* Detect touch devices and mobile to use scroll instead */
+      @media (hover: none) and (pointer: coarse) {
+        .bg-wallpaper {
+          background-attachment: scroll;
+          /* Ensure proper sizing on mobile */
+          background-size: cover;
+        }
+      }
+      
+      /* Additional iOS Safari specific fix using max-width as fallback */
+      @media screen and (max-width: 1024px) {
+        .bg-wallpaper {
+          background-attachment: scroll;
+        }
+      }
+      
+      /* Improve iOS scroll performance */
+      @supports (-webkit-touch-callout: none) {
+        .bg-wallpaper {
+          background-attachment: scroll;
+        }
+        /* Reduce repaints on iOS */
+        section {
+          -webkit-transform: translateZ(0);
+          transform: translateZ(0);
+        }
+      }
     </style>
 </head>
   <body>

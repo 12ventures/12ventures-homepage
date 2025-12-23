@@ -30,15 +30,10 @@ const NurseFeedback: React.FC = () => {
   return (
     <section className="py-24 relative overflow-hidden border-b border-slate-200">
       
-      {/* Background Image */}
+      {/* Background Image - iOS-safe */}
       <div 
-        className="absolute inset-0 z-0"
-        style={{
-            backgroundImage: `url("${backgroundImage}")`,
-            backgroundAttachment: 'fixed',
-            backgroundPosition: 'center',
-            backgroundSize: 'cover'
-        }}
+        className="absolute inset-0 z-0 bg-wallpaper"
+        style={{ backgroundImage: `url("${backgroundImage}")` }}
       ></div>
 
       {/* No overlay filter for vibrant look */}

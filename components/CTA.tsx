@@ -10,15 +10,10 @@ const CTA: React.FC = () => {
   return (
     <section className="py-24 relative overflow-hidden">
       
-      {/* Background Image Layer */}
+      {/* Background Image Layer - iOS-safe */}
       <div 
-        className="absolute inset-0 z-0"
-        style={{
-            backgroundImage: `url("${backgroundImage}")`,
-            backgroundAttachment: 'fixed',
-            backgroundPosition: 'center',
-            backgroundSize: 'cover'
-        }}
+        className="absolute inset-0 z-0 bg-wallpaper"
+        style={{ backgroundImage: `url("${backgroundImage}")` }}
       ></div>
 
       {/* No Overlay - Raw Wallpaper */}
