@@ -8,15 +8,10 @@ const HowItWorks: React.FC = () => {
   return (
     <section id="how-it-works" className="py-24 relative overflow-hidden">
         
-        {/* Background Image Layer */}
+        {/* Background Image Layer - iOS-safe */}
         <div 
-            className="absolute inset-0 z-0"
-            style={{
-                backgroundImage: `url("${backgroundImage}")`,
-                backgroundAttachment: 'fixed',
-                backgroundPosition: 'center',
-                backgroundSize: 'cover'
-            }}
+            className="absolute inset-0 z-0 bg-wallpaper"
+            style={{ backgroundImage: `url("${backgroundImage}")` }}
         ></div>
 
         {/* Gradient Overlay for Text Readability: Solid on left, fading to transparent on right */}

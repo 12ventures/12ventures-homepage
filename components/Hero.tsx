@@ -13,15 +13,10 @@ const Hero: React.FC = () => {
   return (
     <section className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden pt-24 pb-20">
       
-      {/* Background Image Layer */}
+      {/* Background Image Layer - iOS-safe */}
       <div 
-        className="absolute inset-0 z-0"
-        style={{
-        backgroundImage: `url("${backgroundImage}")`,
-            backgroundAttachment: 'fixed',
-            backgroundPosition: 'center',
-            backgroundSize: 'cover'
-        }}
+        className="absolute inset-0 z-0 bg-wallpaper"
+        style={{ backgroundImage: `url("${backgroundImage}")` }}
       ></div>
 
       {/* Gradient Overlay: Solid on left for text readability, fully transparent on right for vibrant image */}
