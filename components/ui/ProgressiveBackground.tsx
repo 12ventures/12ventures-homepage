@@ -52,3 +52,4 @@ const ProgressiveBackground: React.FC<ProgressiveBackgroundProps> = ({
 
 export default ProgressiveBackground;
 
+

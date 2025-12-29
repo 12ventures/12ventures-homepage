@@ -57,8 +57,8 @@ const LeadMagnetModal: React.FC<LeadMagnetModalProps> = ({ isOpen, onClose, hasS
   };
 
   const renderForm = () => (
-    <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
-      <div className="relative">
+    <form onSubmit={handleSubmit} className="w-full max-w-md">
+      <div className="relative mb-12">
         <input
           type="email"
           required
@@ -69,23 +69,25 @@ const LeadMagnetModal: React.FC<LeadMagnetModalProps> = ({ isOpen, onClose, hasS
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full h-16 rounded-2xl bg-white text-slate-900 text-2xl font-black uppercase tracking-wider hover:bg-slate-100 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
-      >
-        {isLoading ? 'Processing...' : 'SHOW ME HOW'}
-      </button>
+      <div className="space-y-4">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full h-16 rounded-2xl bg-white text-slate-900 text-2xl font-black uppercase tracking-wider hover:bg-slate-100 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
+        >
+          {isLoading ? 'Processing...' : 'SHOW ME HOW'}
+        </button>
 
-      {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+        {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
 
-      <button
-        type="button"
-        onClick={onClose}
-        className="block mt-6 mx-auto text-white/50 text-lg font-bold underline hover:text-white/80 transition-colors decoration-white/30 underline-offset-4 italic"
-      >
-        No thanks, I don't want an empowered team
-      </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="block mt-6 mx-auto text-white/50 text-lg font-bold underline hover:text-white/80 transition-colors decoration-white/30 underline-offset-4 italic"
+        >
+          No thanks, I don't want an empowered team
+        </button>
+      </div>
     </form>
   );
 
@@ -153,10 +155,6 @@ const LeadMagnetModal: React.FC<LeadMagnetModalProps> = ({ isOpen, onClose, hasS
           </h2>
 
           {hasSubmitted ? renderSuccess() : renderForm()}
-
-          <p className="mt-12 text-white/30 text-xs max-w-md">
-            By signing up, you agree to receive emails. See our privacy policy for more details.
-          </p>
         </div>
 
         {/* Inner background glow */}
