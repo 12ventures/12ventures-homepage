@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 const OtterWiki: React.FC = () => {
+  // Cache-bust the iframe URL to ensure fresh content on each page load
+  const iframeSrc = useMemo(() => {
+    const baseUrl = 'https://docs.google.com/document/d/e/2PACX-1vSdKBUIRQhrUZ8j7FrKmjpAQmvapIoKcF-kBZWqy73AwwZgNwcKE6KGIaZg6uaOOXqSZPwDQmwHjs6n/pub?embedded=true';
+    return `${baseUrl}&cachebust=${Date.now()}`;
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center py-8 px-4 relative">
       {/* Edit button */}
@@ -18,7 +24,7 @@ const OtterWiki: React.FC = () => {
 
       <div className="w-full max-w-4xl h-[90vh] bg-white rounded-lg shadow-xl shadow-slate-300/50 ring-1 ring-slate-200/50 overflow-hidden">
         <iframe
-          src="https://docs.google.com/document/d/e/2PACX-1vSdKBUIRQhrUZ8j7FrKmjpAQmvapIoKcF-kBZWqy73AwwZgNwcKE6KGIaZg6uaOOXqSZPwDQmwHjs6n/pub?embedded=true"
+          src={iframeSrc}
           className="w-full h-full border-0"
           title="Otter Wiki"
         />
