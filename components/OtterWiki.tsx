@@ -11,7 +11,7 @@ const OtterWiki: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center py-8 px-4 relative">
       {/* Edit button */}
       <a
-        href="https://docs.google.com/document/d/1k0j1ezh4-dT5OLhScJOJObETp5M6zgwq8x11kXDdaao/edit?usp=sharing"
+        href="https://docs.google.com/document/d/1KScmXu4Wc7tV1yue76zTfO_jOYqRA1-Rb5zXa2rAEWs/edit?usp=sharing"
         target="_blank"
         rel="noopener noreferrer"
         className="absolute top-4 right-4 inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-600 text-sm font-medium rounded-lg shadow-md ring-1 ring-slate-200/50 transition-all duration-200 hover:bg-slate-50 hover:text-slate-800 hover:shadow-lg hover:-translate-y-0.5"

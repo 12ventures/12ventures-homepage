@@ -81,9 +81,25 @@ const App: React.FC = () => {
             }
           />
 
-          {/* Otter Wiki */}
+          {/* OtterWorks landing page (same as /otter) */}
+          <Route
+            path="/otterworks"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <LandingPage />
+              </BrandLayout>
+            }
+          />
+
+          {/* Otter Wiki (legacy path) */}
           <Route
             path="/otterwiki"
+            element={<OtterWiki />}
+          />
+
+          {/* OtterWorks Wiki */}
+          <Route
+            path="/otterworks/wiki"
             element={<OtterWiki />}
           />
         </Routes>
