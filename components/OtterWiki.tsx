@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 const OtterWiki: React.FC = () => {
   // Cache-bust the iframe URL to ensure fresh content on each page load
   const iframeSrc = useMemo(() => {
-    const baseUrl = 'https://docs.google.com/document/d/e/2PACX-1vSdKBUIRQhrUZ8j7FrKmjpAQmvapIoKcF-kBZWqy73AwwZgNwcKE6KGIaZg6uaOOXqSZPwDQmwHjs6n/pub?embedded=true';
+    const baseUrl = 'https://docs.google.com/document/d/e/2PACX-1vTBTRdIcWUKRa59aq0SM1-vXRNLw3z7guWoTyqzGiaeN9vznKV58YJ962mKJjruDTgCPrLIxcLRqwBA/pub?embedded=true';
     return `${baseUrl}&cachebust=${Date.now()}`;
   }, []);
 
