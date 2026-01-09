@@ -7,6 +7,7 @@ import LandingPage from './components/LandingPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import OtterWiki from './components/OtterWiki';
+import RoyceSlides from './components/RoyceSlides';
 import DevMenu from './components/DevMenu';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode }> = ({ initialBrandId, children }) => (
@@ -101,6 +102,12 @@ const App: React.FC = () => {
           <Route
             path="/otterworks/wiki"
             element={<OtterWiki />}
+          />
+
+          {/* Royce Slides */}
+          <Route
+            path="/royce"
+            element={<RoyceSlides />}
           />
         </Routes>
       </BrowserRouter>
