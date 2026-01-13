@@ -98,16 +98,16 @@ const PrismaDashboardLayout: React.FC<PrismaDashboardLayoutProps> = ({ children,
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 min-h-screen relative z-10">
-        <header className="h-20 bg-white/30 backdrop-blur-md border-b border-white/30 flex items-center justify-between px-8 sticky top-0 z-30">
+      <main className="flex-1 ml-64 h-screen flex flex-col relative z-10 overflow-hidden">
+        <header className="h-16 bg-white/30 backdrop-blur-md border-b border-white/30 flex items-center justify-between px-8 sticky top-0 z-30 flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-slate-900">{title}</h1>
             {subtitle && <p className="text-xs text-slate-600 font-medium">{subtitle}</p>}
           </div>
         </header>
         
-        <div className="p-8">
-          <div className="max-w-7xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <div className="max-w-7xl mx-auto h-full flex flex-col">
             {children}
           </div>
         </div>

@@ -52,24 +52,24 @@ const MetricDashboard: React.FC = () => {
       title="Learning Effectiveness Command Center" 
       subtitle="Outcomes, Measurement & Change Management"
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 h-full">
         
         {/* TOP ROW: High-Level KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
           
           {/* 1. Proficiency Gauge */}
-          <GlassCard className="p-4 flex flex-col items-center justify-center relative h-[220px]">
-            <div className="absolute top-4 left-6 font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">
-              <Activity size={16} className="text-brand-600" /> Clinical Proficiency
+          <GlassCard className="p-3 flex flex-col items-center justify-center relative h-[180px]">
+            <div className="absolute top-3 left-4 font-bold text-slate-700 flex items-center gap-2 text-xs uppercase tracking-wide">
+              <Activity size={14} className="text-brand-600" /> Clinical Proficiency
             </div>
             
-            <div className="w-full h-full flex items-end justify-center pb-2 relative">
+            <div className="w-full h-full flex items-end justify-center pb-1 relative">
                <ResponsiveContainer width="100%" height="100%">
                  <PieChart>
                    <Pie
                      data={gaugeData}
                      cx="50%"
-                     cy="70%" 
+                     cy="75%" 
                      startAngle={180}
                      endAngle={0}
                      innerRadius="75%"
@@ -86,31 +86,31 @@ const MetricDashboard: React.FC = () => {
                </ResponsiveContainer>
                
                {/* Fixed Label Position */}
-               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center">
-                  <div className="text-4xl font-bold text-slate-900 mb-1">82%</div>
-                  <div className="text-xs text-slate-500 font-medium">Target: 80%</div>
+               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
+                  <div className="text-3xl font-bold text-slate-900 mb-0.5">82%</div>
+                  <div className="text-[10px] text-slate-500 font-medium">Target: 80%</div>
                </div>
             </div>
             
-            <div className="absolute top-4 right-4 flex items-center gap-1 text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-full">
-               <TrendingUp size={12} /> +4.2%
+            <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+               <TrendingUp size={10} /> +4.2%
             </div>
           </GlassCard>
 
           {/* 2. Change Readiness (Moved & Simplified) */}
-          <GlassCard className="p-5 flex flex-col h-[220px]">
-             <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">
-                  <Users size={16} className="text-brand-600" /> Change Readiness
+          <GlassCard className="p-4 flex flex-col h-[180px]">
+             <div className="flex justify-between items-center mb-3">
+                <h4 className="font-bold text-slate-700 flex items-center gap-2 text-xs uppercase tracking-wide">
+                  <Users size={14} className="text-brand-600" /> Change Readiness
                 </h4>
                 <span className="text-[10px] font-bold bg-slate-100/50 text-slate-500 px-2 py-0.5 rounded backdrop-blur-sm">Live Status</span>
              </div>
              
-             <div className="flex-1 flex flex-col justify-center gap-3">
+             <div className="flex-1 flex flex-col justify-center gap-2">
                 <DepartmentRow name="Emergency Dept" readiness={92} status="ready" />
                 <DepartmentRow name="ICU / Critical Care" readiness={88} status="ready" />
              </div>
-             <div className="mt-auto text-xs text-center text-slate-400 font-medium pt-2 border-t border-slate-200/50">
+             <div className="mt-auto text-[10px] text-center text-slate-400 font-medium pt-2 border-t border-slate-200/50">
                 2 Departments Tracking at Risk (Med-Surg)
              </div>
           </GlassCard>
@@ -129,11 +129,11 @@ const MetricDashboard: React.FC = () => {
 
 
         {/* MIDDLE ROW: Correlation Graph */}
-        <GlassCard className="p-8 h-[360px] flex flex-col">
-          <div className="flex justify-between items-center mb-6 flex-shrink-0">
+        <GlassCard className="p-6 flex-1 min-h-0 flex flex-col">
+          <div className="flex justify-between items-center mb-4 flex-shrink-0">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Impact Correlation Analysis</h3>
-              <p className="text-sm text-slate-500">Tracking training completion against support ticket volume.</p>
+              <h3 className="text-base font-bold text-slate-900">Impact Correlation Analysis</h3>
+              <p className="text-xs text-slate-500">Tracking training completion against support ticket volume.</p>
             </div>
             <div className="flex gap-4">
                <LegendItem color="bg-brand-500" label="Training Adoption" />
@@ -143,35 +143,35 @@ const MetricDashboard: React.FC = () => {
 
           <div className="flex-1 w-full min-h-0">
              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={correlationData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <LineChart data={correlationData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                    <XAxis 
                      dataKey="month" 
                      axisLine={false} 
                      tickLine={false} 
-                     tick={{ fill: '#94a3b8', fontSize: 12 }} 
+                     tick={{ fill: '#94a3b8', fontSize: 10 }} 
                      dy={10}
                    />
                    <YAxis hide domain={[0, 100]} />
                    <Tooltip 
-                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(4px)' }}
+                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(4px)', fontSize: '12px' }}
                    />
                    <Line 
                      type="monotone" 
                      dataKey="training" 
                      stroke="#0ea5e9" 
-                     strokeWidth={4} 
-                     dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                     activeDot={{ r: 6 }}
+                     strokeWidth={3} 
+                     dot={{ r: 3, strokeWidth: 2, fill: '#fff' }}
+                     activeDot={{ r: 5 }}
                    />
                    <Line 
                      type="monotone" 
                      dataKey="tickets" 
                      stroke="#fb7185" 
-                     strokeWidth={4} 
-                     strokeDasharray="8 8"
-                     dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                     activeDot={{ r: 6 }}
+                     strokeWidth={3} 
+                     strokeDasharray="6 6"
+                     dot={{ r: 3, strokeWidth: 2, fill: '#fff' }}
+                     activeDot={{ r: 5 }}
                    />
                 </LineChart>
              </ResponsiveContainer>
@@ -180,11 +180,11 @@ const MetricDashboard: React.FC = () => {
 
 
         {/* BOTTOM ROW: Recommended Actions (CTA Buttons) */}
-        <div>
-           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-             <CheckCircle2 size={16} className="text-emerald-600" /> Recommended Actions
+        <div className="flex-shrink-0">
+           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-2">
+             <CheckCircle2 size={14} className="text-emerald-600" /> Recommended Actions
            </h3>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <ActionButton 
                 title="Deploy 'Just-in-Time' Tip Sheets"
                 desc="Target: Med-Surg Units"
@@ -239,19 +239,19 @@ const KPICard: React.FC<{
   const isPositive = isInverse ? trendDirection === 'down' : trendDirection === 'up'; 
   
   return (
-    <GlassCard className="p-6 flex flex-col justify-between h-[220px]">
-       <div className="flex justify-between items-start mb-4">
-          <div className="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">
-             <Icon size={16} className="text-brand-600" /> {title}
+    <GlassCard className="p-4 flex flex-col justify-between h-[180px]">
+       <div className="flex justify-between items-start mb-2">
+          <div className="font-bold text-slate-700 flex items-center gap-2 text-xs uppercase tracking-wide">
+             <Icon size={14} className="text-brand-600" /> {title}
           </div>
-          <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-             {trendDirection === 'up' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+          <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+             {trendDirection === 'up' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
              {trend}
           </div>
        </div>
        <div className="mt-auto">
-          <div className="text-4xl font-bold text-slate-900 mb-1">{value}</div>
-          <div className="text-xs text-slate-400">{subtext}</div>
+          <div className="text-3xl font-bold text-slate-900 mb-1">{value}</div>
+          <div className="text-[10px] text-slate-400">{subtext}</div>
        </div>
     </GlassCard>
   );

@@ -81,13 +81,13 @@ const TrainingEconomics: React.FC = () => {
       title="Training Economics Calculator" 
       subtitle="Staffing, Productivity & Cost Analysis"
     >
-      <div className="flex flex-col gap-6 h-auto min-h-[600px] p-2">
+      <div className="flex flex-col gap-4 h-full">
         
         {/* --- TOP ROW: INPUTS + KPIS --- */}
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4 flex-shrink-0">
           
           {/* Model Inputs (Slider) - Takes up 5 columns */}
-          <GlassCard className="col-span-12 lg:col-span-5 p-6 flex flex-col justify-center">
+          <GlassCard className="col-span-12 lg:col-span-5 p-5 flex flex-col justify-center">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-900 flex items-center gap-2">
                 <Calculator size={20} className="text-brand-600" />
