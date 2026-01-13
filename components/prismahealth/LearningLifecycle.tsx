@@ -100,10 +100,10 @@ const LearningLifecycle: React.FC = () => {
       title="Content & Curriculum Engine" 
       subtitle="Automated Learning Lifecycle Management"
     >
-      <div className="max-w-4xl mx-auto h-[700px] flex flex-col">
+      <div className="w-full max-w-7xl mx-auto h-full flex flex-col">
         
         {/* Progress Stepper */}
-        <div className="flex items-center justify-between px-12 mb-12">
+        <div className="flex items-center justify-between px-4 lg:px-12 mb-6 lg:mb-8 flex-shrink-0">
            <StepIndicator label="Select Source" active={step === 'select'} completed={step !== 'select'} />
            <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step !== 'select' ? 'bg-brand-200' : 'bg-slate-200/50'}`}></div>
            <StepIndicator label="Input / Sync" active={step === 'upload' || step === 'searching'} completed={step === 'processing' || step === 'results'} />

@@ -139,10 +139,10 @@ const GovernanceTool: React.FC = () => {
       title="Governance Model Visualizer" 
       subtitle="Organizational Alignment & Reporting Model"
     >
-      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
+      <div className="flex flex-col lg:flex-row gap-6 h-full">
         
         {/* Main Visualizer Area */}
-        <GlassCard className="flex-1 flex flex-col relative overflow-hidden">
+        <GlassCard className="flex-1 flex flex-col relative overflow-hidden min-h-0">
           
           {/* Header */}
           <div className={`p-4 border-b flex items-center justify-between z-10 transition-colors duration-300 ${
