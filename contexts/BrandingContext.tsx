@@ -89,6 +89,14 @@ export const brands: Brand[] = [
     mascotUrl: '/images/snapskill-logo-icon.png',
     wallpaperUrl: '/images/snapskill-wallpaper2.png',
   },
+  {
+    id: 'prisma-health',
+    name: 'Prisma Health',
+    subtitle: 'Innovation in Healthcare Learning',
+    logoUrl: '/logos/prisma-logo-primary.svg',
+    mascotUrl: '/logos/prisma-logo-primary.svg', // Using logo as mascot for now
+    wallpaperUrl: '/images/otter-wallpaper.png',
+  },
 ];
 
 interface BrandingContextType {
