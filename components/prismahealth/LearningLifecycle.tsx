@@ -100,10 +100,10 @@ const LearningLifecycle: React.FC = () => {
       title="Content & Curriculum Engine" 
       subtitle="Automated Learning Lifecycle Management"
     >
-      <div className="w-full max-w-7xl mx-auto h-full flex flex-col">
+      <div className="w-full max-w-6xl mx-auto h-full flex flex-col">
         
         {/* Progress Stepper */}
-        <div className="flex items-center justify-between px-4 lg:px-12 mb-6 lg:mb-8 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 lg:px-8 mb-6 flex-shrink-0">
            <StepIndicator label="Select Source" active={step === 'select'} completed={step !== 'select'} />
            <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${step !== 'select' ? 'bg-brand-200' : 'bg-slate-200/50'}`}></div>
            <StepIndicator label="Input / Sync" active={step === 'upload' || step === 'searching'} completed={step === 'processing' || step === 'results'} />
@@ -118,37 +118,45 @@ const LearningLifecycle: React.FC = () => {
           
           {/* STEP 1: SELECT SOURCE */}
           {step === 'select' && (
-            <div className="absolute inset-0 p-8 md:p-12 flex flex-col animate-in fade-in slide-in-from-right-8 duration-300">
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Where is your content coming from?</h3>
-              <p className="text-slate-600 mb-8 font-medium">Choose a source to begin the automated curriculum generation process.</p>
+            <div className="absolute inset-0 p-8 flex flex-col animate-in fade-in slide-in-from-right-8 duration-300">
+              <div className="text-center mb-8">
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Where is your content coming from?</h3>
+                <p className="text-slate-600 font-medium text-sm">Choose a source to begin the automated curriculum generation process.</p>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full pb-8">
-                <div className="relative">
-                  {!hasInteracted && (
-                    <div className="absolute -inset-1 rounded-xl border-4 border-brand-300 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] pointer-events-none"></div>
-                  )}
-                  <SourceOption 
-                    id="upload" 
-                    title="Upload Document" 
-                    icon={UploadCloud} 
-                    desc="PDF, DOCX, PPTX" 
-                    onClick={() => handleSourceSelect('upload')} 
-                  />
+              <div className="flex-1 flex items-center justify-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl h-[240px]">
+                  <div className="relative h-full">
+                    {!hasInteracted && (
+                      <div className="absolute -inset-1 rounded-xl border-4 border-brand-300 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] pointer-events-none"></div>
+                    )}
+                    <SourceOption 
+                      id="upload" 
+                      title="Upload Document" 
+                      icon={UploadCloud} 
+                      desc="PDF, DOCX, PPTX" 
+                      onClick={() => handleSourceSelect('upload')} 
+                    />
+                  </div>
+                  <div className="h-full">
+                    <SourceOption 
+                      id="intranet" 
+                      title="Intranet Sync" 
+                      icon={Database} 
+                      desc="Auto-detect policies" 
+                      onClick={() => handleSourceSelect('intranet')} 
+                    />
+                  </div>
+                  <div className="h-full">
+                    <SourceOption 
+                      id="external" 
+                      title="External Web" 
+                      icon={Globe} 
+                      desc="Medical Journals" 
+                      onClick={() => handleSourceSelect('external')} 
+                    />
+                  </div>
                 </div>
-                <SourceOption 
-                  id="intranet" 
-                  title="Intranet Sync" 
-                  icon={Database} 
-                  desc="Auto-detect policies" 
-                  onClick={() => handleSourceSelect('intranet')} 
-                />
-                <SourceOption 
-                  id="external" 
-                  title="External Web" 
-                  icon={Globe} 
-                  desc="Medical Journals" 
-                  onClick={() => handleSourceSelect('external')} 
-                />
               </div>
             </div>
           )}
@@ -224,8 +232,8 @@ const LearningLifecycle: React.FC = () => {
 
           {/* STEP 4: RESULTS */}
           {step === 'results' && (
-            <div className="absolute inset-0 p-8 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-500">
-              <div className="flex justify-between items-start mb-6">
+            <div className="absolute inset-0 p-6 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-500">
+              <div className="flex justify-between items-start mb-4 flex-shrink-0">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <CheckCircle2 size={24} className="text-emerald-500" />
@@ -243,44 +251,48 @@ const LearningLifecycle: React.FC = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 h-full pb-4">
+              <div className="flex-1 flex items-center justify-center gap-6 min-h-0 overflow-y-auto">
                  {/* Asset 1: Tip Sheet */}
-                 <GlassCard 
-                   className="!bg-slate-50/30 border-slate-200/50 p-4 flex flex-col items-center group hover:shadow-lg transition-all cursor-pointer h-full"
-                   onClick={() => setIsViewingImage(true)}
-                 >
-                    <div className="relative w-full h-full aspect-[3/4] rounded-xl overflow-hidden shadow-sm border border-slate-200/50 mb-3 bg-white/80 group">
-                       <img 
-                         src="https://games.dreambox.gg/snapskill/other/comic-demo-3.png" 
-                         alt="Tip Sheet" 
-                         className="absolute inset-0 w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500"
-                       />
-                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[1px]">
-                          <div className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
-                             <ZoomIn size={24} className="text-slate-700" />
-                          </div>
-                       </div>
-                    </div>
-                    <h4 className="font-bold text-slate-900">Tip Sheet</h4>
-                 </GlassCard>
+                 <div className="w-64 h-full max-h-[400px]">
+                   <GlassCard 
+                     className="!bg-slate-50/30 border-slate-200/50 p-4 flex flex-col items-center group hover:shadow-lg transition-all cursor-pointer h-full"
+                     onClick={() => setIsViewingImage(true)}
+                   >
+                      <div className="relative w-full flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200/50 mb-3 bg-white/80 group">
+                         <img 
+                           src="https://games.dreambox.gg/snapskill/other/comic-demo-3.png" 
+                           alt="Tip Sheet" 
+                           className="absolute inset-0 w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500"
+                         />
+                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[1px]">
+                            <div className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
+                               <ZoomIn size={24} className="text-slate-700" />
+                            </div>
+                         </div>
+                      </div>
+                      <h4 className="font-bold text-slate-900 flex-shrink-0">Tip Sheet</h4>
+                   </GlassCard>
+                 </div>
 
                  {/* Asset 2: Video Module */}
-                 <GlassCard 
-                   className="!bg-slate-50/30 border-slate-200/50 p-4 flex flex-col items-center group hover:shadow-lg transition-all cursor-pointer h-full"
-                   onClick={() => setIsPlayingVideo(true)}
-                 >
-                    <div className="relative w-full h-full aspect-[3/4] rounded-xl overflow-hidden shadow-sm border border-slate-200/50 mb-3 bg-slate-900 flex items-center justify-center">
-                       <img 
-                         src="https://games.dreambox.gg/snapskill/videos/1760628332870-au6nuywah3p_thumb2.png" 
-                         alt="Video Short" 
-                         className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-75 transition-opacity"
-                       />
-                       <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center z-10 group-hover:scale-110 transition-transform border border-white/30">
-                          <Play size={32} className="text-white fill-white ml-1" />
-                       </div>
-                    </div>
-                    <h4 className="font-bold text-slate-900">Video Short</h4>
-                 </GlassCard>
+                 <div className="w-64 h-full max-h-[400px]">
+                   <GlassCard 
+                     className="!bg-slate-50/30 border-slate-200/50 p-4 flex flex-col items-center group hover:shadow-lg transition-all cursor-pointer h-full"
+                     onClick={() => setIsPlayingVideo(true)}
+                   >
+                      <div className="relative w-full flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200/50 mb-3 bg-slate-900 flex items-center justify-center">
+                         <img 
+                           src="https://games.dreambox.gg/snapskill/videos/1760628332870-au6nuywah3p_thumb2.png" 
+                           alt="Video Short" 
+                           className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-75 transition-opacity"
+                         />
+                         <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center z-10 group-hover:scale-110 transition-transform border border-white/30">
+                            <Play size={32} className="text-white fill-white ml-1" />
+                         </div>
+                      </div>
+                      <h4 className="font-bold text-slate-900 flex-shrink-0">Video Short</h4>
+                   </GlassCard>
+                 </div>
               </div>
             </div>
           )}
@@ -347,13 +359,13 @@ const StepIndicator: React.FC<{ label: string; active: boolean; completed: boole
 const SourceOption: React.FC<{ id: string; title: string; desc: string; icon: React.ElementType; onClick: () => void }> = ({ title, desc, icon: Icon, onClick }) => (
   <button 
     onClick={onClick}
-    className="h-full w-full rounded-xl border border-slate-200/50 bg-slate-50/30 hover:bg-white/60 hover:border-brand-200 hover:shadow-lg transition-all p-6 flex flex-col items-center justify-center text-center group backdrop-blur-sm"
+    className="h-full w-full rounded-xl border border-slate-200/50 bg-slate-50/30 hover:bg-white/60 hover:border-brand-200 hover:shadow-lg transition-all p-4 flex flex-col items-center justify-center text-center group backdrop-blur-sm"
   >
-    <div className="w-20 h-20 bg-white/80 rounded-full shadow-sm flex items-center justify-center mb-6 text-slate-400 group-hover:text-brand-600 group-hover:scale-110 transition-all backdrop-blur-sm">
-      <Icon size={40} />
+    <div className="w-16 h-16 bg-white/80 rounded-full shadow-sm flex items-center justify-center mb-4 text-slate-400 group-hover:text-brand-600 group-hover:scale-110 transition-all backdrop-blur-sm">
+      <Icon size={32} />
     </div>
-    <h4 className="text-lg font-bold text-slate-900 mb-2">{title}</h4>
-    <p className="text-sm text-slate-500 font-medium">{desc}</p>
+    <h4 className="text-base font-bold text-slate-900 mb-1">{title}</h4>
+    <p className="text-xs text-slate-500 font-medium">{desc}</p>
   </button>
 );
 

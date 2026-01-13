@@ -139,7 +139,7 @@ const GovernanceTool: React.FC = () => {
       title="Governance Model Visualizer" 
       subtitle="Organizational Alignment & Reporting Model"
     >
-      <div className="flex flex-col lg:flex-row gap-6 h-full">
+      <div className="flex flex-col lg:flex-row gap-4 h-full">
         
         {/* Main Visualizer Area */}
         <GlassCard className="flex-1 flex flex-col relative overflow-hidden min-h-0">
@@ -200,7 +200,7 @@ const GovernanceTool: React.FC = () => {
 
             {/* Overlays for Context */}
             {viewMode === 'current' && (
-              <div className="absolute top-[59%] left-0 right-0 z-10 pointer-events-none">
+              <div className="absolute top-[62%] left-0 right-0 z-10 pointer-events-none">
                  <div className="border-t-2 border-red-400 border-dashed w-full h-0 relative opacity-60"></div>
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-50/90 text-red-500 text-[10px] font-bold px-3 py-1 rounded-full border border-red-200 shadow-sm whitespace-nowrap">
                     SILOED COMMUNICATION
@@ -238,14 +238,14 @@ const GoalAlignmentPanel: React.FC<{ viewMode: 'current' | 'future' }> = ({ view
   ];
 
   return (
-    <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6">
-      <GlassCard className="p-6 flex-1 h-full">
-        <h3 className={`font-bold flex items-center gap-2 mb-6 transition-colors duration-300 ${viewMode === 'future' ? 'text-emerald-700' : 'text-slate-800'}`}>
-          <Target className={viewMode === 'future' ? 'text-emerald-500' : 'text-slate-500'} size={20} />
+    <div className="w-full lg:w-72 flex-shrink-0 flex flex-col gap-4">
+      <GlassCard className="p-5 flex-1 h-full">
+        <h3 className={`font-bold flex items-center gap-2 mb-4 transition-colors duration-300 ${viewMode === 'future' ? 'text-emerald-700' : 'text-slate-800'}`}>
+          <Target className={viewMode === 'future' ? 'text-emerald-500' : 'text-slate-500'} size={18} />
           Goal Alignment
         </h3>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           {goals.map((goal) => (
             <div 
               key={goal.id}
@@ -256,13 +256,13 @@ const GoalAlignmentPanel: React.FC<{ viewMode: 'current' | 'future' }> = ({ view
               }`}
             >
               <div className={`mt-0.5 ${goal.active ? 'text-emerald-600' : 'text-slate-400'}`}>
-                {goal.active ? <CheckCircle2 size={18} /> : <Lock size={16} />}
+                {goal.active ? <CheckCircle2 size={16} /> : <Lock size={14} />}
               </div>
               <div>
-                <p className={`text-sm font-medium ${goal.active ? 'text-emerald-900' : 'text-slate-500'}`}>
+                <p className={`text-xs font-medium ${goal.active ? 'text-emerald-900' : 'text-slate-500'}`}>
                   {goal.label}
                 </p>
-                <span className={`text-[10px] font-bold uppercase tracking-wider block mt-1 transition-all duration-300 ${
+                <span className={`text-[9px] font-bold uppercase tracking-wider block mt-0.5 transition-all duration-300 ${
                   goal.active ? 'text-emerald-600 opacity-100' : 'text-emerald-600 opacity-0 select-none'
                 }`}>
                   Optimized
@@ -272,9 +272,9 @@ const GoalAlignmentPanel: React.FC<{ viewMode: 'current' | 'future' }> = ({ view
           ))}
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-100/50">
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Projected Impact</h4>
-          <div className="space-y-3">
+        <div className="mt-6 pt-4 border-t border-slate-100/50">
+          <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Projected Impact</h4>
+          <div className="space-y-2">
              <ImpactMetric 
                label="Strategic Alignment" 
                value={viewMode === 'current' ? 'Low' : 'High'} 
