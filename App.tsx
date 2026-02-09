@@ -30,9 +30,19 @@ const App: React.FC = () => {
     <CalculatorModalProvider>
       <BrowserRouter>
         <Routes>
-          {/* 12Ventures homepage */}
+          {/* Otter IQ landing page (now root) */}
           <Route
             path="/"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <LandingPage />
+              </BrandLayout>
+            }
+          />
+
+          {/* 12Ventures homepage (moved) */}
+          <Route
+            path="/12-ventures"
             element={
               <BrandLayout initialBrandId="12-ventures">
                 <VenturesHome />
