@@ -26,21 +26,30 @@ const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode;
 );
 
 const App: React.FC = () => {
+  // Detect which domain is being used
+  const is12Ventures = window.location.hostname.includes('12ventures.io');
+  
   return (
     <CalculatorModalProvider>
       <BrowserRouter>
         <Routes>
-          {/* Otter IQ landing page (now root) */}
+          {/* Root page - domain-aware */}
           <Route
             path="/"
             element={
-              <BrandLayout initialBrandId="otterworks">
-                <LandingPage />
-              </BrandLayout>
+              is12Ventures ? (
+                <BrandLayout initialBrandId="12-ventures">
+                  <VenturesHome />
+                </BrandLayout>
+              ) : (
+                <BrandLayout initialBrandId="otterworks">
+                  <LandingPage />
+                </BrandLayout>
+              )
             }
           />
 
-          {/* 12Ventures homepage (moved) */}
+          {/* 12Ventures homepage (explicit path) */}
           <Route
             path="/12-ventures"
             element={
