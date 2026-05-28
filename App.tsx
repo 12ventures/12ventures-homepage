@@ -18,6 +18,9 @@ import TrainingEconomics from './components/prismahealth/TrainingEconomics';
 import LearningLifecycle from './components/prismahealth/LearningLifecycle';
 import MetricDashboard from './components/prismahealth/MetricDashboard';
 
+import OtterWorkerOperator from './components/OtterWorkerOperator';
+import OtterWorkerLearn from './components/OtterWorkerLearn';
+
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
     {children}
@@ -115,6 +118,26 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="otterworks">
                 <LandingPage />
+              </BrandLayout>
+            }
+          />
+
+          {/* OtterWorker Operator */}
+          <Route
+            path="/operator"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <OtterWorkerOperator />
+              </BrandLayout>
+            }
+          />
+
+          {/* OtterWorker Learn */}
+          <Route
+            path="/learn"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <OtterWorkerLearn />
               </BrandLayout>
             }
           />
