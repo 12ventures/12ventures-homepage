@@ -147,7 +147,11 @@ const OtterWorkerLearn: React.FC = () => {
           </div>
 
           {/* Value props */}
-          <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex-shrink-0">
+            <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-3 ow-fade-up ow-d-300">
+              Why Leaders Choose OtterWorker I • Learn
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {VALUE_PROPS.map((item, i) => (
               <div
                 key={item.label}
@@ -159,6 +163,7 @@ const OtterWorkerLearn: React.FC = () => {
                 <p className="text-[11px] text-gray-400 leading-snug">{item.label}</p>
               </div>
             ))}
+            </div>
           </div>
 
           {/* Mobile-only CTA */}
@@ -168,13 +173,13 @@ const OtterWorkerLearn: React.FC = () => {
             wrapperClass="md:hidden ow-fade-up ow-d-800"
           />
 
-          {/* Footer */}
-          <div className="flex-shrink-0 flex items-center justify-between ow-fade-in ow-d-900">
+          {/* Footer — hidden for now */}
+          {/* <div className="flex-shrink-0 flex items-center justify-between ow-fade-in ow-d-900">
             <p className="text-gray-700 text-xs">We help your people do their best work.</p>
             <a href="mailto:learn@otterworks.ai" className="text-gray-500 text-xs hover:text-white transition-colors">
               learn@otterworks.ai
             </a>
-          </div>
+          </div> */}
         </div>
 
         {/* ── Right: image + cycling text + CTA (desktop only) ── */}

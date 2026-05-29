@@ -6,10 +6,10 @@ const YOUTUBE_ID = 'A_bvdgfUIVA';
 const EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1&color=white&iv_load_policy=3`;
 
 const VALUE_PROPS = [
-  { stat: 'Zero', label: 'Wait Times' },
-  { stat: 'Zero', label: 'Abandoned Calls' },
-  { stat: '24/7', label: 'Full Coverage, Any Time of Day' },
-  { stat: '10%', label: 'Of Labor Cost' },
+  { stat: '100% Coverage', label: 'For patient and employee calls and communications' },
+  { stat: '0%', label: 'Wait times and abandoned calls' },
+  { stat: '24/7', label: 'Full Coverage Any Time of Day' },
+  { stat: 'Fraction of the Cost', label: 'Massive savings and ROI' },
 ];
 
 const OPERATOR_USES = [
@@ -147,7 +147,11 @@ const OtterWorkerOperator: React.FC = () => {
           </div>
 
           {/* Value props */}
-          <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex-shrink-0">
+            <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-3 ow-fade-up ow-d-300">
+              Why Leaders Choose OtterWorker I • Operator
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {VALUE_PROPS.map((item, i) => (
               <div
                 key={item.label}
@@ -159,6 +163,7 @@ const OtterWorkerOperator: React.FC = () => {
                 <p className="text-[11px] text-gray-400 leading-snug">{item.label}</p>
               </div>
             ))}
+            </div>
           </div>
 
           {/* Mobile-only CTA */}
@@ -168,13 +173,13 @@ const OtterWorkerOperator: React.FC = () => {
             wrapperClass="md:hidden ow-fade-up ow-d-800"
           />
 
-          {/* Footer */}
-          <div className="flex-shrink-0 flex items-center justify-between ow-fade-in ow-d-900">
+          {/* Footer — hidden for now */}
+          {/* <div className="flex-shrink-0 flex items-center justify-between ow-fade-in ow-d-900">
             <p className="text-gray-700 text-xs">We help your people do their best work.</p>
             <a href="mailto:operator@otterworks.ai" className="text-gray-500 text-xs hover:text-white transition-colors">
               operator@otterworks.ai
             </a>
-          </div>
+          </div> */}
         </div>
 
         {/* ── Right: image + cycling text + CTA (desktop only) ── */}
