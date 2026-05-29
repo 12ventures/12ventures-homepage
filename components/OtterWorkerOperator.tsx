@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import BookDemoModal from './BookDemoModal';
 
@@ -12,21 +12,58 @@ const VALUE_PROPS = [
   { stat: '10%', label: 'Of Labor Cost' },
 ];
 
-const DemoButton: React.FC<{ onClick: () => void; className?: string }> = ({ onClick, className = '' }) => (
-  <button
-    onClick={onClick}
-    className={`demo-btn-glow group bg-gradient-to-r from-blue-400 to-cyan-400 text-[#060B14] font-bold rounded-full flex items-center justify-center hover:opacity-95 transition-all hover:scale-105 ${className}`}
-  >
-    Book a demo
-    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-  </button>
+const OPERATOR_USES = [
+  'Patient + Employee Calls',
+  'Scheduling + Coordination',
+  'Billing + Pre-Authorizations',
+  'Data Entry + Fax + Multi-Systems Workflows',
+];
+
+const FULL_TITLE = 'OTTERWORKER I';
+const CHAR_DELAY = 75;
+const CYCLE_INTERVAL = 3300;
+
+const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperClass?: string }> = ({
+  onClick, className = '', wrapperClass = '',
+}) => (
+  <div className={wrapperClass}>
+    <button
+      onClick={onClick}
+      className={`demo-btn-glow group bg-gradient-to-r from-blue-400 to-cyan-400 text-[#060B14] font-bold rounded-full flex items-center justify-center hover:opacity-95 transition-all hover:scale-105 ${className}`}
+    >
+      Book a demo
+      <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+    </button>
+  </div>
 );
 
 const OtterWorkerOperator: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [typedCount, setTypedCount] = useState(0);
+  const [pillVisible, setPillVisible] = useState(false);
+  const [cycleIdx, setCycleIdx] = useState(0);
+
+  useEffect(() => {
+    if (typedCount < FULL_TITLE.length) {
+      const t = setTimeout(() => setTypedCount(c => c + 1), CHAR_DELAY);
+      return () => clearTimeout(t);
+    } else {
+      const t = setTimeout(() => setPillVisible(true), 120);
+      return () => clearTimeout(t);
+    }
+  }, [typedCount]);
+
+  useEffect(() => {
+    const t = setInterval(() => setCycleIdx(i => (i + 1) % OPERATOR_USES.length), CYCLE_INTERVAL);
+    return () => clearInterval(t);
+  }, []);
+
+  const isTyping = typedCount < FULL_TITLE.length;
+  const part1 = FULL_TITLE.slice(0, Math.min(typedCount, 11));
+  const part2 = typedCount > 12 ? FULL_TITLE.slice(12) : '';
 
   return (
-    <div className="min-h-screen md:h-screen bg-[#060B14] text-white font-sans md:overflow-hidden flex flex-col">
+    <div className="min-h-screen md:h-screen bg-[#060B14] text-white font-sans flex flex-col">
       {modalOpen && (
         <BookDemoModal
           onClose={() => setModalOpen(false)}
@@ -38,28 +75,56 @@ const OtterWorkerOperator: React.FC = () => {
         />
       )}
 
-      <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1">
 
         {/* ── Left / main content ── */}
-        <div className="flex flex-col w-full md:w-[58%] px-6 md:px-8 pt-8 pb-6 md:h-full">
+        <div className="flex flex-col w-full md:w-[58%] px-6 md:px-8 pt-10 pb-8 md:h-full md:justify-between gap-5 md:gap-0">
 
-          {/* Title */}
-          <div className="flex-shrink-0 mb-4">
-            <div className="relative inline-block">
-              <span
-                className="absolute -top-5 right-0 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: '#3b82f6', boxShadow: '0 0 12px rgba(59,130,246,0.5)' }}
+          {/* Title row */}
+          <div className="flex-shrink-0">
+            <div className="flex items-center justify-between gap-3">
+              <div className="relative inline-block min-w-0 flex-shrink">
+                {pillVisible && (
+                  <span
+                    className="ow-pill-in absolute -top-5 right-0 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    style={{ background: '#3b82f6', boxShadow: '0 0 12px rgba(59,130,246,0.5)' }}
+                  >
+                    Operator
+                  </span>
+                )}
+                <h1
+                  className="font-black tracking-tight leading-none"
+                  style={{ fontSize: 'clamp(2rem, 3.8vw, 3.75rem)' }}
+                >
+                  {part1}
+                  {part2 && <span style={{ marginLeft: 'clamp(0.5rem, 1vw, 1rem)' }}>{part2}</span>}
+                  {isTyping && <span className="ow-cursor" style={{ height: '0.8em' }} />}
+                </h1>
+              </div>
+              {/* Header button — only at lg+ to avoid overlap at mid-range */}
+              <DemoButton
+                onClick={() => setModalOpen(true)}
+                className="py-2 px-4 text-sm"
+                wrapperClass="hidden xl:block flex-shrink-0 ow-fade-in ow-d-900"
+              />
+            </div>
+          </div>
+
+          {/* Mobile-only cycling text */}
+          <div className="md:hidden flex-shrink-0 -mt-2">
+            <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-1">Operators For</p>
+            <div className="relative overflow-hidden" style={{ height: '1.6rem' }}>
+              <p
+                key={`mobile-${cycleIdx}`}
+                className="ow-item-cycle absolute inset-x-0 text-sm font-semibold text-white/80 leading-snug"
               >
-                Operator
-              </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none">
-                OTTERWORKER<span className="ml-3 md:ml-4">I</span>
-              </h1>
+                {OPERATOR_USES[cycleIdx]}
+              </p>
             </div>
           </div>
 
           {/* Video */}
-          <div className="flex-shrink-0 md:flex-1 md:min-h-0 md:flex md:items-center md:justify-center mb-4">
+          <div className="flex-shrink-0 md:flex-1 md:min-h-0 md:flex md:items-center md:justify-center ow-fade-in ow-d-200">
             <div
               className="rounded-2xl overflow-hidden w-full"
               style={{
@@ -82,11 +147,11 @@ const OtterWorkerOperator: React.FC = () => {
           </div>
 
           {/* Value props */}
-          <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {VALUE_PROPS.map((item) => (
+          <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-3">
+            {VALUE_PROPS.map((item, i) => (
               <div
                 key={item.label}
-                className="rounded-xl px-3 py-3 text-center"
+                className={`rounded-xl px-3 py-4 text-center ow-fade-up ow-d-${400 + i * 100}`}
                 style={{ background: '#0F1A2E', border: '1px solid rgba(56,130,246,0.15)' }}
               >
                 <p className="text-xl font-black text-blue-400 mb-1">{item.stat}</p>
@@ -96,14 +161,15 @@ const OtterWorkerOperator: React.FC = () => {
             ))}
           </div>
 
-          {/* Mobile CTA */}
+          {/* Mobile-only CTA */}
           <DemoButton
             onClick={() => setModalOpen(true)}
-            className="md:hidden w-full py-4 text-base mb-4"
+            className="w-full py-4 text-base"
+            wrapperClass="md:hidden ow-fade-up ow-d-800"
           />
 
           {/* Footer */}
-          <div className="flex-shrink-0 flex items-center justify-between">
+          <div className="flex-shrink-0 flex items-center justify-between ow-fade-in ow-d-900">
             <p className="text-gray-700 text-xs">We help your people do their best work.</p>
             <a href="mailto:operator@otterworks.ai" className="text-gray-500 text-xs hover:text-white transition-colors">
               operator@otterworks.ai
@@ -111,17 +177,31 @@ const OtterWorkerOperator: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Right: hero image + CTA (desktop only) ── */}
-        <div className="hidden md:flex flex-1 relative overflow-hidden items-center justify-center">
-          <img
-            src="/images/operator_banner.png"
-            alt="Operator"
-            className="absolute inset-0 w-full h-full object-cover object-top"
-          />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #060B14, rgba(6,11,20,0.15) 50%, transparent)' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #060B14 0%, transparent 40%)' }} />
-          <div className="relative z-10">
-            <DemoButton onClick={() => setModalOpen(true)} className="py-4 px-10 text-base" />
+        {/* ── Right: image + cycling text + CTA (desktop only) ── */}
+        <div className="hidden md:block flex-1 relative ow-fade-in ow-d-300">
+          {/* Image layer */}
+          <div className="absolute inset-0 overflow-hidden">
+            <img src="/images/operator_banner.png" alt="Operator" className="w-full h-full object-cover object-top" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #060B14, rgba(6,11,20,0.15) 50%, transparent)' }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #060B14 0%, transparent 40%)' }} />
+          </div>
+          {/* Content layer */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative z-10 flex flex-col items-center gap-8 ow-fade-up ow-d-600 px-6 max-w-xs w-full">
+              <div className="text-center w-full">
+                <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-4"
+                  style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>
+                  Operators For
+                </p>
+                <div className="relative overflow-hidden" style={{ height: '3.5rem' }}>
+                  <p key={cycleIdx} className="ow-item-cycle absolute inset-x-0 text-lg font-bold text-white text-center leading-snug"
+                    style={{ textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.6)' }}>
+                    {OPERATOR_USES[cycleIdx]}
+                  </p>
+                </div>
+              </div>
+              <DemoButton onClick={() => setModalOpen(true)} className="py-4 px-10 text-base" />
+            </div>
           </div>
         </div>
 
