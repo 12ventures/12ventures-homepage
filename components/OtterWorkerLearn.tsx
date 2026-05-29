@@ -1,113 +1,130 @@
-import React from 'react';
-import { ArrowRight, Layers, Shield, LineChart } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import BookDemoModal from './BookDemoModal';
+
+const YOUTUBE_ID = '8OihtIyX4mQ';
+const EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1&color=white&iv_load_policy=3`;
+
+const VALUE_PROPS = [
+  { stat: '+40%', label: 'Higher Competency' },
+  { stat: '2×', label: 'Faster Time to Floor' },
+  { stat: '$1M+', label: 'Annual ROI' },
+  { stat: '100%', label: 'Compliance by Default' },
+];
+
+const DemoButton: React.FC<{ onClick: () => void; className?: string }> = ({ onClick, className = '' }) => (
+  <button
+    onClick={onClick}
+    className={`demo-btn-glow group bg-gradient-to-r from-blue-400 to-cyan-400 text-[#060B14] font-bold rounded-full flex items-center justify-center hover:opacity-95 transition-all hover:scale-105 ${className}`}
+  >
+    Book a demo
+    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+  </button>
+);
 
 const OtterWorkerLearn: React.FC = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
-    <div className="h-screen bg-[#060B14] text-white font-sans overflow-hidden flex flex-col">
-      {/* Top bar */}
-      <div className="flex-shrink-0 flex items-center px-8 pt-6 pb-2">
-        <span className="text-white font-bold tracking-widest text-sm">OTTER<span className="font-normal">WORKS</span></span>
-      </div>
+    <div className="min-h-screen md:h-screen bg-[#060B14] text-white font-sans md:overflow-hidden flex flex-col">
+      {modalOpen && (
+        <BookDemoModal
+          onClose={() => setModalOpen(false)}
+          product="Learn"
+          tagline="Turn standards into measurable performance, compliance & ROI."
+          valueProps={VALUE_PROPS}
+          sourceUrl="OtterWorker I Learn Page"
+          email="learn@otterworks.ai"
+        />
+      )}
 
-      {/* Main layout: left content + right image */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left content column */}
-        <div className="flex flex-col justify-between w-full md:w-[55%] px-8 py-4">
+      <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden">
+
+        {/* ── Left / main content ── */}
+        <div className="flex flex-col w-full md:w-[58%] px-6 md:px-8 pt-8 pb-6 md:h-full">
+
           {/* Title */}
-          <div>
-            <h1 className="text-5xl lg:text-6xl font-black tracking-tight leading-none mb-1">
-              OTTERWORKER I
-            </h1>
-            <div className="flex items-center text-2xl text-blue-400 font-light mb-4">
-              <span className="mr-3 text-blue-500">|</span> Learn
-            </div>
-            <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-3">
-              AI Learning & Workforce Performance for Healthcare
-            </p>
-            <p className="text-xl font-bold leading-snug text-white/90 max-w-md">
-              Turn standards into measurable performance, compliance & ROI.
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { stat: '+40%', label: 'Higher competency' },
-              { stat: '2×', label: 'Faster time to floor' },
-              { stat: '$1M+', label: 'Annual ROI' },
-            ].map((item) => (
-              <div
-                key={item.stat}
-                className="bg-[#0F1A2E] border border-blue-900/30 rounded-lg px-4 py-4"
+          <div className="flex-shrink-0 mb-4">
+            <div className="relative inline-block">
+              <span
+                className="absolute -top-5 right-0 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: '#3b82f6', boxShadow: '0 0 12px rgba(59,130,246,0.5)' }}
               >
-                <h3 className="text-3xl font-black mb-1">{item.stat}</h3>
-                <p className="text-xs text-gray-300">{item.label}</p>
+                Learn
+              </span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none">
+                OTTERWORKER<span className="ml-3 md:ml-4">I</span>
+              </h1>
+            </div>
+          </div>
+
+          {/* Video */}
+          <div className="flex-shrink-0 md:flex-1 md:min-h-0 md:flex md:items-center md:justify-center mb-4">
+            <div
+              className="rounded-2xl overflow-hidden w-full"
+              style={{
+                aspectRatio: '2694/1440',
+                maxHeight: '100%',
+                border: '1px solid rgba(255,255,255,0.05)',
+                boxShadow: '0 0 40px rgba(56,189,248,0.08)',
+              }}
+            >
+              <iframe
+                src={EMBED_URL}
+                title="OtterWorker I — Learn"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+                className="w-full h-full"
+                style={{ border: 'none', display: 'block' }}
+              />
+            </div>
+          </div>
+
+          {/* Value props */}
+          <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            {VALUE_PROPS.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-xl px-3 py-3 text-center"
+                style={{ background: '#0F1A2E', border: '1px solid rgba(56,130,246,0.15)' }}
+              >
+                <p className="text-xl font-black text-blue-400 mb-1">{item.stat}</p>
+                <div className="h-px w-5 mx-auto mb-1.5" style={{ background: 'rgba(56,130,246,0.4)' }} />
+                <p className="text-[11px] text-gray-400 leading-snug">{item.label}</p>
               </div>
             ))}
           </div>
 
-          {/* Banner */}
-          <div className="bg-[#0F1A2E] border border-blue-900/50 rounded-lg px-5 py-3 text-center">
-            <p className="text-sm font-semibold">
-              Onboarding • Just-In-Time Reinforcement • EHR & Systems Training
-            </p>
-          </div>
+          {/* Mobile CTA */}
+          <DemoButton
+            onClick={() => setModalOpen(true)}
+            className="md:hidden w-full py-4 text-base mb-4"
+          />
 
-          {/* Features */}
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              {
-                icon: <Layers className="w-4 h-4" />,
-                title: 'Adaptive learning',
-                desc: 'Right knowledge, right format, right time.',
-              },
-              {
-                icon: <Shield className="w-4 h-4" />,
-                title: 'Compliance built-in',
-                desc: 'Trackable, auditable execution by default.',
-              },
-              {
-                icon: <LineChart className="w-4 h-4" />,
-                title: 'Performance analytics',
-                desc: 'Live visibility into readiness and ROI.',
-              },
-            ].map((item) => (
-              <div key={item.title}>
-                <div className="w-8 h-8 rounded-md bg-blue-900/30 border border-blue-800/50 flex items-center justify-center mb-2 text-blue-400">
-                  {item.icon}
-                </div>
-                <h3 className="text-sm font-bold mb-1">{item.title}</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer tagline + email */}
-          <div className="flex items-center justify-between pb-2">
-            <p className="text-gray-600 text-xs">We help your people do their best work.</p>
-            <a href="mailto:learn@otterworks.ai" className="text-gray-400 text-xs hover:text-white transition-colors">
+          {/* Footer */}
+          <div className="flex-shrink-0 flex items-center justify-between">
+            <p className="text-gray-700 text-xs">We help your people do their best work.</p>
+            <a href="mailto:learn@otterworks.ai" className="text-gray-500 text-xs hover:text-white transition-colors">
               learn@otterworks.ai
             </a>
           </div>
         </div>
 
-        {/* Right image column */}
+        {/* ── Right: hero image + CTA (desktop only) ── */}
         <div className="hidden md:flex flex-1 relative overflow-hidden items-center justify-center">
           <img
-            src="/images/learn_banner.png" 
+            src="/images/learn_banner.png"
             alt="Learn"
             className="absolute inset-0 w-full h-full object-cover object-top"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#060B14] via-[#060B14]/20 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#060B14] via-transparent to-[#060B14]/10"></div>
-          {/* Prominent CTA overlay */}
-          <div className="relative z-10 flex flex-col items-center">
-            <button className="group bg-gradient-to-r from-blue-400 to-cyan-400 text-[#060B14] font-bold py-4 px-10 rounded-full flex items-center text-base hover:opacity-95 transition-all shadow-[0_0_40px_rgba(56,189,248,0.5)] hover:shadow-[0_0_60px_rgba(56,189,248,0.7)] hover:scale-105">
-              Book a demo
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #060B14, rgba(6,11,20,0.15) 50%, transparent)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #060B14 0%, transparent 40%)' }} />
+          <div className="relative z-10">
+            <DemoButton onClick={() => setModalOpen(true)} className="py-4 px-10 text-base" />
           </div>
         </div>
+
       </div>
     </div>
   );
