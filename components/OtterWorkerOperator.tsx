@@ -7,8 +7,8 @@ const EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbrand
 
 const VALUE_PROPS = [
   { stat: '100% Coverage', label: 'For patient and employee calls and communications' },
-  { stat: '0%', label: 'Wait times and abandoned calls' },
-  { stat: '24/7', label: 'Full Coverage Any Time of Day' },
+  { stat: 'Zero Wait Time', label: 'Zero wait times and abandoned calls' },
+  { stat: '24/7 Availability', label: 'Full Coverage Any Time of Day' },
   { stat: 'Fraction of the Cost', label: 'Massive savings and ROI' },
 ];
 
@@ -159,7 +159,6 @@ const OtterWorkerOperator: React.FC = () => {
                 style={{ background: '#0F1A2E', border: '1px solid rgba(56,130,246,0.15)' }}
               >
                 <p className="text-xl font-black text-blue-400 mb-1">{item.stat}</p>
-                <div className="h-px w-5 mx-auto mb-1.5" style={{ background: 'rgba(56,130,246,0.4)' }} />
                 <p className="text-[11px] text-gray-400 leading-snug">{item.label}</p>
               </div>
             ))}
