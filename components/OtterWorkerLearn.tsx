@@ -159,7 +159,6 @@ const OtterWorkerLearn: React.FC = () => {
                 style={{ background: '#0F1A2E', border: '1px solid rgba(56,130,246,0.15)' }}
               >
                 <p className="text-xl font-black text-blue-400 mb-1">{item.stat}</p>
-                <div className="h-px w-5 mx-auto mb-1.5" style={{ background: 'rgba(56,130,246,0.4)' }} />
                 <p className="text-[11px] text-gray-400 leading-snug">{item.label}</p>
               </div>
             ))}
