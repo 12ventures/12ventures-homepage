@@ -104,6 +104,78 @@
 .ow-d-800 { animation-delay: 800ms; }
 .ow-d-900 { animation-delay: 900ms; }
 
+/* ── MLKCH Dashboard custom scrollbar ──────────────────────────── */
+.mlkch-scroll::-webkit-scrollbar        { width: 3px; }
+.mlkch-scroll::-webkit-scrollbar-track  { background: transparent; }
+.mlkch-scroll::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.09); border-radius: 2px; }
+.mlkch-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+/* ── Reusable text shimmer (seamless loop) ─────────────────────── */
+.text-shimmer {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.28) 42%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.28) 58%,
+    rgba(255, 255, 255, 0.28) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation-name: text-shimmer;
+  animation-duration: 2.8s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes text-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: -100% 50%; }
+}
+
+/* ── MLKCH dashboard intro cascade ─────────────────────────────── */
+.mlkch-intro {
+  opacity: 0;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-iteration-count: 1;
+}
+
+.mlkch-intro-logo    { animation-name: mlkch-fade-up;    animation-duration: 0.85s; animation-delay: 0ms;    }
+.mlkch-intro-partner { animation-name: mlkch-fade-up;    animation-duration: 0.75s; animation-delay: 200ms;  }
+.mlkch-intro-title   { animation-name: mlkch-fade-up;    animation-duration: 0.75s; animation-delay: 380ms;  }
+.mlkch-intro-metric-0 { animation-name: mlkch-slide-in;  animation-duration: 0.7s;  animation-delay: 580ms;  }
+.mlkch-intro-metric-1 { animation-name: mlkch-slide-in;  animation-duration: 0.7s;  animation-delay: 720ms;  }
+.mlkch-intro-metric-2 { animation-name: mlkch-slide-in;  animation-duration: 0.7s;  animation-delay: 860ms;  }
+.mlkch-intro-divider { animation-name: mlkch-scale-x;   animation-duration: 0.55s; animation-delay: 1020ms; transform-origin: left center; }
+.mlkch-intro-sidebar { animation-name: mlkch-slide-in;   animation-duration: 0.75s; animation-delay: 1100ms; }
+.mlkch-intro-detail  { animation-name: mlkch-fade-in;   animation-duration: 0.8s;  animation-delay: 1250ms; }
+.mlkch-intro-copilot { animation-name: mlkch-fade-up;    animation-duration: 0.7s;  animation-delay: 1450ms; }
+
+@keyframes mlkch-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mlkch-slide-in {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes mlkch-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mlkch-scale-x {
+  from { opacity: 0; transform: scaleX(0); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
 /* ── OtterWorker demo button glow animation */
 .demo-btn-glow {
   animation: demo-glow 3s ease-in-out infinite;

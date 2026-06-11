@@ -22,6 +22,7 @@ import OtterWorkerOperator from './components/OtterWorkerOperator';
 import OtterWorkerLearn from './components/OtterWorkerLearn';
 import OtterWorkerOperatorOld from './components/OtterWorkerOperator_old';
 import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
+import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
@@ -180,6 +181,16 @@ const App: React.FC = () => {
           <Route
             path="/royce"
             element={<RoyceSlides />}
+          />
+
+          {/* MLKCH x 12 Ventures Dashboard */}
+          <Route
+            path="/mlkch"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <MLKCHDashboard />
+              </BrandLayout>
+            }
           />
 
           {/* Prisma Health Demo Hub & Apps */}
