@@ -10,7 +10,7 @@ interface ChatMessage {
 const SNAPSKILL_ROI_REPLY =
   `SnapSkill Onboarding is tracking ${formatRoiAmount(SNAPSKILL_ROI_TOTAL)} in total annual direct and indirect ROI ` +
   `(${formatRoiAmountExact(SNAPSKILL_ROI_DIRECT)} direct savings and ${formatRoiAmountExact(SNAPSKILL_ROI_INDIRECT)} in staff time freed). ` +
-  'With 113 nurses onboarded at a 96% completion rate, open the ROI breakdown on the dashboard for the conservative CFO-validated detail.';
+  'With 113 nurses onboarded at a 96% completion rate, open the ROI breakdown on the dashboard for the full breakdown.';
 
 const EXAMPLE_THREAD: ChatMessage[] = [
   {
