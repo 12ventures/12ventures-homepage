@@ -1,10 +1,16 @@
-// ---------------------------------------------------------------------------
-// MLKCH x 12 Ventures – Dashboard Data
+import { formatRoiAmount, formatRoiAmountExact, SNAPSKILL_ROI_TOTAL } from './snapSkillRoi';
 //
 // All values are dummy data for the current static build.
 // Future: replace METRICS / INITIATIVES with an async fetchDashboardData()
 // call that pulls from the SnapSkill API and other initiative trackers.
 // ---------------------------------------------------------------------------
+
+const SNAPSKILL_QUIZ_FIRST_ATTEMPT = 49;
+const SNAPSKILL_QUIZ_COMPLETION = 92;
+const SNAPSKILL_COMPETENCY_IMPROVEMENT_RATE =
+  SNAPSKILL_QUIZ_COMPLETION - SNAPSKILL_QUIZ_FIRST_ATTEMPT;
+const SNAPSKILL_NURSES_ONBOARDED = 113;
+const SNAPSKILL_CONTENT_MODULES = 2_348;
 
 export interface DashboardMetrics {
   liveProjects: number;
@@ -21,12 +27,40 @@ export type MetricAccent      = 'teal' | 'sky' | 'purple' | 'green';
 export interface InitiativeMetric {
   label: string;
   value: string;
+  opensRoiBreakdown?: boolean;
 }
 
 export interface TopMetric {
   label: string;
   value: string;
   accent: MetricAccent;
+  opensRoiBreakdown?: boolean;
+}
+
+export interface MilestoneLink {
+  label: string;
+  url: string;
+}
+
+export interface MilestoneGroup {
+  label: string;
+  children: MilestoneChild[];
+}
+
+export type MilestoneChild = string | MilestoneLink;
+
+export type MilestoneItem = string | MilestoneLink | MilestoneGroup;
+
+export function isMilestoneGroup(item: MilestoneItem): item is MilestoneGroup {
+  return typeof item === 'object' && 'children' in item;
+}
+
+export function milestoneLabel(item: MilestoneChild | MilestoneItem): string {
+  return typeof item === 'string' ? item : item.label;
+}
+
+export function milestoneUrl(item: MilestoneChild | MilestoneItem): string | undefined {
+  return typeof item === 'string' ? undefined : isMilestoneGroup(item) ? undefined : item.url;
 }
 
 export interface Initiative {
@@ -36,9 +70,13 @@ export interface Initiative {
   status: InitiativeStatus;
   description: string;
   topMetrics: TopMetric[];   // drives the top KPI row when selected
-  subItems?: string[];
+  subItems?: MilestoneItem[];
   metrics?: InitiativeMetric[];
   tags?: string[];
+  /** Optional hero image shown behind the detail panel with a top-to-bottom fade */
+  bannerImage?: string;
+  /** Optional external product or demo link shown next to the title */
+  externalUrl?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,9 +91,18 @@ export const METRICS: DashboardMetrics = {
 };
 
 export const GLOBAL_TOP_METRICS: TopMetric[] = [
-  { label: 'Nurses Onboarded', value: '113',   accent: 'sky'    },
-  { label: 'Est. Savings',     value: '$127K',  accent: 'green'  },
-  { label: 'Value Created',    value: '$185K',  accent: 'purple' },
+  { label: 'Nurses Onboarded', value: '113', accent: 'sky' },
+  {
+    label: 'Competency Improvement and Retention',
+    value: `${SNAPSKILL_COMPETENCY_IMPROVEMENT_RATE}%`,
+    accent: 'green',
+  },
+  {
+    label: 'ROI',
+    value: formatRoiAmount(SNAPSKILL_ROI_TOTAL),
+    accent: 'purple',
+    opensRoiBreakdown: true,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -68,23 +115,49 @@ export const INITIATIVES: Initiative[] = [
     title: 'SnapSkill Onboarding',
     section: 'live',
     status: 'active',
+    bannerImage: 'https://games.dreambox.gg/snapskill/logos/mlk-front-entrance.jpg',
     description:
       'AI-powered onboarding program for MLKCH nursing staff, transforming dense policy documents and workflows into engaging, bite-sized learning modules delivered via SnapSkill.',
     topMetrics: [
-      { label: 'Nurses Onboarded', value: '113',   accent: 'sky'    },
-      { label: 'Est. Savings',     value: '$127K',  accent: 'green'  },
-      { label: 'Value Created',    value: '$185K',  accent: 'purple' },
+      { label: 'Nurses Onboarded', value: '113', accent: 'sky' },
+      {
+        label: 'Competency Improvement and Retention',
+        value: `${SNAPSKILL_COMPETENCY_IMPROVEMENT_RATE}%`,
+        accent: 'green',
+      },
+      {
+        label: 'ROI',
+        value: formatRoiAmount(SNAPSKILL_ROI_TOTAL),
+        accent: 'purple',
+        opensRoiBreakdown: true,
+      },
     ],
     subItems: [
-      '113 nurses onboarded to date',
-      'Custom MLKCH module library',
-      'Ongoing content refresh cadence',
+      `${SNAPSKILL_NURSES_ONBOARDED} nurses onboarded to date`,
+      `${SNAPSKILL_CONTENT_MODULES.toLocaleString()} content modules transformed to adaptive modern multimedia`,
+      `${SNAPSKILL_COMPETENCY_IMPROVEMENT_RATE}% increase in competency and retention`,
+      `${formatRoiAmountExact(SNAPSKILL_ROI_TOTAL)} in annual direct and indirect ROI`,
     ],
     metrics: [
-      { label: 'Nurses Onboarded',       value: '113'       },
-      { label: 'Avg Completion Rate',    value: '91%'       },
-      { label: 'Est. Time Saved',        value: '2x faster' },
-      { label: 'Annual ROI Est.',        value: '$127K'     },
+      { label: 'Nurses Onboarded',    value: '113'       },
+      { label: 'Avg Completion Rate', value: '96%'       },
+      {
+        label: 'Quiz Performance - First Attempt',
+        value: `${SNAPSKILL_QUIZ_FIRST_ATTEMPT}%`,
+      },
+      {
+        label: 'Quiz Performance - Completion',
+        value: `${SNAPSKILL_QUIZ_COMPLETION}%`,
+      },
+      {
+        label: 'Competency Improvement and Retention',
+        value: `${SNAPSKILL_COMPETENCY_IMPROVEMENT_RATE}%`,
+      },
+      {
+        label: 'ROI',
+        value: formatRoiAmount(SNAPSKILL_ROI_TOTAL),
+        opensRoiBreakdown: true,
+      },
     ],
     tags: ['SnapSkill', 'Nursing', 'AI Content', 'Live'],
   },
@@ -92,14 +165,15 @@ export const INITIATIVES: Initiative[] = [
   // ── Next ──────────────────────────────────────────────────────────────────
   {
     id: 'msp-transition',
-    title: 'Managed Services Partner (MSP) Transition',
+    title: 'Managed Services Provider (MSP) Transition',
     section: 'next',
     status: 'planning',
+    bannerImage: '/images/operator_banner_wide.png',
     description:
-      'Structured transition to a Managed Services Partner model, enabling MLKCH to scale AI initiatives with 12 Ventures as the long-term delivery partner.',
+      'Structured transition to a Managed Services Provider model, enabling MLKCH to scale AI initiatives with 12 Ventures as the long-term delivery partner.',
     topMetrics: [
       { label: 'Phase',            value: 'Planning',  accent: 'sky'    },
-      { label: 'Target Kickoff',   value: 'Q3 2026',   accent: 'teal'   },
+      { label: 'Target Completion', value: 'July 2026', accent: 'teal'   },
       { label: 'Projected Value',  value: '$80K',      accent: 'purple' },
     ],
     subItems: [
@@ -108,30 +182,36 @@ export const INITIATIVES: Initiative[] = [
     ],
     metrics: [
       { label: 'Phase',          value: 'Planning' },
-      { label: 'Target Kickoff', value: 'Q3 2026'  },
+      { label: 'Target Completion', value: 'July 2026' },
     ],
     tags: ['MSP', 'Change Management', 'Strategy'],
   },
   {
     id: 'snapskill-modules',
-    title: 'SnapSkill Modules Expansion',
+    title: 'SnapSkill Additional Modules',
     section: 'next',
     status: 'planning',
+    bannerImage: 'https://games.dreambox.gg/snapskill/logos/mlk-front-entrance.jpg',
     description:
       'Expanding the SnapSkill module library for MLKCH with targeted updates, an Ask AI feature for just-in-time answers, and full EHR systems training.',
     topMetrics: [
-      { label: 'New Modules',        value: '8+',       accent: 'sky'   },
-      { label: 'Projected Savings',  value: '$35K',     accent: 'green' },
-      { label: 'Target Launch',      value: 'Q3 2026',  accent: 'teal'  },
+      { label: 'New Modules',   value: '3',         accent: 'sky'  },
+      { label: 'Target Launch', value: 'July 2026', accent: 'teal' },
     ],
     subItems: [
-      'Targeted Updates: refresh existing content',
-      'Ask AI: real-time question answering against module content',
-      'EHR Training: Epic/Cerner system navigation modules',
+      {
+        label: 'Targeted Updates',
+        url: 'https://staging.snapskill.ai/o/mlkch/continuous-reinforcement',
+      },
+      {
+        label: 'Ask AI',
+        url: 'https://staging.snapskill.ai/o/mlkch/ask',
+      },
+      'EHR Training',
     ],
     metrics: [
-      { label: 'New Modules Planned', value: '8+'      },
-      { label: 'Target Launch',       value: 'Q3 2026' },
+      { label: 'New Modules Planned', value: '3'         },
+      { label: 'Target Launch',       value: 'July 2026' },
     ],
     tags: ['SnapSkill', 'EHR', 'Ask AI', 'Content'],
   },
@@ -140,20 +220,31 @@ export const INITIATIVES: Initiative[] = [
     title: 'Cedars-Sinai Site Visit',
     section: 'next',
     status: 'planning',
+    bannerImage:
+      'https://www.cedars-sinai.org/content/dam/cedars-sinai/locations-images/Surgery_8700_Beverly_01.jpg',
     description:
       'Cedars-Sinai is visiting MLKCH to see firsthand the AI advancements and workforce innovations powered by 12 Ventures, a recognition of MLKCH\'s progress as an AI-forward health system.',
     topMetrics: [
-      { label: 'Visit Date',     value: 'Q3 2026',   accent: 'sky'    },
+      { label: 'Visit Date',     value: 'July 2026', accent: 'sky'    },
       { label: 'Phase',          value: 'Scheduling', accent: 'teal'   },
       { label: 'Orgs Involved',  value: '2',          accent: 'purple' },
     ],
     subItems: [
-      'Showcase SnapSkill onboarding program',
-      'Demonstrate AI-powered workflow improvements',
-      'Cross-system knowledge exchange and debrief',
+      'Showcase AI Transformation Program',
+      'AI Learning + Workforce Performance',
+      {
+        label: 'Phase 1: Onboarding',
+        children: ['SnapSkill Onboarding', 'EHR Training'],
+      },
+      {
+        label: 'Phase 2: Continuous Reinforcement',
+        children: ['Targeted Updates', 'Ask AI'],
+      },
+      'Phase 3: AI Workflow Transformation',
+      'Strategic Partnership Discussion',
     ],
     metrics: [
-      { label: 'Visit Date', value: 'Q3 2026' },
+      { label: 'Visit Date', value: 'July 2026' },
     ],
     tags: ['Benchmarking', 'Site Visit', 'Research'],
   },
@@ -162,20 +253,31 @@ export const INITIATIVES: Initiative[] = [
     title: 'Conexiones',
     section: 'next',
     status: 'planning',
+    bannerImage: '/images/conexiones_banner.png',
+    externalUrl: 'https://staging.snapskill.io/p/conexiones',
     description:
       'Community health AI initiative targeting underserved patient populations, exploring AI-assisted outreach, multilingual content delivery, and care coordination.',
     topMetrics: [
-      { label: 'Phase',            value: 'Discovery', accent: 'sky'    },
-      { label: 'Target Launch',    value: 'Q4 2026',   accent: 'teal'   },
-      { label: 'Projected Value',  value: '$50K+',     accent: 'purple' },
+      { label: 'Phase',           value: 'Discovery', accent: 'sky'    },
+      { label: 'Target Live',     value: 'July 2026', accent: 'teal'   },
+      { label: 'Projected Value', value: '$50K+',     accent: 'purple' },
     ],
     subItems: [
-      'Multilingual AI content strategy',
-      'Community health worker enablement',
-      'Pilot program design',
+      {
+        label: 'Patient Engagement multimedia content',
+        children: [
+          'Medi-Cal Literacy on Cost',
+          'Open Access Schedule - Evening, Weekends, Last-Minute Booking Available',
+          'Transportation Support (Theme: No car? We\'ll cover your transportation)',
+          'Break Generational Exhaustion (Theme: You\'re not being selfish by taking care of your health)',
+        ],
+      },
+      'Patient Engagement App Product',
+      'Partner with MLKCH and HealthBegins for Patient Engagement App Distribution',
     ],
     metrics: [
-      { label: 'Phase', value: 'Discovery' },
+      { label: 'Phase',       value: 'Discovery' },
+      { label: 'Target Live', value: 'July 2026' },
     ],
     tags: ['Community Health', 'Multilingual', 'Outreach'],
   },
@@ -252,6 +354,12 @@ export const INITIATIVES: Initiative[] = [
     tags: ['Internal Comms', 'Social', 'Knowledge Sharing'],
   },
 ];
+
+export const DEFAULT_BACKLOG_BANNER = '/images/tech_banner.png';
+
+export function resolveInitiativeBanner(initiative: Initiative): string | undefined {
+  return initiative.bannerImage ?? (initiative.section === 'backlog' ? DEFAULT_BACKLOG_BANNER : undefined);
+}
 
 // ---------------------------------------------------------------------------
 // Helper: group initiatives by section (preserves order)

@@ -153,8 +153,73 @@
 .mlkch-intro-metric-2 { animation-name: mlkch-slide-in;  animation-duration: 0.7s;  animation-delay: 860ms;  }
 .mlkch-intro-divider { animation-name: mlkch-scale-x;   animation-duration: 0.55s; animation-delay: 1020ms; transform-origin: left center; }
 .mlkch-intro-sidebar { animation-name: mlkch-slide-in;   animation-duration: 0.75s; animation-delay: 1100ms; }
-.mlkch-intro-detail  { animation-name: mlkch-fade-in;   animation-duration: 0.8s;  animation-delay: 1250ms; }
+.mlkch-intro-detail  { animation-name: mlkch-detail-in; animation-duration: 0.6s;  animation-delay: 1250ms; }
 .mlkch-intro-copilot { animation-name: mlkch-fade-up;    animation-duration: 0.7s;  animation-delay: 1450ms; }
+
+/* Initiative switch — detail panel + top metrics
+   IMPORTANT: no opacity on wrappers that contain backdrop-filter children.
+   Chrome drops backdrop-filter on any element whose ancestor has opacity < 1.
+   These animations use transform-only so glass cards always have opaque parents. */
+.mlkch-initiative-enter {
+  animation: mlkch-initiative-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mlkch-initiative-section {
+  animation: mlkch-initiative-section-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mlkch-initiative-section-0 { animation-delay: 0ms; }
+.mlkch-initiative-section-1 { animation-delay: 55ms; }
+.mlkch-initiative-section-2 { animation-delay: 110ms; }
+
+.mlkch-metric-switch {
+  opacity: 0;
+  animation: mlkch-slide-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mlkch-metric-switch-0 { animation-delay: 0ms; }
+.mlkch-metric-switch-1 { animation-delay: 65ms; }
+.mlkch-metric-switch-2 { animation-delay: 130ms; }
+
+.mlkch-initiative-banner {
+  opacity: 0;
+  animation: mlkch-banner-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mlkch-banner-title-text {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 2px 12px rgba(0, 0, 0, 0.85),
+    0 4px 32px rgba(0, 0, 0, 0.55);
+}
+
+@keyframes mlkch-banner-in {
+  from { opacity: 0; transform: scale(1.03); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* transform: none as end state so fill-mode:forwards doesn't leave a
+   compositing layer alive (translateY(0) would; none doesn't). */
+@keyframes mlkch-initiative-enter {
+  from { transform: translateY(12px); }
+  to   { transform: none; }
+}
+
+@keyframes mlkch-initiative-section-in {
+  from { transform: translateY(8px); }
+  to   { transform: none; }
+}
+
+/* ROI breakdown modal — staggered rows */
+.mlkch-roi-row {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: mlkch-roi-row-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mlkch-roi-row-in {
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @keyframes mlkch-fade-up {
   from { opacity: 0; transform: translateY(16px); }
@@ -169,6 +234,13 @@
 @keyframes mlkch-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* Slide-right for the detail panel — no opacity so backdrop-filter children
+   are never inside an opacity < 1 ancestor */
+@keyframes mlkch-detail-in {
+  from { transform: translateX(16px); }
+  to   { transform: none; }
 }
 
 @keyframes mlkch-scale-x {

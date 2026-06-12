@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, TrendingUp, DollarSign, Tag, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, TrendingUp, DollarSign, BarChart3, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import MLKCHPasswordGate from './MLKCHPasswordGate';
 import MetricCard from './MetricCard';
 import InitiativeCard from './InitiativeCard';
 import CopilotWidget from './CopilotWidget';
 import ShimmerText from './ShimmerText';
 import AnimatedMetricValue from './AnimatedMetricValue';
-import { INITIATIVES, GLOBAL_TOP_METRICS, getInitiativesBySection } from './data/initiatives';
+import MilestoneList from './MilestoneList';
+import { INITIATIVES, GLOBAL_TOP_METRICS, getInitiativesBySection, resolveInitiativeBanner } from './data/initiatives';
+import { getRoiBreakdown } from './data/snapSkillRoi';
+import ROIBreakdownModal from './ROIBreakdownModal';
 import type { Initiative, InitiativeSection, TopMetric } from './data/initiatives';
 
 const PARTNERSHIP_LOGO = '/logos/mlkch-x-12v-logo.png';
@@ -26,96 +29,218 @@ const SECTION_ACCENT: Record<InitiativeSection, { text: string; bg: string; bord
 
 const STATUS_LABELS: Record<Initiative['status'], string> = {
   active:   'Live',
-  planning: 'Planning',
-  backlog:  'Backlog',
+  planning: 'Active',
+  backlog:  'Planning',
 };
 
-// Icon map for global metric row
-const GLOBAL_ICONS = [
-  <Users className="w-4 h-4" />,
-  <DollarSign className="w-4 h-4" />,
-  <TrendingUp className="w-4 h-4" />,
-];
+// Icon per metric label
+function metricIcon(label: string) {
+  if (label === 'Nurses Onboarded') return <Users className="w-4 h-4" />;
+  if (label === 'ROI') return <TrendingUp className="w-4 h-4" />;
+  if (label.includes('Competency')) return <BarChart3 className="w-4 h-4" />;
+  if (label.includes('Savings')) return <DollarSign className="w-4 h-4" />;
+  return <TrendingUp className="w-4 h-4" />;
+}
 
-const METRIC_INTRO_CLASSES = [
-  'mlkch-intro mlkch-intro-metric-0',
-  'mlkch-intro mlkch-intro-metric-1',
-  'mlkch-intro mlkch-intro-metric-2',
-];
+function accentMetricTextShadow(accentColor: string): string {
+  return [
+    `0 1px 2px color-mix(in srgb, ${accentColor} 45%, black)`,
+    `0 2px 10px color-mix(in srgb, ${accentColor} 35%, black)`,
+  ].join(', ');
+}
+
+const GLASS_CARD_BASE = {
+  plain: {
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.07)',
+  },
+  banner: {
+    background: 'linear-gradient(145deg, rgba(14,100,180,0.10) 0%, rgba(6,30,80,0.12) 100%)',
+    border: '1px solid rgba(56,189,248,0.14)',
+    backdropFilter: 'blur(8px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 24px rgba(0,0,0,0.3)',
+    transform: 'translateZ(0)',
+    willChange: 'backdrop-filter',
+  },
+} as const;
+
+const GLASS_BADGE_BASE = {
+  banner: {
+    backdropFilter: 'blur(6px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(6px) saturate(140%)',
+    transform: 'translateZ(0)',
+    willChange: 'backdrop-filter',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+  },
+} as const;
+
+const InitiativeBanner: React.FC<{ src: string; animate?: boolean }> = ({ src, animate }) => (
+  <div
+    className={`pointer-events-none absolute inset-x-0 top-0 h-[min(380px,52vh)] overflow-hidden ${
+      animate ? 'mlkch-initiative-banner' : ''
+    }`}
+  >
+    <img
+      src={src}
+      alt=""
+      aria-hidden
+      className="absolute inset-0 h-full w-full object-cover object-[center_35%]"
+    />
+    <div
+      className="absolute inset-0"
+      style={{
+        background:
+          'linear-gradient(to right, #060B14 0%, transparent 12%, transparent 88%, #060B14 100%),' +
+          'linear-gradient(to bottom, rgba(6,11,20,0.08) 0%, rgba(6,11,20,0.35) 38%, rgba(6,11,20,0.82) 72%, #060B14 100%)',
+      }}
+    />
+  </div>
+);
 
 // ── Detail panel ──────────────────────────────────────────────────────────
-const DetailPanel: React.FC<{ initiative: Initiative }> = ({ initiative }) => {
+const DetailPanel: React.FC<{
+  initiative: Initiative;
+  onOpenRoi?: () => void;
+  animateSections?: boolean;
+}> = ({ initiative, onOpenRoi, animateSections = false }) => {
   const accent = SECTION_ACCENT[initiative.section];
+  const hasBanner = Boolean(resolveInitiativeBanner(initiative));
+  const cardSurface = hasBanner ? GLASS_CARD_BASE.banner : GLASS_CARD_BASE.plain;
+  const statusLabel = STATUS_LABELS[initiative.status];
+  const statusTextColor = statusLabel === 'Active' ? '#ffffff' : accent.text;
+  const sectionClass = (index: number) =>
+    animateSections ? `mlkch-initiative-section mlkch-initiative-section-${index}` : '';
 
   return (
     <div>
       {/* Status + title */}
-      <div className="mb-6">
+      <div className={`flex items-center justify-between gap-4 mb-6 ${sectionClass(0)}`}>
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <h2
+            className={`text-2xl md:text-3xl font-black text-white leading-tight min-w-0 ${
+              hasBanner ? 'mlkch-banner-title-text' : ''
+            }`}
+          >
+            {initiative.title}
+          </h2>
+          {initiative.externalUrl && (
+            <a
+              href={initiative.externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open product"
+              aria-label={`Open ${initiative.title} product`}
+              className="flex-shrink-0 p-1.5 rounded-lg text-white/35 hover:text-white/80 transition-colors"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <ExternalLink className="w-4 h-4" style={{ color: accent.text }} />
+            </a>
+          )}
+        </div>
         <span
-          className="inline-block text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full mb-3"
-          style={{ background: accent.bg, color: accent.text, border: `1px solid ${accent.border}` }}
+          className="flex-shrink-0 text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
+          style={{
+            background: hasBanner ? accent.bg.replace('0.08', '0.18') : accent.bg,
+            color: statusTextColor,
+            border: `1px solid ${accent.border}`,
+            ...(hasBanner ? GLASS_BADGE_BASE.banner : {}),
+          }}
         >
-          {STATUS_LABELS[initiative.status]}
+          {statusLabel}
         </span>
-        <h2 className="text-2xl md:text-3xl font-black text-white leading-tight">
-          {initiative.title}
-        </h2>
       </div>
 
       {/* Metrics */}
       {initiative.metrics && initiative.metrics.length > 0 && (
-        <div className="mb-7">
+        <div className={`mb-7 ${sectionClass(1)}`}>
           <p
-            className="text-[10px] font-bold tracking-widest uppercase mb-3"
+            className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasBanner ? 'mlkch-banner-title-text' : ''}`}
             style={{ color: accent.text }}
           >
             Metrics
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {initiative.metrics.map((m) => (
-              <div
-                key={m.label}
-                className="rounded-2xl px-4 py-3.5"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-              >
-                <AnimatedMetricValue
-                  key={`${initiative.id}-${m.label}-${m.value}`}
-                  value={m.value}
-                  className="text-2xl font-black leading-none mb-1 block"
-                  style={{ color: accent.text }}
-                />
-                <p className="text-[11px] text-white/40">{m.label}</p>
-              </div>
-            ))}
+            {initiative.metrics.map((m) => {
+              const clickable = m.opensRoiBreakdown && onOpenRoi;
+
+              return (
+                <div
+                  key={m.label}
+                  role={clickable ? 'button' : undefined}
+                  tabIndex={clickable ? 0 : undefined}
+                  onClick={clickable ? onOpenRoi : undefined}
+                  onKeyDown={
+                    clickable
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onOpenRoi?.();
+                          }
+                        }
+                      : undefined
+                  }
+                  className={`rounded-2xl px-4 py-3.5 ${
+                    clickable ? 'cursor-pointer transition-all duration-200 hover:scale-[1.01]' : ''
+                  }`}
+                  style={cardSurface}
+                  onMouseEnter={
+                    clickable
+                      ? (e) => {
+                          (e.currentTarget as HTMLElement).style.border =
+                            `1px solid ${accent.border}`;
+                        }
+                      : undefined
+                  }
+                  onMouseLeave={
+                    clickable
+                      ? (e) => {
+                          (e.currentTarget as HTMLElement).style.border =
+                            '1px solid rgba(255,255,255,0.07)';
+                        }
+                      : undefined
+                  }
+                >
+                  <AnimatedMetricValue
+                    key={`${initiative.id}-${m.label}-${m.value}`}
+                    value={m.value}
+                    className="text-2xl font-black leading-none mb-1 block"
+                    style={{
+                      color: accent.text,
+                      ...(hasBanner ? { textShadow: accentMetricTextShadow(accent.text) } : {}),
+                    }}
+                  />
+                  <p className={`text-[11px] ${hasBanner ? 'text-white' : 'text-white/40'}`}>
+                    {m.label}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Work items */}
+      {/* Milestones */}
       {initiative.subItems && initiative.subItems.length > 0 && (
-        <div className="mb-7">
+        <div className={`mb-7 ${sectionClass(2)}`}>
           <p
-            className="text-[10px] font-bold tracking-widest uppercase mb-3"
+            className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasBanner ? 'mlkch-banner-title-text' : ''}`}
             style={{ color: accent.text }}
           >
-            Work Items
+            Milestones
           </p>
-          <div className="space-y-1.5">
-            {initiative.subItems.map((item) => (
-              <div
-                key={item}
-                className="flex items-center gap-3 py-2.5 px-3 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent.text }} />
-                <span className="text-sm text-white/60">{item}</span>
-              </div>
-            ))}
-          </div>
+          <MilestoneList
+            items={initiative.subItems}
+            accentColor={accent.text}
+            glassSurface={hasBanner}
+          />
         </div>
       )}
 
-      {/* Tags */}
+      {/* Tags — hidden for now
       {initiative.tags && initiative.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 items-center">
           <Tag className="w-3 h-3 text-white/20" />
@@ -130,6 +255,7 @@ const DetailPanel: React.FC<{ initiative: Initiative }> = ({ initiative }) => {
           ))}
         </div>
       )}
+      */}
     </div>
   );
 };
@@ -150,22 +276,38 @@ const OverviewPanel: React.FC = () => (
 );
 
 
+const METRIC_INTRO_CLASSES = [
+  'mlkch-intro mlkch-intro-metric-0',
+  'mlkch-intro mlkch-intro-metric-1',
+  'mlkch-intro mlkch-intro-metric-2',
+];
+
 // ── Top metrics row renderer ───────────────────────────────────────────────
-const TopMetricsRow: React.FC<{ metrics: TopMetric[]; animateIntro: boolean }> = ({
-  metrics,
-  animateIntro,
-}) => (
-  <div className="grid grid-cols-3 gap-3">
+const TopMetricsRow: React.FC<{
+  metrics: TopMetric[];
+  animateIntro: boolean;
+  switchKey: string;
+  onOpenRoi?: () => void;
+}> = ({ metrics, animateIntro, switchKey, onOpenRoi }) => (
+  <div
+    key={switchKey}
+    className={`grid gap-3 ${metrics.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}
+  >
     {metrics.map((m, i) => (
       <div
         key={m.label}
-        className={animateIntro ? METRIC_INTRO_CLASSES[i] ?? '' : undefined}
+        className={
+          animateIntro
+            ? METRIC_INTRO_CLASSES[i] ?? ''
+            : `mlkch-metric-switch mlkch-metric-switch-${Math.min(i, 2)}`
+        }
       >
         <MetricCard
           label={m.label}
           value={m.value}
           accent={m.accent}
-          icon={GLOBAL_ICONS[i]}
+          icon={metricIcon(m.label)}
+          onClick={m.opensRoiBreakdown ? onOpenRoi : undefined}
         />
       </div>
     ))}
@@ -177,6 +319,7 @@ const DashboardContent: React.FC = () => {
   const [introComplete, setIntroComplete] = useState(false);
   const [selectedId,  setSelectedId]  = useState<string>('snapskill-onboarding');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [roiModalOpen, setRoiModalOpen] = useState(false);
   const glowRef = useRef<HTMLDivElement>(null);
 
   // Mark intro sequence complete so metric swaps don't re-animate
@@ -184,6 +327,10 @@ const DashboardContent: React.FC = () => {
     const t = setTimeout(() => setIntroComplete(true), 1600);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    setRoiModalOpen(false);
+  }, [selectedId]);
 
   // Mouse-tracking glow — direct DOM update, no re-renders
   useEffect(() => {
@@ -199,7 +346,13 @@ const DashboardContent: React.FC = () => {
   }, []);
 
   const selected     = INITIATIVES.find((i) => i.id === selectedId) ?? null;
+  const selectedBanner = selected ? resolveInitiativeBanner(selected) : undefined;
   const topMetrics   = selected ? selected.topMetrics : GLOBAL_TOP_METRICS;
+  const roiBreakdown = getRoiBreakdown(selectedId);
+
+  const handleOpenRoi = () => {
+    if (roiBreakdown) setRoiModalOpen(true);
+  };
 
   return (
     <div
@@ -227,25 +380,27 @@ const DashboardContent: React.FC = () => {
           <img
             src={PARTNERSHIP_LOGO}
             alt="MLKCH x 12 Ventures"
-            className="mlkch-intro mlkch-intro-logo h-9 md:h-11 object-contain"
+            className="mlkch-intro mlkch-intro-logo h-9 md:h-11 max-w-[280px] md:max-w-[320px] object-contain"
           />
           <div className="border-l pl-4" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-            <div className="mlkch-intro mlkch-intro-partner">
+            <div className="mlkch-intro mlkch-intro-title">
               <ShimmerText
-                as="p"
-                className="text-[10px] font-bold tracking-widest uppercase"
+                as="h1"
+                className="text-base md:text-lg font-black leading-none"
               >
-                Strategic Partnership
+                AI Transformation Program
               </ShimmerText>
             </div>
-            <h1 className="mlkch-intro mlkch-intro-title text-base md:text-lg font-black text-white leading-none mt-0.5">
-              AI Transformation Program
-            </h1>
           </div>
         </div>
 
         {/* Metrics — update per selected initiative */}
-        <TopMetricsRow metrics={topMetrics} animateIntro={!introComplete} />
+        <TopMetricsRow
+          metrics={topMetrics}
+          animateIntro={!introComplete}
+          switchKey={selectedId}
+          onOpenRoi={roiBreakdown ? handleOpenRoi : undefined}
+        />
       </div>
 
       {/* Divider */}
@@ -256,6 +411,21 @@ const DashboardContent: React.FC = () => {
 
       {/* ── Split view ──────────────────────────────────────────────────── */}
       <div className="relative flex flex-col md:flex-row flex-1 md:overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          className="absolute z-20 top-8 left-1 md:left-2 p-1 text-white/30 hover:text-white/70 transition-opacity duration-200"
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+          aria-hidden={sidebarOpen}
+          style={{
+            opacity: sidebarOpen ? 0 : 1,
+            pointerEvents: sidebarOpen ? 'none' : 'auto',
+          }}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+
         {/* ── Left: collapsible sidebar ───────────────────────────────── */}
         <div
           className="flex-shrink-0 mlkch-intro mlkch-intro-sidebar"
@@ -349,33 +519,45 @@ const DashboardContent: React.FC = () => {
         </div>
 
         {/* ── Right: detail panel ─────────────────────────────────────── */}
-        <div className="flex-1 md:overflow-y-auto mlkch-scroll mlkch-intro mlkch-intro-detail px-6 md:px-10 py-6 md:py-8">
-          {/* Expand toggle — only when sidebar is collapsed */}
-          <div
-            className="overflow-hidden transition-all duration-300 ease-out origin-top-left"
-            style={{
-              width:      sidebarOpen ? 0 : 27,
-              height:     sidebarOpen ? 0 : 27,
-              opacity:    sidebarOpen ? 0 : 1,
-              transform:  sidebarOpen ? 'scale(0.5)' : 'scale(1)',
-              marginBottom: sidebarOpen ? 0 : 20,
-              pointerEvents: sidebarOpen ? 'none' : 'auto',
-            }}
-          >
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-lg text-white/25 hover:text-white/60 transition-colors"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        <div
+          className={`relative flex-1 md:overflow-y-auto mlkch-scroll px-6 md:px-10 py-6 md:py-8 ${
+            !introComplete ? 'mlkch-intro mlkch-intro-detail' : ''
+          }`}
+          style={{ contain: 'layout style' }}
+        >
+          {selectedBanner && (
+            <InitiativeBanner
+              key={`banner-${selectedId}`}
+              src={selectedBanner}
+              animate={introComplete}
+            />
+          )}
 
-          {selected ? <DetailPanel initiative={selected} /> : <OverviewPanel />}
+          <div className="relative z-10">
+            {selected ? (
+              <div
+                key={selectedId}
+                className={introComplete ? 'mlkch-initiative-enter' : undefined}
+              >
+                <DetailPanel
+                  initiative={selected}
+                  animateSections={introComplete}
+                  onOpenRoi={roiBreakdown ? handleOpenRoi : undefined}
+                />
+              </div>
+            ) : (
+              <OverviewPanel />
+            )}
+          </div>
         </div>
       </div>
+
+      {roiModalOpen && roiBreakdown && (
+        <ROIBreakdownModal
+          breakdown={roiBreakdown}
+          onClose={() => setRoiModalOpen(false)}
+        />
+      )}
 
       {/* AI Copilot */}
       <CopilotWidget />

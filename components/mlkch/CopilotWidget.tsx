@@ -1,10 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, MessageCircle, Bot } from 'lucide-react';
+import { formatRoiAmount, formatRoiAmountExact, SNAPSKILL_ROI_DIRECT, SNAPSKILL_ROI_INDIRECT, SNAPSKILL_ROI_TOTAL } from './data/snapSkillRoi';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
 }
+
+const SNAPSKILL_ROI_REPLY =
+  `SnapSkill Onboarding is tracking ${formatRoiAmount(SNAPSKILL_ROI_TOTAL)} in total annual direct and indirect ROI ` +
+  `(${formatRoiAmountExact(SNAPSKILL_ROI_DIRECT)} direct savings and ${formatRoiAmountExact(SNAPSKILL_ROI_INDIRECT)} in staff time freed). ` +
+  'With 113 nurses onboarded at a 96% completion rate, open the ROI breakdown on the dashboard for the conservative CFO-validated detail.';
 
 const EXAMPLE_THREAD: ChatMessage[] = [
   {
@@ -13,7 +19,7 @@ const EXAMPLE_THREAD: ChatMessage[] = [
   },
   {
     role: 'assistant',
-    text: "Based on the latest data, SnapSkill Onboarding has delivered an estimated $127K in savings, primarily through reduced manual onboarding hours and faster time-to-floor for new nurses. With 113 nurses onboarded at a 91% completion rate, the annualized ROI projection is approximately $185K.",
+    text: SNAPSKILL_ROI_REPLY,
   },
   {
     role: 'user',
@@ -21,7 +27,7 @@ const EXAMPLE_THREAD: ChatMessage[] = [
   },
   {
     role: 'assistant',
-    text: "There is 1 live initiative (SnapSkill Onboarding) and 4 in the planning pipeline for Q3 2026: the MSP Transition, SnapSkill Modules Expansion, Cedars-Sinai Site Visit, and Conexiones. 5 more are in the AI Transformation Backlog.",
+    text: "There is 1 live initiative (SnapSkill Onboarding) and 4 in the planning pipeline for Q3 2026: the MSP Transition, SnapSkill Additional Modules, Cedars-Sinai Site Visit, and Conexiones. 5 more are in the AI Transformation Backlog.",
   },
 ];
 
@@ -104,7 +110,6 @@ const CopilotWidget: React.FC = () => {
               }}
             >
               Ask anything about MLKCH initiatives, metrics, and project status.
-              <span className="text-white/25 ml-1">(Preview · live data coming soon)</span>
             </div>
 
             {EXAMPLE_THREAD.map((msg, i) => (

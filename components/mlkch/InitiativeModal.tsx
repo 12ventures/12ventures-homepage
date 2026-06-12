@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { X, Tag } from 'lucide-react';
+import { X } from 'lucide-react';
+import MilestoneList from './MilestoneList';
 import type { Initiative, InitiativeSection } from './data/initiatives';
 
 interface InitiativeModalProps {
@@ -15,8 +16,8 @@ const SECTION_ACCENT: Record<InitiativeSection, { text: string; glow: string; bo
 
 const STATUS_LABELS: Record<Initiative['status'], string> = {
   active: 'Live',
-  planning: 'Planning',
-  backlog: 'Backlog',
+  planning: 'Active',
+  backlog: 'Planning',
 };
 
 const InitiativeModal: React.FC<InitiativeModalProps> = ({ initiative, onClose }) => {
@@ -141,23 +142,13 @@ const InitiativeModal: React.FC<InitiativeModalProps> = ({ initiative, onClose }
                 className="text-[10px] font-bold tracking-widest uppercase mb-3"
                 style={{ color: accent.text }}
               >
-                Work Items
+                Milestones
               </p>
-              <ul className="space-y-2">
-                {initiative.subItems.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
-                      style={{ background: accent.text }}
-                    />
-                    <span className="text-sm text-white/60">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <MilestoneList items={initiative.subItems} accentColor={accent.text} />
             </div>
           )}
 
-          {/* Tags */}
+          {/* Tags — hidden for now
           {initiative.tags && initiative.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 items-center">
               <Tag className="w-3 h-3 text-white/20" />
@@ -175,6 +166,7 @@ const InitiativeModal: React.FC<InitiativeModalProps> = ({ initiative, onClose }
               ))}
             </div>
           )}
+          */}
         </div>
       </div>
     </div>
