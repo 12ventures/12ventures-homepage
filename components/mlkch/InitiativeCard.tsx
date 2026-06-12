@@ -45,8 +45,8 @@ const SECTION_STYLES: Record<InitiativeSection, {
 
 const STATUS_LABELS: Record<Initiative['status'], string> = {
   active:   'Live',
-  planning: 'Planning',
-  backlog:  'Backlog',
+  planning: 'Active',
+  backlog:  'Planning',
 };
 
 const InitiativeCard: React.FC<InitiativeCardProps> = ({

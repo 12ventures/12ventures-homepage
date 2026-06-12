@@ -6,6 +6,7 @@ interface MetricCardProps {
   value: string;
   accent?: 'teal' | 'sky' | 'purple' | 'green';
   icon?: React.ReactNode;
+  onClick?: () => void;
 }
 
 const ACCENT_COLORS: Record<NonNullable<MetricCardProps['accent']>, { text: string; glow: string; border: string; bg: string }> = {
@@ -20,17 +21,48 @@ const MetricCard: React.FC<MetricCardProps> = ({
   value,
   accent = 'sky',
   icon,
+  onClick,
 }) => {
   const colors = ACCENT_COLORS[accent];
+  const interactive = Boolean(onClick);
 
   return (
     <div
-      className="relative rounded-2xl px-5 py-4 overflow-hidden"
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      className={`relative rounded-2xl px-5 py-4 overflow-hidden ${
+        interactive ? 'cursor-pointer transition-all duration-200 hover:scale-[1.01]' : ''
+      }`}
       style={{
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.07)',
         boxShadow: '0 0 0 1px rgba(0,0,0,0.2), 0 4px 20px rgba(0,0,0,0.25)',
       }}
+      onMouseEnter={
+        interactive
+          ? (e) => {
+              (e.currentTarget as HTMLElement).style.border = `1px solid ${colors.border}`;
+            }
+          : undefined
+      }
+      onMouseLeave={
+        interactive
+          ? (e) => {
+              (e.currentTarget as HTMLElement).style.border = '1px solid rgba(255,255,255,0.07)';
+            }
+          : undefined
+      }
     >
       {/* Accent glow */}
       <div

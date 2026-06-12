@@ -70,7 +70,7 @@ const MLKCHPasswordGate: React.FC<MLKCHPasswordGateProps> = ({ children }) => {
         <div className="flex items-center justify-between gap-4 mb-5">
           <div className="min-w-0">
             <p className="text-[10px] font-bold tracking-widest text-sky-400 uppercase mb-0.5">
-              12 Ventures × MLKCH
+              MLKCH × 12 Ventures
             </p>
             <h1 className="text-xl font-black text-white leading-tight">
               AI Transformation Program
