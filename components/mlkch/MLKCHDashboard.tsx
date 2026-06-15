@@ -85,7 +85,7 @@ const InitiativeBanner: React.FC<{ src: string; animate?: boolean }> = ({ src, a
       src={src}
       alt=""
       aria-hidden
-      className="absolute inset-0 h-full w-full object-cover object-[center_35%]"
+      className="absolute inset-0 h-full w-full scale-[1.04] object-cover object-[center_35%] blur-[1px]"
     />
     <div
       className="absolute inset-0"
@@ -131,13 +131,21 @@ const DetailPanel: React.FC<{
               rel="noopener noreferrer"
               title="Open product"
               aria-label={`Open ${initiative.title} product`}
-              className="flex-shrink-0 p-1.5 rounded-lg text-white/35 hover:text-white/80 transition-colors"
+              className="mlkch-external-link flex-shrink-0 p-1.5 rounded-lg text-white transition-colors"
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: hasBanner ? accent.bg.replace('0.08', '0.18') : 'rgba(255,255,255,0.05)',
+                border: hasBanner ? `1px solid ${accent.border}` : '1px solid rgba(255,255,255,0.08)',
+                ...(hasBanner
+                  ? {
+                      backdropFilter: GLASS_BADGE_BASE.banner.backdropFilter,
+                      WebkitBackdropFilter: GLASS_BADGE_BASE.banner.WebkitBackdropFilter,
+                      transform: GLASS_BADGE_BASE.banner.transform,
+                      willChange: GLASS_BADGE_BASE.banner.willChange,
+                    }
+                  : {}),
               }}
             >
-              <ExternalLink className="w-4 h-4" style={{ color: accent.text }} />
+              <ExternalLink className="w-4 h-4 text-white" />
             </a>
           )}
         </div>
