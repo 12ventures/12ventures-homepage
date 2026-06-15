@@ -23,6 +23,7 @@ import OtterWorkerLearn from './components/OtterWorkerLearn';
 import OtterWorkerOperatorOld from './components/OtterWorkerOperator_old';
 import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
 import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
+import MeridaWellness from './components/MeridaWellness';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
@@ -181,6 +182,12 @@ const App: React.FC = () => {
           <Route
             path="/royce"
             element={<RoyceSlides />}
+          />
+
+          {/* Merida Wellness Video */}
+          <Route
+            path="/meridawellness"
+            element={<MeridaWellness />}
           />
 
           {/* MLKCH x 12 Ventures Dashboard */}
