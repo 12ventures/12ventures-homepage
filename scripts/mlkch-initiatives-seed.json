@@ -1,0 +1,238 @@
+{
+  "initiatives": [
+    {
+      "id": "snapskill-onboarding",
+      "title": "SnapSkill Onboarding",
+      "section": "live",
+      "status": "active",
+      "description": "AI-powered onboarding program for MLKCH nursing staff, transforming dense policy documents and workflows into engaging, bite-sized learning modules delivered via SnapSkill.",
+      "sort_order": 0,
+      "banner_image": "https://games.dreambox.gg/snapskill/logos/mlk-front-entrance.jpg",
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Nurses Onboarded", "value": "113", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Competency Improvement and Retention", "value": "43%", "accent": "green", "opens_roi_breakdown": false },
+        { "label": "ROI", "value": "$428K", "accent": "purple", "opens_roi_breakdown": true }
+      ],
+      "sub_items": [
+        "113 nurses onboarded to date",
+        "2,348 content modules transformed to adaptive modern multimedia",
+        "43% increase in competency and retention",
+        "$427,680 in annual direct and indirect ROI"
+      ],
+      "metrics": [
+        { "label": "Nurses Onboarded", "value": "113", "opens_roi_breakdown": false },
+        { "label": "Avg Completion Rate", "value": "96%", "opens_roi_breakdown": false },
+        { "label": "Quiz Performance - First Attempt", "value": "49%", "opens_roi_breakdown": false },
+        { "label": "Quiz Performance - Completion", "value": "92%", "opens_roi_breakdown": false },
+        { "label": "Competency Improvement and Retention", "value": "43%", "opens_roi_breakdown": false },
+        { "label": "ROI", "value": "$428K", "opens_roi_breakdown": true }
+      ],
+      "tags": ["SnapSkill", "Nursing", "AI Content", "Live"]
+    },
+    {
+      "id": "msp-transition",
+      "title": "Managed Services Provider (MSP) Transition",
+      "section": "next",
+      "status": "planning",
+      "description": "Structured transition to a Managed Services Provider model, enabling MLKCH to scale AI initiatives with 12 Ventures as the long-term delivery partner.",
+      "sort_order": 1,
+      "banner_image": "/images/operator_banner_wide.png",
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Phase", "value": "Planning", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Target Completion", "value": "July 2026", "accent": "teal", "opens_roi_breakdown": false },
+        { "label": "Projected Value", "value": "$80K", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [
+        "Validate Change Management Methodology",
+        "Communication Plan"
+      ],
+      "metrics": [
+        { "label": "Phase", "value": "Planning", "opens_roi_breakdown": false },
+        { "label": "Target Completion", "value": "July 2026", "opens_roi_breakdown": false }
+      ],
+      "tags": ["MSP", "Change Management", "Strategy"]
+    },
+    {
+      "id": "snapskill-modules",
+      "title": "SnapSkill Additional Modules",
+      "section": "next",
+      "status": "planning",
+      "description": "Expanding the SnapSkill module library for MLKCH with targeted updates, an Ask AI feature for just-in-time answers, and full EHR systems training.",
+      "sort_order": 2,
+      "banner_image": "https://games.dreambox.gg/snapskill/logos/mlk-front-entrance.jpg",
+      "external_url": null,
+      "top_metrics": [
+        { "label": "New Modules", "value": "3", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Target Launch", "value": "July 2026", "accent": "teal", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [
+        { "label": "Targeted Updates", "url": "https://staging.snapskill.ai/o/mlkch/continuous-reinforcement" },
+        { "label": "Ask AI", "url": "https://staging.snapskill.ai/o/mlkch/ask" },
+        "EHR Training"
+      ],
+      "metrics": [
+        { "label": "New Modules Planned", "value": "3", "opens_roi_breakdown": false },
+        { "label": "Target Launch", "value": "July 2026", "opens_roi_breakdown": false }
+      ],
+      "tags": ["SnapSkill", "EHR", "Ask AI", "Content"]
+    },
+    {
+      "id": "cedars-sinai-visit",
+      "title": "Cedars-Sinai Site Visit",
+      "section": "next",
+      "status": "planning",
+      "description": "Cedars-Sinai is visiting MLKCH to see firsthand the AI advancements and workforce innovations powered by 12 Ventures, a recognition of MLKCH's progress as an AI-forward health system.",
+      "sort_order": 3,
+      "banner_image": "https://www.cedars-sinai.org/content/dam/cedars-sinai/locations-images/Surgery_8700_Beverly_01.jpg",
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Visit Date", "value": "July 2026", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Phase", "value": "Scheduling", "accent": "teal", "opens_roi_breakdown": false },
+        { "label": "Orgs Involved", "value": "2", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [
+        "Showcase AI Transformation Program",
+        "AI Learning + Workforce Performance",
+        {
+          "label": "Phase 1: Onboarding",
+          "children": ["SnapSkill Onboarding", "EHR Training"]
+        },
+        {
+          "label": "Phase 2: Continuous Reinforcement",
+          "children": ["Targeted Updates", "Ask AI"]
+        },
+        "Phase 3: AI Workflow Transformation",
+        "Strategic Partnership Discussion"
+      ],
+      "metrics": [
+        { "label": "Visit Date", "value": "July 2026", "opens_roi_breakdown": false }
+      ],
+      "tags": ["Benchmarking", "Site Visit", "Research"]
+    },
+    {
+      "id": "conexiones",
+      "title": "Conexiones",
+      "section": "next",
+      "status": "planning",
+      "description": "Community health AI initiative targeting underserved patient populations, exploring AI-assisted outreach, multilingual content delivery, and care coordination.",
+      "sort_order": 4,
+      "banner_image": "/images/conexiones_banner.png",
+      "external_url": "https://staging.snapskill.io/p/conexiones",
+      "top_metrics": [
+        { "label": "Phase", "value": "Discovery", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Target Live", "value": "July 2026", "accent": "teal", "opens_roi_breakdown": false },
+        { "label": "Projected Value", "value": "$50K+", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [
+        {
+          "label": "Patient Engagement multimedia content",
+          "children": [
+            "Medi-Cal Literacy on Cost",
+            "Open Access Schedule - Evening, Weekends, Last-Minute Booking Available",
+            "Transportation Support (Theme: No car? We'll cover your transportation)",
+            "Break Generational Exhaustion (Theme: You're not being selfish by taking care of your health)"
+          ]
+        },
+        "Patient Engagement App Product",
+        "Partner with MLKCH and HealthBegins for Patient Engagement App Distribution"
+      ],
+      "metrics": [
+        { "label": "Phase", "value": "Discovery", "opens_roi_breakdown": false },
+        { "label": "Target Live", "value": "July 2026", "opens_roi_breakdown": false }
+      ],
+      "tags": ["Community Health", "Multilingual", "Outreach"]
+    },
+    {
+      "id": "patient-engagement",
+      "title": "Patient Engagement",
+      "section": "backlog",
+      "status": "backlog",
+      "description": "AI-driven patient engagement platform with personalized communications, appointment reminders, post-discharge follow-ups, and satisfaction surveys at scale.",
+      "sort_order": 5,
+      "banner_image": null,
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Target", "value": "Est. 2027", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Projected Savings", "value": "$200K+", "accent": "green", "opens_roi_breakdown": false },
+        { "label": "Projected Value", "value": "$350K", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [],
+      "metrics": [],
+      "tags": ["Patient Experience", "Automation", "Messaging"]
+    },
+    {
+      "id": "contracts-intelligence",
+      "title": "Contracts Intelligence Dashboard",
+      "section": "backlog",
+      "status": "backlog",
+      "description": "AI-powered contract analysis and monitoring, automatically surfacing renewal dates, compliance obligations, cost anomalies, and vendor performance signals.",
+      "sort_order": 6,
+      "banner_image": null,
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Target", "value": "Q4 2026", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Projected Savings", "value": "$150K", "accent": "green", "opens_roi_breakdown": false },
+        { "label": "Projected Value", "value": "$280K", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [],
+      "metrics": [],
+      "tags": ["Contracts", "Legal", "Finance", "Analytics"]
+    },
+    {
+      "id": "miscoded-reimbursement",
+      "title": "Miscoded Reimbursement Entries",
+      "section": "backlog",
+      "status": "backlog",
+      "description": "Revenue integrity tool using AI to detect miscoded EHR billing entries, recovering lost reimbursement revenue and improving compliance.",
+      "sort_order": 7,
+      "banner_image": null,
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Recovery Rate", "value": "3-5%", "accent": "teal", "opens_roi_breakdown": false },
+        { "label": "Revenue Recovery", "value": "$300K+", "accent": "green", "opens_roi_breakdown": false },
+        { "label": "Projected Value", "value": "$500K", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [],
+      "metrics": [],
+      "tags": ["Revenue Cycle", "EHR", "Compliance", "Finance"]
+    },
+    {
+      "id": "mpp-automation",
+      "title": "Management Performance Plan (MPP) Automation",
+      "section": "backlog",
+      "status": "backlog",
+      "description": "Automates the creation, tracking, and reporting of Management Performance Plans, reducing administrative overhead and surfacing real-time performance signals.",
+      "sort_order": 8,
+      "banner_image": null,
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Admin Time Saved", "value": "80%", "accent": "teal", "opens_roi_breakdown": false },
+        { "label": "Projected Savings", "value": "$80K", "accent": "green", "opens_roi_breakdown": false },
+        { "label": "Projected Value", "value": "$120K", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [],
+      "metrics": [],
+      "tags": ["HR", "Automation", "Performance Management"]
+    },
+    {
+      "id": "mlkch-messaging",
+      "title": "MLKCH DM / Messaging Social Network",
+      "section": "backlog",
+      "status": "backlog",
+      "description": "Internal AI-enabled messaging and social network for MLKCH staff, facilitating knowledge sharing, peer support, and real-time clinical communication.",
+      "sort_order": 9,
+      "banner_image": null,
+      "external_url": null,
+      "top_metrics": [
+        { "label": "Scope", "value": "All Staff", "accent": "sky", "opens_roi_breakdown": false },
+        { "label": "Target Launch", "value": "2027", "accent": "teal", "opens_roi_breakdown": false },
+        { "label": "Projected Value", "value": "$60K", "accent": "purple", "opens_roi_breakdown": false }
+      ],
+      "sub_items": [],
+      "metrics": [],
+      "tags": ["Internal Comms", "Social", "Knowledge Sharing"]
+    }
+  ]
+}
