@@ -1,7 +1,9 @@
 import type {
+  DashboardSection,
   Initiative,
   InitiativeMetric,
-  InitiativeSection,
+  InitiativeSectionRef,
+  InitiativeSectionSlug,
   InitiativeStatus,
   MetricAccent,
   MilestoneChild,
@@ -25,7 +27,7 @@ interface ApiEnvelope<T> {
 
 export interface InitiativeInput {
   title: string;
-  section: InitiativeSection;
+  sectionId: string;
   status: InitiativeStatus;
   description: string;
   sortOrder?: number;
@@ -36,6 +38,16 @@ export interface InitiativeInput {
   bannerImage?: string | null;
   externalUrl?: string | null;
 }
+
+export interface SectionInput {
+  label: string;
+  slug?: string;
+  sortOrder?: number;
+  accentColor?: string;
+  dotPulse?: boolean;
+}
+
+export type SectionPatch = Partial<SectionInput>;
 
 type ApiTopMetric = {
   label: string;
@@ -56,10 +68,28 @@ type ApiMilestoneItem =
   | MilestoneLink
   | { label: string; children: ApiMilestoneChild[] };
 
+type ApiSectionRef = {
+  id: string;
+  slug: string;
+  label: string;
+};
+
+type ApiSection = {
+  id: string;
+  slug: string;
+  label: string;
+  sort_order: number;
+  accent_color: string;
+  dot_pulse: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
 type ApiInitiative = {
   id: string;
   title: string;
-  section: InitiativeSection;
+  section_id: string;
+  section: ApiSectionRef;
   status: InitiativeStatus;
   description: string;
   sort_order: number;
@@ -136,11 +166,31 @@ function mapMilestoneItemFromApi(item: ApiMilestoneItem): MilestoneItem {
   return item;
 }
 
+function mapSectionRefFromApi(raw: ApiSectionRef): InitiativeSectionRef {
+  return {
+    id: raw.id,
+    slug: raw.slug,
+    label: raw.label,
+  };
+}
+
+export function mapSectionFromApi(raw: ApiSection): DashboardSection {
+  return {
+    id: raw.id,
+    slug: raw.slug,
+    label: raw.label,
+    sortOrder: raw.sort_order,
+    accentColor: raw.accent_color,
+    dotPulse: raw.dot_pulse,
+  };
+}
+
 export function mapInitiativeFromApi(raw: ApiInitiative): Initiative {
   return {
     id: raw.id,
     title: raw.title,
-    section: raw.section,
+    sectionId: raw.section_id,
+    section: mapSectionRefFromApi(raw.section),
     status: raw.status,
     description: raw.description,
     sortOrder: raw.sort_order,
@@ -187,10 +237,30 @@ function mapMilestoneItemToApi(item: MilestoneItem): ApiMilestoneItem {
   return item;
 }
 
-export function mapInitiativeToApi(input: InitiativeInput): Omit<ApiInitiative, 'id' | 'created_at' | 'updated_at'> {
+function mapSectionToApi(input: SectionInput): Record<string, unknown> {
+  return {
+    label: input.label,
+    ...(input.slug !== undefined ? { slug: input.slug } : {}),
+    ...(input.sortOrder !== undefined ? { sort_order: input.sortOrder } : {}),
+    ...(input.accentColor !== undefined ? { accent_color: input.accentColor } : {}),
+    ...(input.dotPulse !== undefined ? { dot_pulse: input.dotPulse } : {}),
+  };
+}
+
+function mapSectionPatchToApi(patch: SectionPatch): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (patch.label !== undefined) body.label = patch.label;
+  if (patch.slug !== undefined) body.slug = patch.slug;
+  if (patch.sortOrder !== undefined) body.sort_order = patch.sortOrder;
+  if (patch.accentColor !== undefined) body.accent_color = patch.accentColor;
+  if (patch.dotPulse !== undefined) body.dot_pulse = patch.dotPulse;
+  return body;
+}
+
+export function mapInitiativeToApi(input: InitiativeInput): Omit<ApiInitiative, 'id' | 'created_at' | 'updated_at' | 'section'> {
   return {
     title: input.title,
-    section: input.section,
+    section_id: input.sectionId,
     status: input.status,
     description: input.description,
     sort_order: input.sortOrder ?? 0,
@@ -206,7 +276,7 @@ export function mapInitiativeToApi(input: InitiativeInput): Omit<ApiInitiative, 
 export function initiativeToInput(initiative: Initiative): InitiativeInput {
   return {
     title: initiative.title,
-    section: initiative.section,
+    sectionId: initiative.sectionId,
     status: initiative.status,
     description: initiative.description,
     sortOrder: initiative.sortOrder ?? 0,
@@ -221,7 +291,8 @@ export function initiativeToInput(initiative: Initiative): InitiativeInput {
 
 export type InitiativePatch = Partial<{
   title: string;
-  section: InitiativeSection;
+  sectionId: string;
+  sectionSlug: InitiativeSectionSlug;
   status: InitiativeStatus;
   description: string;
   sortOrder: number;
@@ -233,13 +304,14 @@ export type InitiativePatch = Partial<{
   externalUrl: string | null;
 }>;
 
-type ApiInitiativePatch = Partial<Omit<ApiInitiative, 'id' | 'created_at' | 'updated_at'>>;
+type ApiInitiativePatch = Partial<Omit<ApiInitiative, 'id' | 'created_at' | 'updated_at' | 'section'>>;
 
 function mapPartialToApi(patch: InitiativePatch): ApiInitiativePatch {
   const body: ApiInitiativePatch = {};
 
   if (patch.title !== undefined) body.title = patch.title;
-  if (patch.section !== undefined) body.section = patch.section;
+  if (patch.sectionId !== undefined) body.section_id = patch.sectionId;
+  if (patch.sectionSlug !== undefined) body.section_slug = patch.sectionSlug;
   if (patch.status !== undefined) body.status = patch.status;
   if (patch.description !== undefined) body.description = patch.description;
   if (patch.sortOrder !== undefined) body.sort_order = patch.sortOrder;
@@ -254,6 +326,34 @@ function mapPartialToApi(patch: InitiativePatch): ApiInitiativePatch {
 }
 
 export const mlkchApi = {
+  listSections: async () => {
+    const data = await request<{ items: ApiSection[]; total: number }>('/sections');
+    return {
+      items: data.items.map(mapSectionFromApi).sort((a, b) => a.sortOrder - b.sortOrder),
+      total: data.total,
+    };
+  },
+
+  createSection: async (body: SectionInput) => {
+    const data = await request<ApiSection>('/sections', {
+      method: 'POST',
+      body: JSON.stringify(mapSectionToApi(body)),
+    });
+    return mapSectionFromApi(data);
+  },
+
+  patchSection: async (id: string, body: SectionPatch) => {
+    const data = await request<ApiSection>(`/sections/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(mapSectionPatchToApi(body)),
+    });
+    return mapSectionFromApi(data);
+  },
+
+  removeSection: async (id: string) => {
+    return request<{ id: string }>(`/sections/${id}`, { method: 'DELETE' });
+  },
+
   list: async () => {
     const data = await request<{ items: ApiInitiative[]; total: number }>('/initiatives');
     return {

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { ExternalLink, Plus } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { GripVertical, Plus } from 'lucide-react';
+import { Reorder, useDragControls } from 'framer-motion';
 import { InlineEditBlock } from './inline/InlineEditBlock';
 import type { MilestoneChild, MilestoneItem } from './data/initiatives';
 import { isMilestoneGroup, milestoneLabel, milestoneUrl } from './data/initiatives';
@@ -15,6 +16,34 @@ interface MilestoneListProps {
 
 function milestoneKey(item: MilestoneItem, index: number): string {
   return `${milestoneLabel(item)}-${index}`;
+}
+
+function childEquals(a: MilestoneChild, b: MilestoneChild): boolean {
+  if (typeof a === 'string' && typeof b === 'string') return a === b;
+  if (typeof a === 'object' && typeof b === 'object') {
+    return a.label === b.label && a.url === b.url;
+  }
+  return false;
+}
+
+function milestoneEquals(a: MilestoneItem, b: MilestoneItem): boolean {
+  if (isMilestoneGroup(a) !== isMilestoneGroup(b)) return false;
+  if (isMilestoneGroup(a) && isMilestoneGroup(b)) {
+    return (
+      a.label === b.label &&
+      a.children.length === b.children.length &&
+      a.children.every((child, i) => childEquals(child, b.children[i]))
+    );
+  }
+  return childEquals(a as MilestoneChild, b as MilestoneChild);
+}
+
+function itemsEqual(a: MilestoneItem[], b: MilestoneItem[]): boolean {
+  return a.length === b.length && a.every((item, i) => milestoneEquals(item, b[i]));
+}
+
+function createMilestoneUid(): string {
+  return `ms-${crypto.randomUUID()}`;
 }
 
 const fieldInputClass =
@@ -128,19 +157,17 @@ const MilestoneRow: React.FC<{
   dotOpacity = 1,
   className = 'group flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors duration-150',
 }) => {
+  const labelClassName = url
+    ? 'text-sm text-sky-400 underline underline-offset-2 decoration-sky-400/50 hover:text-sky-300 hover:decoration-sky-300/70 flex-1 min-w-0'
+    : `${textClassName} flex-1 min-w-0`;
+
   const content = (
     <>
       <span
         className={`${dotClassName} rounded-full flex-shrink-0 mt-0.5`}
         style={{ background: accentColor, opacity: dotOpacity }}
       />
-      <span className={`${textClassName} flex-1 min-w-0`}>{label}</span>
-      {url && (
-        <ExternalLink
-          className="w-3.5 h-3.5 flex-shrink-0 opacity-45 group-hover:opacity-90 transition-opacity"
-          style={{ color: accentColor }}
-        />
-      )}
+      <span className={labelClassName}>{label}</span>
     </>
   );
 
@@ -165,6 +192,58 @@ const MilestoneRow: React.FC<{
   );
 };
 
+// Wrapper that gives each MilestoneItem a stable uid for Reorder keys
+type OrderedMilestone = { uid: string; item: MilestoneItem };
+
+function syncOrderedFromItems(
+  items: MilestoneItem[],
+  prev: OrderedMilestone[],
+): OrderedMilestone[] {
+  const unmatched = [...prev];
+  return items.map((item) => {
+    const matchIndex = unmatched.findIndex((entry) => milestoneEquals(entry.item, item));
+    if (matchIndex >= 0) {
+      const [found] = unmatched.splice(matchIndex, 1);
+      return { uid: found.uid, item };
+    }
+    return { uid: createMilestoneUid(), item };
+  });
+}
+
+// Per-item drag wrapper (needs its own useDragControls)
+const DraggableMilestoneItem: React.FC<{
+  value: OrderedMilestone;
+  canDrag: boolean;
+  onDragEnd: () => void;
+  children: React.ReactNode;
+}> = ({ value, canDrag, onDragEnd, children }) => {
+  const controls = useDragControls();
+
+  return (
+    <Reorder.Item
+      as="div"
+      value={value}
+      dragListener={false}
+      dragControls={controls}
+      onDragEnd={onDragEnd}
+      whileDrag={{ opacity: 0.9, scale: 1.01, zIndex: 30 }}
+      style={{ listStyle: 'none' }}
+    >
+      <div className="group/drag flex items-center gap-1 min-w-0">
+        {canDrag && (
+          <div
+            className="flex-shrink-0 opacity-0 group-hover/drag:opacity-20 hover:!opacity-55 cursor-grab active:cursor-grabbing touch-none select-none p-0.5 transition-opacity duration-150"
+            onPointerDown={(e) => { e.preventDefault(); controls.start(e); }}
+          >
+            <GripVertical className="w-3.5 h-3.5 text-white" strokeWidth={1.75} />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">{children}</div>
+      </div>
+    </Reorder.Item>
+  );
+};
+
 const MilestoneList: React.FC<MilestoneListProps> = ({
   items,
   accentColor,
@@ -176,15 +255,60 @@ const MilestoneList: React.FC<MilestoneListProps> = ({
   const surface = glassSurface ? MILESTONE_SURFACE.glass : MILESTONE_SURFACE.plain;
   const editable = canEdit && Boolean(onPatchItems);
   const [drafts, setDrafts] = useState(items);
+  const [ordered, setOrdered] = useState<OrderedMilestone[]>(() => syncOrderedFromItems(items, []));
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const orderedRef = useRef<OrderedMilestone[]>(ordered);
 
   useEffect(() => {
+    if (isSavingOrder) return;
+
+    const currentItems = orderedRef.current.map((entry) => entry.item);
+    if (itemsEqual(items, currentItems)) {
+      const synced = syncOrderedFromItems(items, orderedRef.current);
+      setDrafts(items);
+      setOrdered(synced);
+      orderedRef.current = synced;
+      return;
+    }
+
+    const synced = syncOrderedFromItems(items, orderedRef.current);
     setDrafts(items);
-  }, [items]);
+    setOrdered(synced);
+    orderedRef.current = synced;
+  }, [items, isSavingOrder]);
 
   const patchItems = async (next: MilestoneItem[]) => {
     if (!onPatchItems) return;
     await onPatchItems(next);
   };
+
+  const handleReorder = (newOrder: OrderedMilestone[]) => {
+    if (isSavingOrder) return;
+    setOrdered(newOrder);
+    orderedRef.current = newOrder;
+    setDrafts(newOrder.map((entry) => entry.item));
+  };
+
+  const handleDragEnd = async () => {
+    if (isSavingOrder) return;
+
+    const next = orderedRef.current.map((entry) => entry.item);
+    if (itemsEqual(next, items)) return;
+
+    setIsSavingOrder(true);
+    try {
+      await patchItems(next);
+    } catch {
+      const reverted = syncOrderedFromItems(items, orderedRef.current);
+      setOrdered(reverted);
+      orderedRef.current = reverted;
+      setDrafts(items);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const removeItem = (index: number) => patchItems(items.filter((_, i) => i !== index));
 
   const updateItem = (index: number, next: MilestoneItem) => {
     const updated = items.map((item, i) => (i === index ? next : item));
@@ -197,6 +321,17 @@ const MilestoneList: React.FC<MilestoneListProps> = ({
       return {
         ...item,
         children: item.children.map((child, ci) => (ci === childIndex ? next : child)),
+      };
+    });
+    return patchItems(updated);
+  };
+
+  const removeGroupChild = (groupIndex: number, childIndex: number) => {
+    const updated = items.map((entry, i) => {
+      if (i !== groupIndex || !isMilestoneGroup(entry)) return entry;
+      return {
+        ...entry,
+        children: entry.children.filter((_, ci) => ci !== childIndex),
       };
     });
     return patchItems(updated);
@@ -223,6 +358,8 @@ const MilestoneList: React.FC<MilestoneListProps> = ({
           const draft = getGroupChildDraft(drafts, groupIndex, childIndex, child);
           await updateGroupChild(groupIndex, childIndex, draftToChild(draft));
         }}
+        onRemove={async () => removeGroupChild(groupIndex, childIndex)}
+        removeLabel={milestoneLabel(child)}
       >
         {(editing) => {
           const draft = getGroupChildDraft(drafts, groupIndex, childIndex, child);
@@ -289,6 +426,8 @@ const MilestoneList: React.FC<MilestoneListProps> = ({
                 label: draftItem.label.trim() || item.label,
               });
             }}
+            onRemove={async () => removeItem(index)}
+            removeLabel={item.label}
           >
             {(editing) =>
               editing ? (
@@ -335,9 +474,9 @@ const MilestoneList: React.FC<MilestoneListProps> = ({
             </ul>
           )}
 
-          {editable && (
+          {editable && item.children.length === 0 && (
             <p className="mt-2 ml-5 text-[10px] text-white/25">
-              Add or remove group items in Advanced
+              Add group items in Advanced
             </p>
           )}
         </div>
@@ -359,6 +498,8 @@ const MilestoneList: React.FC<MilestoneListProps> = ({
           const draft = getItemDraft(drafts, index, item);
           await updateItem(index, draftToChild(draft));
         }}
+        onRemove={async () => removeItem(index)}
+        removeLabel={milestoneLabel(item)}
       >
         {(editing) => {
           const draft = getItemDraft(drafts, index, item);
@@ -404,14 +545,42 @@ const MilestoneList: React.FC<MilestoneListProps> = ({
   };
 
   return (
-    <div className="space-y-1.5">
-      {items.map((item, index) => renderEditableItem(item, index))}
+    <div className="relative">
+      {isSavingOrder && (
+        <span
+          className="pointer-events-none absolute -top-0.5 right-0 z-10 h-1.5 w-1.5 rounded-full bg-sky-400/60 animate-pulse"
+          aria-hidden
+        />
+      )}
+      <Reorder.Group
+        as="div"
+        axis="y"
+        values={ordered}
+        onReorder={handleReorder}
+        className={`space-y-1.5 transition-opacity duration-150${
+          isSavingOrder ? ' opacity-45 pointer-events-none' : ''
+        }`}
+        style={{ listStyle: 'none' }}
+        aria-busy={isSavingOrder}
+      >
+        {ordered.map((wrapped, index) => (
+          <DraggableMilestoneItem
+            key={wrapped.uid}
+            value={wrapped}
+            canDrag={editable && !isSavingOrder}
+            onDragEnd={() => void handleDragEnd()}
+          >
+            {renderEditableItem(wrapped.item, index)}
+          </DraggableMilestoneItem>
+        ))}
+      </Reorder.Group>
 
       {editable && (
         <button
           type="button"
+          disabled={isSavingOrder}
           onClick={() => void patchItems([...items, 'New milestone'])}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-white/35 hover:text-white/60 transition-colors"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-white/35 hover:text-white/60 transition-colors disabled:opacity-40 disabled:pointer-events-none"
         >
           <Plus className="w-3.5 h-3.5" />
           Add milestone

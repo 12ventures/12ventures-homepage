@@ -89,6 +89,10 @@ const TopMetricsRow: React.FC<TopMetricsRowProps> = ({
                 };
                 await patchMetrics(next);
               }}
+              onRemove={async () => {
+                await patchMetrics(metrics.filter((_, i) => i !== index));
+              }}
+              removeLabel={metric.label || 'metric'}
             >
               {(editing) =>
                 editing ? (
