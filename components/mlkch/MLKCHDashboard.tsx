@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, TrendingUp, DollarSign, BarChart3, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { BarChart3, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import MLKCHPasswordGate from './MLKCHPasswordGate';
-import MetricCard from './MetricCard';
 import InitiativeCard from './InitiativeCard';
 import CopilotWidget from './CopilotWidget';
 import ShimmerText from './ShimmerText';
-import AnimatedMetricValue from './AnimatedMetricValue';
-import MilestoneList from './MilestoneList';
-import { INITIATIVES, GLOBAL_TOP_METRICS, getInitiativesBySection, resolveInitiativeBanner } from './data/initiatives';
+import DetailPanel from './DetailPanel';
+import InitiativeEditPanel from './InitiativeEditPanel';
+import TopMetricsRow from './TopMetricsRow';
+import { InlineEditProvider } from './inline/InlineEditProvider';
+import { GLOBAL_TOP_METRICS, getInitiativesBySection, resolveInitiativeBanner } from './data/initiatives';
 import { getRoiBreakdown } from './data/snapSkillRoi';
 import ROIBreakdownModal from './ROIBreakdownModal';
-import type { Initiative, InitiativeSection, TopMetric } from './data/initiatives';
+import { useInitiatives } from './hooks/useInitiatives';
+import type { Initiative, InitiativeSection } from './data/initiatives';
+import type { InitiativeInput } from './api/mlkchApi';
 
 const PARTNERSHIP_LOGO = '/logos/mlkch-x-12v-logo.png';
 
@@ -26,54 +29,6 @@ const SECTION_ACCENT: Record<InitiativeSection, { text: string; bg: string; bord
   next:    { text: '#38bdf8', bg: 'rgba(56,189,248,0.08)',  border: 'rgba(56,189,248,0.25)'  },
   backlog: { text: '#94a3b8', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.2)'  },
 };
-
-const STATUS_LABELS: Record<Initiative['status'], string> = {
-  active:   'Live',
-  planning: 'Active',
-  backlog:  'Planning',
-};
-
-// Icon per metric label
-function metricIcon(label: string) {
-  if (label === 'Nurses Onboarded') return <Users className="w-4 h-4" />;
-  if (label === 'ROI') return <TrendingUp className="w-4 h-4" />;
-  if (label.includes('Competency')) return <BarChart3 className="w-4 h-4" />;
-  if (label.includes('Savings')) return <DollarSign className="w-4 h-4" />;
-  return <TrendingUp className="w-4 h-4" />;
-}
-
-function accentMetricTextShadow(accentColor: string): string {
-  return [
-    `0 1px 2px color-mix(in srgb, ${accentColor} 45%, black)`,
-    `0 2px 10px color-mix(in srgb, ${accentColor} 35%, black)`,
-  ].join(', ');
-}
-
-const GLASS_CARD_BASE = {
-  plain: {
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.07)',
-  },
-  banner: {
-    background: 'linear-gradient(145deg, rgba(14,100,180,0.10) 0%, rgba(6,30,80,0.12) 100%)',
-    border: '1px solid rgba(56,189,248,0.14)',
-    backdropFilter: 'blur(8px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 24px rgba(0,0,0,0.3)',
-    transform: 'translateZ(0)',
-    willChange: 'backdrop-filter',
-  },
-} as const;
-
-const GLASS_BADGE_BASE = {
-  banner: {
-    backdropFilter: 'blur(6px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(6px) saturate(140%)',
-    transform: 'translateZ(0)',
-    willChange: 'backdrop-filter',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
-  },
-} as const;
 
 const InitiativeBanner: React.FC<{ src: string; animate?: boolean }> = ({ src, animate }) => (
   <div
@@ -98,176 +53,6 @@ const InitiativeBanner: React.FC<{ src: string; animate?: boolean }> = ({ src, a
   </div>
 );
 
-// ── Detail panel ──────────────────────────────────────────────────────────
-const DetailPanel: React.FC<{
-  initiative: Initiative;
-  onOpenRoi?: () => void;
-  animateSections?: boolean;
-}> = ({ initiative, onOpenRoi, animateSections = false }) => {
-  const accent = SECTION_ACCENT[initiative.section];
-  const hasBanner = Boolean(resolveInitiativeBanner(initiative));
-  const cardSurface = hasBanner ? GLASS_CARD_BASE.banner : GLASS_CARD_BASE.plain;
-  const statusLabel = STATUS_LABELS[initiative.status];
-  const statusTextColor = statusLabel === 'Active' ? '#ffffff' : accent.text;
-  const sectionClass = (index: number) =>
-    animateSections ? `mlkch-initiative-section mlkch-initiative-section-${index}` : '';
-
-  return (
-    <div>
-      {/* Status + title */}
-      <div className={`flex items-center justify-between gap-4 mb-6 ${sectionClass(0)}`}>
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <h2
-            className={`text-2xl md:text-3xl font-black text-white leading-tight min-w-0 ${
-              hasBanner ? 'mlkch-banner-title-text' : ''
-            }`}
-          >
-            {initiative.title}
-          </h2>
-          {initiative.externalUrl && (
-            <a
-              href={initiative.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open product"
-              aria-label={`Open ${initiative.title} product`}
-              className="mlkch-external-link flex-shrink-0 p-1.5 rounded-lg text-white transition-colors"
-              style={{
-                background: hasBanner ? accent.bg.replace('0.08', '0.18') : 'rgba(255,255,255,0.05)',
-                border: hasBanner ? `1px solid ${accent.border}` : '1px solid rgba(255,255,255,0.08)',
-                ...(hasBanner
-                  ? {
-                      backdropFilter: GLASS_BADGE_BASE.banner.backdropFilter,
-                      WebkitBackdropFilter: GLASS_BADGE_BASE.banner.WebkitBackdropFilter,
-                      transform: GLASS_BADGE_BASE.banner.transform,
-                      willChange: GLASS_BADGE_BASE.banner.willChange,
-                    }
-                  : {}),
-              }}
-            >
-              <ExternalLink className="w-4 h-4 text-white" />
-            </a>
-          )}
-        </div>
-        <span
-          className="flex-shrink-0 text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-          style={{
-            background: hasBanner ? accent.bg.replace('0.08', '0.18') : accent.bg,
-            color: statusTextColor,
-            border: `1px solid ${accent.border}`,
-            ...(hasBanner ? GLASS_BADGE_BASE.banner : {}),
-          }}
-        >
-          {statusLabel}
-        </span>
-      </div>
-
-      {/* Metrics */}
-      {initiative.metrics && initiative.metrics.length > 0 && (
-        <div className={`mb-7 ${sectionClass(1)}`}>
-          <p
-            className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasBanner ? 'mlkch-banner-title-text' : ''}`}
-            style={{ color: accent.text }}
-          >
-            Metrics
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {initiative.metrics.map((m) => {
-              const clickable = m.opensRoiBreakdown && onOpenRoi;
-
-              return (
-                <div
-                  key={m.label}
-                  role={clickable ? 'button' : undefined}
-                  tabIndex={clickable ? 0 : undefined}
-                  onClick={clickable ? onOpenRoi : undefined}
-                  onKeyDown={
-                    clickable
-                      ? (e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            onOpenRoi?.();
-                          }
-                        }
-                      : undefined
-                  }
-                  className={`rounded-2xl px-4 py-3.5 ${
-                    clickable ? 'cursor-pointer transition-all duration-200 hover:scale-[1.01]' : ''
-                  }`}
-                  style={cardSurface}
-                  onMouseEnter={
-                    clickable
-                      ? (e) => {
-                          (e.currentTarget as HTMLElement).style.border =
-                            `1px solid ${accent.border}`;
-                        }
-                      : undefined
-                  }
-                  onMouseLeave={
-                    clickable
-                      ? (e) => {
-                          (e.currentTarget as HTMLElement).style.border =
-                            '1px solid rgba(255,255,255,0.07)';
-                        }
-                      : undefined
-                  }
-                >
-                  <AnimatedMetricValue
-                    key={`${initiative.id}-${m.label}-${m.value}`}
-                    value={m.value}
-                    className="text-2xl font-black leading-none mb-1 block"
-                    style={{
-                      color: accent.text,
-                      ...(hasBanner ? { textShadow: accentMetricTextShadow(accent.text) } : {}),
-                    }}
-                  />
-                  <p className={`text-[11px] ${hasBanner ? 'text-white' : 'text-white/40'}`}>
-                    {m.label}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Milestones */}
-      {initiative.subItems && initiative.subItems.length > 0 && (
-        <div className={`mb-7 ${sectionClass(2)}`}>
-          <p
-            className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasBanner ? 'mlkch-banner-title-text' : ''}`}
-            style={{ color: accent.text }}
-          >
-            Milestones
-          </p>
-          <MilestoneList
-            items={initiative.subItems}
-            accentColor={accent.text}
-            glassSurface={hasBanner}
-          />
-        </div>
-      )}
-
-      {/* Tags — hidden for now
-      {initiative.tags && initiative.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 items-center">
-          <Tag className="w-3 h-3 text-white/20" />
-          {initiative.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[11px] px-2.5 py-1 rounded-full text-white/40"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-      */}
-    </div>
-  );
-};
-
 // ── Overview / empty state ─────────────────────────────────────────────────
 const OverviewPanel: React.FC = () => (
   <div className="h-full flex items-center justify-center min-h-40">
@@ -284,51 +69,29 @@ const OverviewPanel: React.FC = () => (
 );
 
 
-const METRIC_INTRO_CLASSES = [
-  'mlkch-intro mlkch-intro-metric-0',
-  'mlkch-intro mlkch-intro-metric-1',
-  'mlkch-intro mlkch-intro-metric-2',
-];
-
-// ── Top metrics row renderer ───────────────────────────────────────────────
-const TopMetricsRow: React.FC<{
-  metrics: TopMetric[];
-  animateIntro: boolean;
-  switchKey: string;
-  onOpenRoi?: () => void;
-}> = ({ metrics, animateIntro, switchKey, onOpenRoi }) => (
-  <div
-    key={switchKey}
-    className={`grid gap-3 ${metrics.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}
-  >
-    {metrics.map((m, i) => (
-      <div
-        key={m.label}
-        className={
-          animateIntro
-            ? METRIC_INTRO_CLASSES[i] ?? ''
-            : `mlkch-metric-switch mlkch-metric-switch-${Math.min(i, 2)}`
-        }
-      >
-        <MetricCard
-          label={m.label}
-          value={m.value}
-          accent={m.accent}
-          icon={metricIcon(m.label)}
-          onClick={m.opensRoiBreakdown ? onOpenRoi : undefined}
-        />
-      </div>
-    ))}
-  </div>
-);
-
 // ── Main dashboard content ─────────────────────────────────────────────────
 const DashboardContent: React.FC = () => {
   const [introComplete, setIntroComplete] = useState(false);
-  const [selectedId,  setSelectedId]  = useState<string>('snapskill-onboarding');
+  const [selectedId, setSelectedId] = useState<string>('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [roiModalOpen, setRoiModalOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Initiative | null>(null);
+  const [editSection, setEditSection] = useState<InitiativeSection>('next');
   const glowRef = useRef<HTMLDivElement>(null);
+
+  const {
+    initiatives,
+    loading,
+    error,
+    source,
+    mutating,
+    create,
+    update,
+    remove,
+    patch,
+    canEdit,
+  } = useInitiatives();
 
   // Mark intro sequence complete so metric swaps don't re-animate
   useEffect(() => {
@@ -339,6 +102,16 @@ const DashboardContent: React.FC = () => {
   useEffect(() => {
     setRoiModalOpen(false);
   }, [selectedId]);
+
+  useEffect(() => {
+    if (initiatives.length === 0) {
+      setSelectedId('');
+      return;
+    }
+    if (!initiatives.some((item) => item.id === selectedId)) {
+      setSelectedId(initiatives[0].id);
+    }
+  }, [initiatives, selectedId]);
 
   // Mouse-tracking glow — direct DOM update, no re-renders
   useEffect(() => {
@@ -353,7 +126,7 @@ const DashboardContent: React.FC = () => {
     return () => window.removeEventListener('mousemove', handler);
   }, []);
 
-  const selected     = INITIATIVES.find((i) => i.id === selectedId) ?? null;
+  const selected     = initiatives.find((i) => i.id === selectedId) ?? null;
   const selectedBanner = selected ? resolveInitiativeBanner(selected) : undefined;
   const topMetrics   = selected ? selected.topMetrics : GLOBAL_TOP_METRICS;
   const roiBreakdown = getRoiBreakdown(selectedId);
@@ -361,6 +134,49 @@ const DashboardContent: React.FC = () => {
   const handleOpenRoi = () => {
     if (roiBreakdown) setRoiModalOpen(true);
   };
+
+  const openCreateEditor = (section: InitiativeSection = 'next') => {
+    setEditTarget(null);
+    setEditSection(section);
+    setEditOpen(true);
+  };
+
+  const openAdvancedEditor = () => {
+    if (!selected) return;
+    setEditTarget(selected);
+    setEditSection(selected.section);
+    setEditOpen(true);
+  };
+
+  const handleSaveInitiative = async (input: InitiativeInput) => {
+    if (editTarget) {
+      await update(editTarget.id, input);
+      setSelectedId(editTarget.id);
+      return;
+    }
+
+    const created = await create(input);
+    setSelectedId(created.id);
+  };
+
+  const handleDeleteInitiative = async (id: string) => {
+    await remove(id);
+    setSelectedId((current) => (current === id ? '' : current));
+  };
+
+  const lastUpdated = initiatives.reduce<string | undefined>((latest, item) => {
+    if (!item.updatedAt) return latest;
+    if (!latest || item.updatedAt > latest) return item.updatedAt;
+    return latest;
+  }, undefined);
+
+  const updatedLabel = lastUpdated
+    ? new Date(lastUpdated).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : 'Jun 11, 2026';
 
   return (
     <div
@@ -382,6 +198,7 @@ const DashboardContent: React.FC = () => {
 
       {/* All UI content — above glow */}
       <div className="relative z-10 flex flex-col flex-1 min-h-0">
+      <InlineEditProvider resetTrigger={selectedId}>
       <div className="relative flex-shrink-0 px-6 md:px-10 pt-8 pb-5">
         {/* Logo + title */}
         <div className="flex items-center gap-4 mb-6">
@@ -406,9 +223,24 @@ const DashboardContent: React.FC = () => {
         <TopMetricsRow
           metrics={topMetrics}
           animateIntro={!introComplete}
-          switchKey={selectedId}
+          switchKey={selectedId || 'overview'}
           onOpenRoi={roiBreakdown ? handleOpenRoi : undefined}
+          canEdit={canEdit && Boolean(selected)}
+          blockIdPrefix={selectedId || 'overview'}
+          onPatchMetrics={
+            selected
+              ? async (metrics) => {
+                  await patch(selected.id, { topMetrics: metrics });
+                }
+              : undefined
+          }
         />
+
+        {error && (
+          <p className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+            Could not reach the MLKCH API ({error}). Showing local fallback data.
+          </p>
+        )}
       </div>
 
       {/* Divider */}
@@ -436,7 +268,7 @@ const DashboardContent: React.FC = () => {
 
         {/* ── Left: collapsible sidebar ───────────────────────────────── */}
         <div
-          className="flex-shrink-0 mlkch-intro mlkch-intro-sidebar"
+          className={`flex-shrink-0 ${!introComplete ? 'mlkch-intro mlkch-intro-sidebar' : ''}`}
           style={{
             width:      sidebarOpen ? 248 : 0,
             minWidth:   0,
@@ -469,58 +301,82 @@ const DashboardContent: React.FC = () => {
               </div>
 
               {/* Initiative sections */}
-              {SECTIONS.map((section) => {
-                const items = getInitiativesBySection(section.key);
-                if (items.length === 0) return null;
-                return (
-                  <div key={section.key}>
-                    <div className="flex items-center gap-2 px-1 mb-2">
-                      <span className="relative flex h-2 w-2 flex-shrink-0">
-                        {section.dotPulse && (
+              {loading ? (
+                <div className="space-y-3 px-1">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-14 rounded-xl animate-pulse"
+                      style={{ background: 'rgba(255,255,255,0.04)' }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                SECTIONS.map((section) => {
+                  const items = getInitiativesBySection(section.key, initiatives);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={section.key}>
+                      <div className="flex items-center gap-2 px-1 mb-2">
+                        <span className="relative flex h-2 w-2 flex-shrink-0">
+                          {section.dotPulse && (
+                            <span
+                              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
+                              style={{ background: section.accent }}
+                            />
+                          )}
                           <span
-                            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
+                            className="relative inline-flex rounded-full h-2 w-2"
                             style={{ background: section.accent }}
                           />
-                        )}
+                        </span>
+                        <p
+                          className="text-[10px] font-bold tracking-widest uppercase"
+                          style={{ color: section.accent }}
+                        >
+                          {section.label}
+                        </p>
                         <span
-                          className="relative inline-flex rounded-full h-2 w-2"
-                          style={{ background: section.accent }}
-                        />
-                      </span>
-                      <p
-                        className="text-[10px] font-bold tracking-widest uppercase"
-                        style={{ color: section.accent }}
-                      >
-                        {section.label}
-                      </p>
-                      <span
-                        className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                        style={{
-                          background: `rgba(${section.key === 'live' ? '45,212,191' : section.key === 'next' ? '56,189,248' : '100,116,139'},0.1)`,
-                          color: section.accent,
-                        }}
-                      >
-                        {items.length}
-                      </span>
+                          className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{
+                            background: `rgba(${section.key === 'live' ? '45,212,191' : section.key === 'next' ? '56,189,248' : '100,116,139'},0.1)`,
+                            color: section.accent,
+                          }}
+                        >
+                          {items.length}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {items.map((initiative) => (
+                          <InitiativeCard
+                            key={initiative.id}
+                            initiative={initiative}
+                            sectionAccent={section.key}
+                            isSelected={selectedId === initiative.id}
+                            compact
+                            onClick={(i) => setSelectedId(i.id)}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      {items.map((initiative) => (
-                        <InitiativeCard
-                          key={initiative.id}
-                          initiative={initiative}
-                          sectionAccent={section.key}
-                          isSelected={selectedId === initiative.id}
-                          compact
-                          onClick={(i) => setSelectedId(i.id)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
+
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => openCreateEditor('next')}
+                  className="w-full mt-2 inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-sky-300 border border-sky-400/20 bg-sky-400/5 hover:bg-sky-400/10 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  New Initiative
+                </button>
+              )}
 
               <p className="text-[10px] text-white/15 px-1 pt-2">
-                Updated Jun 11, 2026
+                Updated {updatedLabel}
+                {source === 'api' ? '' : ' · offline data'}
               </p>
             </div>
           </div>
@@ -543,14 +399,16 @@ const DashboardContent: React.FC = () => {
 
           <div className="relative z-10">
             {selected ? (
-              <div
-                key={selectedId}
-                className={introComplete ? 'mlkch-initiative-enter' : undefined}
-              >
+              <div className={introComplete ? 'mlkch-initiative-enter' : undefined}>
                 <DetailPanel
                   initiative={selected}
                   animateSections={introComplete}
                   onOpenRoi={roiBreakdown ? handleOpenRoi : undefined}
+                  canEdit={canEdit}
+                  onPatch={async (partial) => {
+                    await patch(selected.id, partial);
+                  }}
+                  onAdvancedEdit={canEdit ? openAdvancedEditor : undefined}
                 />
               </div>
             ) : (
@@ -559,6 +417,7 @@ const DashboardContent: React.FC = () => {
           </div>
         </div>
       </div>
+      </InlineEditProvider>
 
       {roiModalOpen && roiBreakdown && (
         <ROIBreakdownModal
@@ -566,6 +425,17 @@ const DashboardContent: React.FC = () => {
           onClose={() => setRoiModalOpen(false)}
         />
       )}
+
+      <InitiativeEditPanel
+        open={editOpen}
+        initiative={editTarget}
+        defaultSection={editSection}
+        defaultSortOrder={initiatives.length}
+        saving={mutating}
+        onClose={() => setEditOpen(false)}
+        onSave={handleSaveInitiative}
+        onDelete={editTarget ? handleDeleteInitiative : undefined}
+      />
 
       {/* AI Copilot */}
       <CopilotWidget />

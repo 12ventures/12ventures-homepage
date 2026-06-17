@@ -208,6 +208,11 @@
     0 0 28px rgba(255, 255, 255, 0.16);
 }
 
+.mlkch-inline-editing {
+  border-radius: 0.5rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
 @keyframes mlkch-banner-in {
   from { opacity: 0; transform: scale(1.03); }
   to   { opacity: 1; transform: scale(1); }
@@ -281,5 +286,70 @@
       0 0 35px rgba(56, 189, 248, 0.65),
       0 0 70px rgba(56, 189, 248, 0.3),
       0 0 100px rgba(34, 211, 238, 0.15);
+  }
+}
+
+/* ── Merida Wellness page intro ─────────────────────────────────── */
+.merida-intro {
+  opacity: 0;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.merida-intro-bg {
+  animation-name: merida-bg-in;
+  animation-duration: 1.35s;
+}
+
+.merida-intro-logo {
+  animation-name: merida-logo-in;
+  animation-duration: 0.95s;
+  animation-delay: 220ms;
+}
+
+.merida-intro-video {
+  animation-name: merida-video-in;
+  animation-duration: 1.05s;
+  animation-delay: 480ms;
+}
+
+@keyframes merida-bg-in {
+  from {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes merida-logo-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes merida-video-in {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .merida-intro {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

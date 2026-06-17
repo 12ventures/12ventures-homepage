@@ -69,6 +69,7 @@ export interface Initiative {
   section: InitiativeSection;
   status: InitiativeStatus;
   description: string;
+  sortOrder?: number;
   topMetrics: TopMetric[];   // drives the top KPI row when selected
   subItems?: MilestoneItem[];
   metrics?: InitiativeMetric[];
@@ -77,6 +78,8 @@ export interface Initiative {
   bannerImage?: string;
   /** Optional external product or demo link shown next to the title */
   externalUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -364,6 +367,11 @@ export function resolveInitiativeBanner(initiative: Initiative): string | undefi
 // ---------------------------------------------------------------------------
 // Helper: group initiatives by section (preserves order)
 // ---------------------------------------------------------------------------
-export function getInitiativesBySection(section: InitiativeSection): Initiative[] {
-  return INITIATIVES.filter((i) => i.section === section);
+export function getInitiativesBySection(
+  section: InitiativeSection,
+  initiatives: Initiative[] = INITIATIVES,
+): Initiative[] {
+  return initiatives
+    .filter((i) => i.section === section)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 }
