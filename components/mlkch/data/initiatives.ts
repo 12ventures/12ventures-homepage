@@ -20,9 +20,63 @@ export interface DashboardMetrics {
   lastUpdated: string;
 }
 
-export type InitiativeSection = 'live' | 'next' | 'backlog';
+export type InitiativeSectionSlug = 'live' | 'next' | 'backlog';
+/** @deprecated Use InitiativeSectionSlug — kept for static seed data only */
+export type InitiativeSection = InitiativeSectionSlug;
 export type InitiativeStatus  = 'active' | 'planning' | 'backlog';
 export type MetricAccent      = 'teal' | 'sky' | 'purple' | 'green';
+
+export interface InitiativeSectionRef {
+  id: string;
+  slug: string;
+  label: string;
+}
+
+export interface DashboardSection extends InitiativeSectionRef {
+  sortOrder: number;
+  accentColor: string;
+  dotPulse: boolean;
+}
+
+export const DEFAULT_SECTIONS: DashboardSection[] = [
+  { id: 'sec_live', slug: 'live', label: 'Live', sortOrder: 0, accentColor: '#2dd4bf', dotPulse: true },
+  { id: 'sec_next', slug: 'next', label: 'Next', sortOrder: 10, accentColor: '#38bdf8', dotPulse: false },
+  { id: 'sec_backlog', slug: 'backlog', label: 'Backlog', sortOrder: 20, accentColor: '#64748b', dotPulse: false },
+];
+
+export function hexToRgb(hex: string): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `${r},${g},${b}`;
+}
+
+export function accentUiFromColor(accentColor: string) {
+  const rgb = hexToRgb(accentColor);
+  return {
+    text: accentColor,
+    bg: `rgba(${rgb},0.08)`,
+    border: `rgba(${rgb},0.25)`,
+    rgb,
+  };
+}
+
+export function resolveSectionAccent(
+  initiative: Initiative,
+  sections: DashboardSection[] = DEFAULT_SECTIONS,
+) {
+  const match =
+    sections.find((s) => s.id === initiative.sectionId) ??
+    sections.find((s) => s.slug === initiative.section.slug);
+  return accentUiFromColor(match?.accentColor ?? '#64748b');
+}
+
+export function defaultStatusForSectionSlug(slug: string): InitiativeStatus {
+  if (slug === 'live') return 'active';
+  if (slug === 'next') return 'planning';
+  return 'backlog';
+}
 
 export interface InitiativeMetric {
   label: string;
@@ -66,7 +120,8 @@ export function milestoneUrl(item: MilestoneChild | MilestoneItem): string | und
 export interface Initiative {
   id: string;
   title: string;
-  section: InitiativeSection;
+  sectionId: string;
+  section: InitiativeSectionRef;
   status: InitiativeStatus;
   description: string;
   sortOrder?: number;
@@ -109,14 +164,28 @@ export const GLOBAL_TOP_METRICS: TopMetric[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Initiative data
+// Initiative data (static fallback — sectionSlug mapped to sectionId on export)
 // ---------------------------------------------------------------------------
-export const INITIATIVES: Initiative[] = [
+type RawInitiative = Omit<Initiative, 'sectionId' | 'section'> & {
+  sectionSlug: InitiativeSectionSlug;
+};
+
+function withSection(raw: RawInitiative): Initiative {
+  const def = DEFAULT_SECTIONS.find((s) => s.slug === raw.sectionSlug)!;
+  const { sectionSlug, ...rest } = raw;
+  return {
+    ...rest,
+    sectionId: def.id,
+    section: { id: def.id, slug: def.slug, label: def.label },
+  };
+}
+
+const RAW_INITIATIVES: RawInitiative[] = [
   // ── Live ──────────────────────────────────────────────────────────────────
   {
     id: 'snapskill-onboarding',
     title: 'SnapSkill Onboarding',
-    section: 'live',
+    sectionSlug: 'live',
     status: 'active',
     bannerImage: 'https://games.dreambox.gg/snapskill/logos/mlk-front-entrance.jpg',
     description:
@@ -169,7 +238,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'msp-transition',
     title: 'Managed Services Provider (MSP) Transition',
-    section: 'next',
+    sectionSlug: 'next',
     status: 'planning',
     bannerImage: '/images/operator_banner_wide.png',
     description:
@@ -192,7 +261,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'snapskill-modules',
     title: 'SnapSkill Additional Modules',
-    section: 'next',
+    sectionSlug: 'next',
     status: 'planning',
     bannerImage: 'https://games.dreambox.gg/snapskill/logos/mlk-front-entrance.jpg',
     description:
@@ -221,7 +290,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'cedars-sinai-visit',
     title: 'Cedars-Sinai Site Visit',
-    section: 'next',
+    sectionSlug: 'next',
     status: 'planning',
     bannerImage:
       'https://www.cedars-sinai.org/content/dam/cedars-sinai/locations-images/Surgery_8700_Beverly_01.jpg',
@@ -254,7 +323,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'conexiones',
     title: 'Conexiones',
-    section: 'next',
+    sectionSlug: 'next',
     status: 'planning',
     bannerImage: '/images/conexiones_banner.png',
     externalUrl: 'https://staging.snapskill.io/p/conexiones',
@@ -289,7 +358,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'patient-engagement',
     title: 'Patient Engagement',
-    section: 'backlog',
+    sectionSlug: 'backlog',
     status: 'backlog',
     description:
       'AI-driven patient engagement platform with personalized communications, appointment reminders, post-discharge follow-ups, and satisfaction surveys at scale.',
@@ -303,7 +372,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'contracts-intelligence',
     title: 'Contracts Intelligence Dashboard',
-    section: 'backlog',
+    sectionSlug: 'backlog',
     status: 'backlog',
     description:
       'AI-powered contract analysis and monitoring, automatically surfacing renewal dates, compliance obligations, cost anomalies, and vendor performance signals.',
@@ -317,7 +386,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'miscoded-reimbursement',
     title: 'Miscoded Reimbursement Entries',
-    section: 'backlog',
+    sectionSlug: 'backlog',
     status: 'backlog',
     description:
       'Revenue integrity tool using AI to detect miscoded EHR billing entries, recovering lost reimbursement revenue and improving compliance.',
@@ -331,7 +400,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'mpp-automation',
     title: 'Management Performance Plan (MPP) Automation',
-    section: 'backlog',
+    sectionSlug: 'backlog',
     status: 'backlog',
     description:
       'Automates the creation, tracking, and reporting of Management Performance Plans, reducing administrative overhead and surfacing real-time performance signals.',
@@ -345,7 +414,7 @@ export const INITIATIVES: Initiative[] = [
   {
     id: 'mlkch-messaging',
     title: 'MLKCH DM / Messaging Social Network',
-    section: 'backlog',
+    sectionSlug: 'backlog',
     status: 'backlog',
     description:
       'Internal AI-enabled messaging and social network for MLKCH staff, facilitating knowledge sharing, peer support, and real-time clinical communication.',
@@ -358,20 +427,29 @@ export const INITIATIVES: Initiative[] = [
   },
 ];
 
+export const INITIATIVES: Initiative[] = RAW_INITIATIVES.map(withSection);
+
 export const DEFAULT_BACKLOG_BANNER = '/images/tech_banner.png';
 
 export function resolveInitiativeBanner(initiative: Initiative): string | undefined {
-  return initiative.bannerImage ?? (initiative.section === 'backlog' ? DEFAULT_BACKLOG_BANNER : undefined);
+  return initiative.bannerImage ?? (initiative.section.slug === 'backlog' ? DEFAULT_BACKLOG_BANNER : undefined);
 }
 
-// ---------------------------------------------------------------------------
-// Helper: group initiatives by section (preserves order)
-// ---------------------------------------------------------------------------
-export function getInitiativesBySection(
-  section: InitiativeSection,
+export function getInitiativesBySectionId(
+  sectionId: string,
   initiatives: Initiative[] = INITIATIVES,
 ): Initiative[] {
   return initiatives
-    .filter((i) => i.section === section)
+    .filter((i) => i.sectionId === sectionId)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+}
+
+/** @deprecated Use getInitiativesBySectionId */
+export function getInitiativesBySection(
+  sectionSlug: InitiativeSectionSlug,
+  initiatives: Initiative[] = INITIATIVES,
+): Initiative[] {
+  const def = DEFAULT_SECTIONS.find((s) => s.slug === sectionSlug);
+  if (!def) return [];
+  return getInitiativesBySectionId(def.id, initiatives);
 }

@@ -1,18 +1,14 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import MilestoneList from './MilestoneList';
-import type { Initiative, InitiativeSection } from './data/initiatives';
+import type { DashboardSection, Initiative } from './data/initiatives';
+import { resolveSectionAccent } from './data/initiatives';
 
 interface InitiativeModalProps {
   initiative: Initiative;
+  sections?: DashboardSection[];
   onClose: () => void;
 }
-
-const SECTION_ACCENT: Record<InitiativeSection, { text: string; glow: string; border: string; bg: string }> = {
-  live:    { text: '#2dd4bf', glow: 'rgba(45,212,191,0.15)',  border: 'rgba(45,212,191,0.25)',  bg: 'rgba(45,212,191,0.08)' },
-  next:    { text: '#38bdf8', glow: 'rgba(56,189,248,0.15)',  border: 'rgba(56,189,248,0.25)',  bg: 'rgba(56,189,248,0.08)' },
-  backlog: { text: '#94a3b8', glow: 'rgba(100,116,139,0.15)', border: 'rgba(100,116,139,0.2)',  bg: 'rgba(100,116,139,0.06)' },
-};
 
 const STATUS_LABELS: Record<Initiative['status'], string> = {
   active: 'Live',
@@ -20,8 +16,14 @@ const STATUS_LABELS: Record<Initiative['status'], string> = {
   backlog: 'Planning',
 };
 
-const InitiativeModal: React.FC<InitiativeModalProps> = ({ initiative, onClose }) => {
-  const accent = SECTION_ACCENT[initiative.section];
+const InitiativeModal: React.FC<InitiativeModalProps> = ({ initiative, sections, onClose }) => {
+  const accentBase = resolveSectionAccent(initiative, sections);
+  const accent = {
+    text: accentBase.text,
+    glow: `rgba(${accentBase.rgb},0.15)`,
+    border: accentBase.border,
+    bg: accentBase.bg,
+  };
 
   // Close on Escape
   useEffect(() => {

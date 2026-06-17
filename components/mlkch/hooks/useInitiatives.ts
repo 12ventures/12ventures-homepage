@@ -119,6 +119,41 @@ export function useInitiatives() {
     }
   }, []);
 
+  const reorderSection = useCallback(
+    async (sectionId: string, reordered: Initiative[]) => {
+      if (!isMlkchApiConfigured) return;
+
+      setInitiatives((prev) => [
+        ...prev.filter((i) => i.sectionId !== sectionId),
+        ...reordered.map((item, idx) => ({ ...item, sortOrder: idx * 10 })),
+      ]);
+
+      const saves = reordered
+        .map((item, idx) => {
+          const newOrder = idx * 10;
+          return (item.sortOrder ?? 0) !== newOrder
+            ? mlkchApi.patch(item.id, { sortOrder: newOrder })
+            : null;
+        })
+        .filter((p): p is Promise<Initiative> => p !== null);
+
+      if (saves.length === 0) return;
+      setMutating(true);
+      try {
+        const results = await Promise.all(saves);
+        setInitiatives((prev) => {
+          const map = new Map(results.map((r) => [r.id, r]));
+          return prev.map((i) => map.get(i.id) ?? i);
+        });
+      } catch {
+        refresh();
+      } finally {
+        setMutating(false);
+      }
+    },
+    [refresh],
+  );
+
   return {
     initiatives,
     loading,
@@ -130,6 +165,7 @@ export function useInitiatives() {
     update,
     remove,
     patch,
+    reorderSection,
     canEdit: isMlkchApiConfigured,
     apiConfigured: isMlkchApiConfigured,
     initiativeToInput,

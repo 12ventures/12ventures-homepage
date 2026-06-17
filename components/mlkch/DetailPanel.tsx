@@ -5,18 +5,9 @@ import AnimatedMetricValue from './AnimatedMetricValue';
 import MilestoneList from './MilestoneList';
 import { InlineEditBlock } from './inline/InlineEditBlock';
 import GlassDropdown from './ui/GlassDropdown';
-import { resolveInitiativeBanner } from './data/initiatives';
-import type { Initiative, InitiativeStatus } from './data/initiatives';
+import { resolveInitiativeBanner, resolveSectionAccent } from './data/initiatives';
+import type { DashboardSection, Initiative, InitiativeStatus } from './data/initiatives';
 import type { InitiativePatch } from './api/mlkchApi';
-
-const SECTION_ACCENT: Record<
-  Initiative['section'],
-  { text: string; bg: string; border: string }
-> = {
-  live: { text: '#2dd4bf', bg: 'rgba(45,212,191,0.08)', border: 'rgba(45,212,191,0.25)' },
-  next: { text: '#38bdf8', bg: 'rgba(56,189,248,0.08)', border: 'rgba(56,189,248,0.25)' },
-  backlog: { text: '#94a3b8', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.2)' },
-};
 
 const STATUS_LABELS: Record<InitiativeStatus, string> = {
   active: 'Live',
@@ -76,6 +67,7 @@ const fieldInputClass =
 
 interface DetailPanelProps {
   initiative: Initiative;
+  sections?: DashboardSection[];
   canEdit?: boolean;
   animateSections?: boolean;
   onOpenRoi?: () => void;
@@ -85,13 +77,14 @@ interface DetailPanelProps {
 
 const DetailPanel: React.FC<DetailPanelProps> = ({
   initiative,
+  sections,
   canEdit = false,
   animateSections = false,
   onOpenRoi,
   onPatch,
   onAdvancedEdit,
 }) => {
-  const accent = SECTION_ACCENT[initiative.section];
+  const accent = resolveSectionAccent(initiative, sections);
   const hasBanner = Boolean(resolveInitiativeBanner(initiative));
   const cardSurface = hasBanner ? GLASS_CARD_BASE.banner : GLASS_CARD_BASE.plain;
   const statusLabel = STATUS_LABELS[initiative.status];
@@ -145,7 +138,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           <InlineEditBlock
             blockId={blockId('title')}
             canEdit={canEdit}
-            className="min-w-0 flex-1"
+            className="min-w-0 shrink max-w-full"
+            controlsPlacement="inline"
             editClassName="px-2 py-1 -mx-2"
             onCancel={() => setTitleDraft(initiative.title)}
             onSave={async () => {
@@ -168,7 +162,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 />
               ) : (
                 <h2
-                  className={`text-2xl md:text-3xl font-black text-white leading-tight min-w-0 ${
+                  className={`inline text-2xl md:text-3xl font-black text-white leading-tight ${
                     hasBanner ? 'mlkch-banner-title-text' : ''
                   }`}
                 >
@@ -264,6 +258,12 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                     };
                     await onPatch({ metrics: next });
                   }}
+                  onRemove={async () => {
+                    await onPatch({
+                      metrics: (initiative.metrics ?? []).filter((_, i) => i !== index),
+                    });
+                  }}
+                  removeLabel={m.label || 'metric'}
                 >
                   {(editing) =>
                     editing ? (

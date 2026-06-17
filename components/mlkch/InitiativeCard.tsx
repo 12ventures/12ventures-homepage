@@ -1,47 +1,26 @@
 import React from 'react';
-import type { Initiative, InitiativeSection } from './data/initiatives';
+import type { Initiative } from './data/initiatives';
+import { hexToRgb } from './data/initiatives';
 
 interface InitiativeCardProps {
   initiative: Initiative;
-  sectionAccent: InitiativeSection;
+  accentColor: string;
   onClick: (initiative: Initiative) => void;
   isSelected?: boolean;
   compact?: boolean;
 }
 
-const SECTION_STYLES: Record<InitiativeSection, {
-  badgeBg: string;
-  badgeText: string;
-  badgeBorder: string;
-  dotColor: string;
-  selectedBg: string;
-  selectedBorder: string;
-}> = {
-  live: {
-    badgeBg:        'rgba(45,212,191,0.12)',
-    badgeText:      '#2dd4bf',
-    badgeBorder:    'rgba(45,212,191,0.25)',
-    dotColor:       '#2dd4bf',
-    selectedBg:     'rgba(45,212,191,0.07)',
-    selectedBorder: 'rgba(45,212,191,0.35)',
-  },
-  next: {
-    badgeBg:        'rgba(56,189,248,0.12)',
-    badgeText:      '#38bdf8',
-    badgeBorder:    'rgba(56,189,248,0.25)',
-    dotColor:       '#38bdf8',
-    selectedBg:     'rgba(56,189,248,0.07)',
-    selectedBorder: 'rgba(56,189,248,0.35)',
-  },
-  backlog: {
-    badgeBg:        'rgba(100,116,139,0.15)',
-    badgeText:      '#94a3b8',
-    badgeBorder:    'rgba(100,116,139,0.2)',
-    dotColor:       '#64748b',
-    selectedBg:     'rgba(100,116,139,0.08)',
-    selectedBorder: 'rgba(100,116,139,0.35)',
-  },
-};
+function stylesFromAccent(accentColor: string) {
+  const rgb = hexToRgb(accentColor);
+  return {
+    badgeBg: `rgba(${rgb},0.12)`,
+    badgeText: accentColor,
+    badgeBorder: `rgba(${rgb},0.25)`,
+    dotColor: accentColor,
+    selectedBg: `rgba(${rgb},0.07)`,
+    selectedBorder: `rgba(${rgb},0.35)`,
+  };
+}
 
 const STATUS_LABELS: Record<Initiative['status'], string> = {
   active:   'Live',
@@ -51,12 +30,12 @@ const STATUS_LABELS: Record<Initiative['status'], string> = {
 
 const InitiativeCard: React.FC<InitiativeCardProps> = ({
   initiative,
-  sectionAccent,
+  accentColor,
   onClick,
   isSelected = false,
   compact = false,
 }) => {
-  const s = SECTION_STYLES[sectionAccent];
+  const s = stylesFromAccent(accentColor);
 
   const bg     = isSelected ? s.selectedBg     : 'rgba(255,255,255,0.02)';
   const border = isSelected ? s.selectedBorder : 'rgba(255,255,255,0.06)';
@@ -83,7 +62,6 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({
         }
       }}
     >
-      {/* Title row */}
       <div className="flex items-center gap-2 min-w-0">
         <span
           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -108,7 +86,6 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({
         )}
       </div>
 
-      {/* Description — compact mode hides it */}
       {!compact && (
         <p className="mt-1.5 text-[11px] text-white/35 leading-relaxed line-clamp-2">
           {initiative.description}

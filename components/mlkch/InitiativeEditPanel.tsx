@@ -2,26 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import GlassDropdown from './ui/GlassDropdown';
 import type {
+  DashboardSection,
   Initiative,
   InitiativeMetric,
-  InitiativeSection,
   InitiativeStatus,
   MetricAccent,
   MilestoneChild,
   MilestoneItem,
   TopMetric,
 } from './data/initiatives';
-import { isMilestoneGroup } from './data/initiatives';
+import { defaultStatusForSectionSlug, isMilestoneGroup } from './data/initiatives';
 import type { InitiativeInput } from './api/mlkchApi';
 
-const SECTIONS: InitiativeSection[] = ['live', 'next', 'backlog'];
 const STATUSES: InitiativeStatus[] = ['active', 'planning', 'backlog'];
-const ACCENTS: MetricAccent[] = ['teal', 'sky', 'purple', 'green'];
 
-const SECTION_OPTIONS = SECTIONS.map((section) => ({
-  value: section,
-  label: section.charAt(0).toUpperCase() + section.slice(1),
-}));
+const ACCENTS: MetricAccent[] = ['teal', 'sky', 'purple', 'green'];
 
 const STATUS_OPTIONS = STATUSES.map((status) => ({
   value: status,
@@ -60,7 +55,8 @@ interface MilestoneDraft {
 interface Props {
   open: boolean;
   initiative: Initiative | null;
-  defaultSection?: InitiativeSection;
+  sections: DashboardSection[];
+  defaultSectionId?: string;
   defaultSortOrder?: number;
   saving?: boolean;
   onClose: () => void;
@@ -124,11 +120,12 @@ function emptyMetric(): InitiativeMetric {
   return { label: '', value: '' };
 }
 
-function buildDefaultInput(section: InitiativeSection, sortOrder: number): InitiativeInput {
+function buildDefaultInput(sectionId: string, sortOrder: number, sections: DashboardSection[]): InitiativeInput {
+  const section = sections.find((s) => s.id === sectionId);
   return {
     title: '',
-    section,
-    status: section === 'live' ? 'active' : section === 'next' ? 'planning' : 'backlog',
+    sectionId,
+    status: defaultStatusForSectionSlug(section?.slug ?? 'next'),
     description: '',
     sortOrder,
     topMetrics: [],
@@ -143,14 +140,28 @@ function buildDefaultInput(section: InitiativeSection, sortOrder: number): Initi
 const InitiativeEditPanel: React.FC<Props> = ({
   open,
   initiative,
-  defaultSection = 'next',
+  sections,
+  defaultSectionId,
   defaultSortOrder = 0,
   saving = false,
   onClose,
   onSave,
   onDelete,
 }) => {
-  const [form, setForm] = useState<InitiativeInput>(() => buildDefaultInput(defaultSection, defaultSortOrder));
+  const resolvedDefaultSectionId =
+    defaultSectionId ??
+    sections.find((s) => s.slug === 'next')?.id ??
+    sections[0]?.id ??
+    'sec_next';
+
+  const sectionOptions = sections.map((section) => ({
+    value: section.id,
+    label: section.label,
+  }));
+
+  const [form, setForm] = useState<InitiativeInput>(() =>
+    buildDefaultInput(resolvedDefaultSectionId, defaultSortOrder, sections),
+  );
   const [milestones, setMilestones] = useState<MilestoneDraft[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -160,7 +171,7 @@ const InitiativeEditPanel: React.FC<Props> = ({
     if (initiative) {
       setForm({
         title: initiative.title,
-        section: initiative.section,
+        sectionId: initiative.sectionId,
         status: initiative.status,
         description: initiative.description,
         sortOrder: initiative.sortOrder ?? 0,
@@ -173,11 +184,11 @@ const InitiativeEditPanel: React.FC<Props> = ({
       });
       setMilestones((initiative.subItems ?? []).map(milestoneToDraft));
     } else {
-      setForm(buildDefaultInput(defaultSection, defaultSortOrder));
+      setForm(buildDefaultInput(resolvedDefaultSectionId, defaultSortOrder, sections));
       setMilestones([]);
     }
     setSaveError(null);
-  }, [open, initiative, defaultSection, defaultSortOrder]);
+  }, [open, initiative, resolvedDefaultSectionId, defaultSortOrder, sections]);
 
   if (!open) return null;
 
@@ -290,9 +301,9 @@ const InitiativeEditPanel: React.FC<Props> = ({
                   variant="field"
                   align="left"
                   menuZIndex={EDIT_PANEL_MENU_Z}
-                  value={form.section}
-                  options={SECTION_OPTIONS}
-                  onChange={(section) => setForm((prev) => ({ ...prev, section }))}
+                  value={form.sectionId}
+                  options={sectionOptions}
+                  onChange={(sectionId) => setForm((prev) => ({ ...prev, sectionId }))}
                 />
               </div>
               <div>
