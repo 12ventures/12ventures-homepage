@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 
 const VIDEO_URL = 'https://games.dreambox.gg/videos/merida_demo_clip.mp4';
 const LOGO_SRC = '/logos/merida.jpg';
+/** Set to true to hide the video and show an access-restricted message instead */
+const RESTRICT_VIDEO_ACCESS = true;
 const BG_IMAGE =
   'https://images.stockcake.com/public/1/6/0/1604b404-0b8e-4b4a-99d2-e59b6b9192d1_large/serene-spa-sanctuary-stockcake.jpg';
 const PAGE_URL = 'https://12ventures.io/meridawellness';
@@ -24,19 +26,27 @@ const MeridaWellness: React.FC = () => {
     const previousTitle = document.title;
     document.title = PAGE_TITLE;
 
-    setMeta('description', PAGE_DESCRIPTION);
+    const description = RESTRICT_VIDEO_ACCESS
+      ? 'Merida Wellness content is not available.'
+      : PAGE_DESCRIPTION;
+
+    setMeta('description', description);
     setMeta('og:title', PAGE_TITLE, true);
-    setMeta('og:description', PAGE_DESCRIPTION, true);
+    setMeta('og:description', description, true);
     setMeta('og:url', PAGE_URL, true);
-    setMeta('og:type', 'video.other', true);
-    setMeta('og:video', VIDEO_URL, true);
-    setMeta('og:video:type', 'video/mp4', true);
+    setMeta('og:type', RESTRICT_VIDEO_ACCESS ? 'website' : 'video.other', true);
+    if (!RESTRICT_VIDEO_ACCESS) {
+      setMeta('og:video', VIDEO_URL, true);
+      setMeta('og:video:type', 'video/mp4', true);
+    }
     setMeta('og:image', `${window.location.origin}${LOGO_SRC}`, true);
-    setMeta('twitter:card', 'player');
+    setMeta('twitter:card', RESTRICT_VIDEO_ACCESS ? 'summary' : 'player');
     setMeta('twitter:title', PAGE_TITLE);
-    setMeta('twitter:description', PAGE_DESCRIPTION);
-    setMeta('twitter:player', VIDEO_URL);
-    setMeta('twitter:player:stream', VIDEO_URL);
+    setMeta('twitter:description', description);
+    if (!RESTRICT_VIDEO_ACCESS) {
+      setMeta('twitter:player', VIDEO_URL);
+      setMeta('twitter:player:stream', VIDEO_URL);
+    }
 
     return () => {
       document.title = previousTitle;
@@ -77,14 +87,22 @@ const MeridaWellness: React.FC = () => {
               '0 32px 90px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 80px rgba(74, 222, 128, 0.06)',
           }}
         >
-          <video
-            src={VIDEO_URL}
-            controls
-            playsInline
-            preload="metadata"
-            className="block w-full aspect-video bg-black"
-            aria-label="Merida Wellness sample video"
-          />
+          {RESTRICT_VIDEO_ACCESS ? (
+            <div className="flex aspect-video w-full items-center justify-center bg-black/60 px-8 text-center backdrop-blur-sm">
+              <p className="max-w-md text-sm md:text-base text-white/70 leading-relaxed">
+                You do not have access to this content.
+              </p>
+            </div>
+          ) : (
+            <video
+              src={VIDEO_URL}
+              controls
+              playsInline
+              preload="metadata"
+              className="block w-full aspect-video bg-black"
+              aria-label="Merida Wellness sample video"
+            />
+          )}
         </div>
       </main>
     </div>
