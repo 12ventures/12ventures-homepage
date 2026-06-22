@@ -11,10 +11,133 @@ import type {
   MilestoneLink,
   TopMetric,
 } from '../data/initiatives';
+import type {
+  DashboardOverview,
+  FinancialSummary,
+  OverviewMetric,
+  OverviewSectionCount,
+} from '../data/overview';
 
 // Temporary: hardcoded for deploy simplicity — move back to VITE_* env vars later
 const BASE = 'https://api-staging.snapskill.io/api/v1';
 const KEY = 'o0TTLk0wdVZUXZ2jh8qLfnIh3JimYD03';
+
+export type {
+  DashboardOverview,
+  FinancialSummary,
+  OverviewMetric,
+  OverviewSectionCount,
+} from '../data/overview';
+
+type ApiOverviewSectionCount = {
+  section_id: string;
+  section_label: string;
+  section_slug: string;
+  count: number;
+};
+
+type ApiOverviewMetric = {
+  label: string;
+  value: string;
+  roi_related: boolean;
+  source_initiative_ids: string[];
+};
+
+type ApiFinancialContribution = {
+  initiative_id: string;
+  title: string;
+  label: string;
+  value: string;
+  raw: number;
+};
+
+type ApiFinancialSummaryItem = {
+  label: string;
+  total_raw: number;
+  display_value: string;
+  initiative_count: number;
+  has_estimates: boolean;
+  contributions: ApiFinancialContribution[];
+};
+
+type ApiFinancialSummary = {
+  realized_roi: ApiFinancialSummaryItem;
+  projected_value: ApiFinancialSummaryItem;
+  projected_savings: ApiFinancialSummaryItem;
+  combined_total: ApiFinancialSummaryItem;
+};
+
+type ApiOverview = {
+  company_name: string;
+  total_initiatives: number;
+  by_section: ApiOverviewSectionCount[];
+  by_status: Record<InitiativeStatus, number>;
+  top_metrics: ApiOverviewMetric[];
+  all_metrics: ApiOverviewMetric[];
+  tags: string[];
+  financial_summary?: ApiFinancialSummary | null;
+  last_updated: string;
+};
+
+function mapFinancialContributionFromApi(raw: ApiFinancialContribution) {
+  return {
+    initiativeId: raw.initiative_id,
+    title: raw.title,
+    label: raw.label,
+    value: raw.value,
+    raw: raw.raw,
+  };
+}
+
+function mapFinancialSummaryItemFromApi(raw: ApiFinancialSummaryItem) {
+  return {
+    label: raw.label,
+    totalRaw: raw.total_raw,
+    displayValue: raw.display_value,
+    initiativeCount: raw.initiative_count,
+    hasEstimates: raw.has_estimates,
+    contributions: (raw.contributions ?? []).map(mapFinancialContributionFromApi),
+  };
+}
+
+function mapFinancialSummaryFromApi(raw: ApiFinancialSummary): FinancialSummary {
+  return {
+    realizedRoi: mapFinancialSummaryItemFromApi(raw.realized_roi),
+    projectedValue: mapFinancialSummaryItemFromApi(raw.projected_value),
+    projectedSavings: mapFinancialSummaryItemFromApi(raw.projected_savings),
+    combinedTotal: mapFinancialSummaryItemFromApi(raw.combined_total),
+  };
+}
+
+function mapOverviewMetricFromApi(raw: ApiOverviewMetric): OverviewMetric {
+  return {
+    label: raw.label,
+    value: raw.value,
+    roiRelated: raw.roi_related,
+    sourceInitiativeIds: raw.source_initiative_ids ?? [],
+  };
+}
+
+export function mapOverviewFromApi(raw: ApiOverview): DashboardOverview {
+  return {
+    companyName: raw.company_name,
+    totalInitiatives: raw.total_initiatives,
+    bySection: (raw.by_section ?? []).map((row) => ({
+      sectionId: row.section_id,
+      sectionLabel: row.section_label,
+      sectionSlug: row.section_slug,
+      count: row.count,
+    })),
+    byStatus: raw.by_status ?? { active: 0, planning: 0, backlog: 0 },
+    topMetrics: (raw.top_metrics ?? []).map(mapOverviewMetricFromApi),
+    allMetrics: (raw.all_metrics ?? []).map(mapOverviewMetricFromApi),
+    tags: raw.tags ?? [],
+    financialSummary: raw.financial_summary
+      ? mapFinancialSummaryFromApi(raw.financial_summary)
+      : null,
+    lastUpdated: raw.last_updated,
+  };
+}
 
 export const isMlkchApiConfigured = Boolean(BASE && KEY);
 
@@ -304,7 +427,11 @@ export type InitiativePatch = Partial<{
   externalUrl: string | null;
 }>;
 
-type ApiInitiativePatch = Partial<Omit<ApiInitiative, 'id' | 'created_at' | 'updated_at' | 'section'>>;
+type ApiInitiativePatch = Partial<
+  Omit<ApiInitiative, 'id' | 'created_at' | 'updated_at' | 'section'>
+> & {
+  section_slug?: InitiativeSectionSlug;
+};
 
 function mapPartialToApi(patch: InitiativePatch): ApiInitiativePatch {
   const body: ApiInitiativePatch = {};
@@ -393,5 +520,10 @@ export const mlkchApi = {
 
   remove: async (id: string) => {
     return request<{ id: string }>(`/initiatives/${id}`, { method: 'DELETE' });
+  },
+
+  getOverview: async () => {
+    const data = await request<ApiOverview>('/overview');
+    return mapOverviewFromApi(data);
   },
 };
