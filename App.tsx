@@ -56,9 +56,17 @@ const App: React.FC = () => {
             }
           />
 
-          {/* 12Ventures homepage (explicit path) */}
+          {/* 12Ventures homepage (explicit paths) */}
           <Route
             path="/12-ventures"
+            element={
+              <BrandLayout initialBrandId="12-ventures">
+                <VenturesHome />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/home"
             element={
               <BrandLayout initialBrandId="12-ventures">
                 <VenturesHome />

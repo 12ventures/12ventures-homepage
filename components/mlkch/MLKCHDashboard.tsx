@@ -6,14 +6,17 @@ import InitiativeCard from './InitiativeCard';
 import CopilotWidget from './CopilotWidget';
 import ShimmerText from './ShimmerText';
 import DetailPanel from './DetailPanel';
+import OverviewPanel from './OverviewPanel';
 import InitiativeEditPanel from './InitiativeEditPanel';
 import TopMetricsRow from './TopMetricsRow';
 import { InlineEditProvider } from './inline/InlineEditProvider';
 import { InlineEditBlock } from './inline/InlineEditBlock';
 import { GLOBAL_TOP_METRICS, getInitiativesBySectionId, hexToRgb, resolveInitiativeBanner } from './data/initiatives';
+import { overviewToTopMetrics, formatOverviewDate } from './data/overview';
 import { getRoiBreakdown } from './data/snapSkillRoi';
 import ROIBreakdownModal from './ROIBreakdownModal';
 import { useInitiatives } from './hooks/useInitiatives';
+import { useOverview } from './hooks/useOverview';
 import { useSections } from './hooks/useSections';
 import type { DashboardSection, Initiative } from './data/initiatives';
 import type { InitiativeInput } from './api/mlkchApi';
@@ -45,22 +48,6 @@ const InitiativeBanner: React.FC<{ src: string; animate?: boolean }> = ({ src, a
     />
   </div>
 );
-
-// ── Overview / empty state ─────────────────────────────────────────────────
-const OverviewPanel: React.FC = () => (
-  <div className="h-full flex items-center justify-center min-h-40">
-    <div className="text-center">
-      <div
-        className="w-10 h-10 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-        style={{ background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.15)' }}
-      >
-        <BarChart3 className="w-5 h-5 text-sky-400/50" />
-      </div>
-      <p className="text-sm text-white/25">Select an initiative to view details</p>
-    </div>
-  </div>
-);
-
 
 // ── Drag-to-reorder: single initiative row ─────────────────────────────────
 const DraggableInitiativeRow: React.FC<{
@@ -320,7 +307,13 @@ const DashboardContent: React.FC = () => {
     reorderSections,
   } = useSections();
 
-  const loading = initiativesLoading || sectionsLoading;
+  const {
+    overview,
+    loading: overviewLoading,
+    refresh: refreshOverview,
+  } = useOverview(initiatives, sections);
+
+  const loading = initiativesLoading || sectionsLoading || overviewLoading;
   const error = initiativesError ?? sectionsError;
 
   const [orderedSections, setOrderedSections] = useState<DashboardSection[]>(sections);
@@ -377,12 +370,8 @@ const DashboardContent: React.FC = () => {
   }, [selectedId]);
 
   useEffect(() => {
-    if (initiatives.length === 0) {
+    if (selectedId && !initiatives.some((item) => item.id === selectedId)) {
       setSelectedId('');
-      return;
-    }
-    if (!initiatives.some((item) => item.id === selectedId)) {
-      setSelectedId(initiatives[0].id);
     }
   }, [initiatives, selectedId]);
 
@@ -401,8 +390,13 @@ const DashboardContent: React.FC = () => {
 
   const selected     = initiatives.find((i) => i.id === selectedId) ?? null;
   const selectedBanner = selected ? resolveInitiativeBanner(selected) : undefined;
-  const topMetrics   = selected ? selected.topMetrics : GLOBAL_TOP_METRICS;
+  const topMetrics   = selected
+    ? selected.topMetrics
+    : overview
+      ? overviewToTopMetrics(overview)
+      : GLOBAL_TOP_METRICS;
   const roiBreakdown = getRoiBreakdown(selectedId);
+  const showingOverview = !selected;
 
   const handleOpenRoi = () => {
     if (roiBreakdown) setRoiModalOpen(true);
@@ -432,17 +426,24 @@ const DashboardContent: React.FC = () => {
     if (editTarget) {
       await update(editTarget.id, input);
       setSelectedId(editTarget.id);
+      await refreshOverview();
       return;
     }
 
     const created = await create(input);
     setSelectedId(created.id);
+    await refreshOverview();
   };
 
   const handleDeleteInitiative = async (id: string) => {
     await remove(id);
     setSelectedId((current) => (current === id ? '' : current));
+    await refreshOverview();
   };
+
+  const overviewUpdatedLabel = overview
+    ? formatOverviewDate(overview.lastUpdated)
+    : undefined;
 
   const lastUpdated = initiatives.reduce<string | undefined>((latest, item) => {
     if (!item.updatedAt) return latest;
@@ -450,13 +451,14 @@ const DashboardContent: React.FC = () => {
     return latest;
   }, undefined);
 
-  const updatedLabel = lastUpdated
-    ? new Date(lastUpdated).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : 'Jun 11, 2026';
+  const updatedLabel = overviewUpdatedLabel
+    ?? (lastUpdated
+      ? new Date(lastUpdated).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : 'Jun 11, 2026');
 
   return (
     <div
@@ -580,6 +582,30 @@ const DashboardContent: React.FC = () => {
                 </button>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setSelectedId('')}
+                className="w-full text-left rounded-xl px-3 py-2.5 mb-4 transition-all duration-150"
+                style={{
+                  background: showingOverview ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.02)',
+                  border: showingOverview
+                    ? '1px solid rgba(56,189,248,0.28)'
+                    : '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <BarChart3
+                    className="w-3.5 h-3.5 flex-shrink-0"
+                    style={{ color: showingOverview ? '#38bdf8' : 'rgba(255,255,255,0.35)' }}
+                  />
+                  <span
+                    className={`text-xs font-semibold ${showingOverview ? 'text-white' : 'text-white/60'}`}
+                  >
+                    Overview
+                  </span>
+                </div>
+              </button>
+
               {/* Initiative sections */}
               {loading ? (
                 <div className="space-y-3 px-1">
@@ -659,7 +685,7 @@ const DashboardContent: React.FC = () => {
             />
           )}
 
-          <div className="relative z-10">
+          <div className="relative z-10 w-full min-w-0">
             {selected ? (
               <div className={introComplete ? 'mlkch-initiative-enter' : undefined}>
                 <DetailPanel
@@ -675,7 +701,10 @@ const DashboardContent: React.FC = () => {
                 />
               </div>
             ) : (
-              <OverviewPanel />
+              <OverviewPanel
+                overview={overview}
+                loading={overviewLoading}
+              />
             )}
           </div>
         </div>
