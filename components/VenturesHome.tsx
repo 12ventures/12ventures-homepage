@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import ShimmerText from './mlkch/ShimmerText';
 
 // ─── Video URL ──────────────────────────────────────────────────────────────
-const BG_VIDEO_URL: string | null = 'https://games.dreambox.gg/videos/d0776cf5-aa6b-4c61-929f-ec6759588956.mp4';
+const BG_VIDEO_URL: string | null = 'https://games.dreambox.gg/videos/intel_org.mp4';
 // ────────────────────────────────────────────────────────────────────────────
 
 // ─── Loop mode ──────────────────────────────────────────────────────────────
@@ -23,7 +24,19 @@ const SCRUB_LERP     = 0.06; // smoothing factor (lower = smoother / more lag)
 const VIDEO_SCALE    = 0.9; // 1 = full size, 0.72 = 72% — scales entire frame down, no crop
 // ────────────────────────────────────────────────────────────────────────────
 
-const PAGE_BG = '#080b10';
+const PAGE_BG = '#061018';
+// Subtle color at page edges, dark blue-teal at center to match the video
+const PAGE_GRADIENT = `
+  radial-gradient(ellipse 78% 72% at 50% 50%, ${PAGE_BG} 0%,rgb(6, 14, 23) 58%, transparent 88%),
+  radial-gradient(ellipse 48% 95% at 0% 50%, rgba(28, 52, 88, 0.38) 0%, rgba(10, 20, 37, 0.1) 50%, transparent 78%),
+  radial-gradient(ellipse 48% 95% at 100% 50%, rgba(18, 58, 82, 0.34) 0%, rgba(8, 4, 23, 0.08) 50%, transparent 78%),
+  radial-gradient(ellipse 75% 38% at 50% 0%, rgba(7, 11, 19, 0.28) 0%, transparent 42%),
+  radial-gradient(ellipse 75% 38% at 50% 100%, rgba(7, 6, 12, 0.3) 0%, transparent 40%),
+  ${PAGE_BG}
+`;
+// Masks video edges so the page gradient shows through instead of a flat color
+const VIDEO_EDGE_MASK =
+  'radial-gradient(ellipse 40% 62% at 50% 50%, black 16%, rgba(0,0,0,0.55) 52%, transparent 78%)';
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -155,7 +168,10 @@ const VenturesHome: React.FC = () => {
   }, [videoLoaded]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: PAGE_BG }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ background: PAGE_GRADIENT }}>
+
+      {/* Page gradient — always visible in letterbox areas around the video */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: PAGE_GRADIENT }} />
 
       {/* ── Background video ──────────────────────────────────────────── */}
       {BG_VIDEO_URL && (
@@ -174,26 +190,16 @@ const VenturesHome: React.FC = () => {
               transform: `translate(-50%, -50%) scale(${VIDEO_SCALE})`,
               transformOrigin: 'center center',
               opacity: 0,
+              WebkitMaskImage: VIDEO_EDGE_MASK,
+              maskImage: VIDEO_EDGE_MASK,
             }}
           />
 
-          {/* Overlays span full viewport so edges still dissolve into page bg */}
+          {/* Center scrim — keeps text readable over the video */}
           <div
             className="absolute inset-0"
             style={{
-              background: `radial-gradient(ellipse 60% 60% at 50% 50%, transparent 20%, ${PAGE_BG} 75%)`,
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(ellipse 80% 70% at 50% 50%, transparent 35%, ${PAGE_BG} 90%)`,
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: 'radial-gradient(ellipse 55% 45% at 50% 50%, rgba(0,0,0,0.52) 0%, transparent 70%)',
+              background: 'radial-gradient(ellipse 50% 42% at 50% 50%, rgba(0,0,0,0.55) 0%, transparent 68%)',
             }}
           />
         </div>
@@ -244,20 +250,33 @@ const VenturesHome: React.FC = () => {
             animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.25s both',
           }}
         >
-          Building Intelligent Organizations.
+          Building Intelligent Organizations
         </h1>
 
-        <p
-          className="mt-8 text-[13px] md:text-sm tracking-[0.18em] uppercase text-white/55 font-normal"
+        <div
+          className="mt-8"
           style={{
-            fontFamily: "'Inter', sans-serif",
-            textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 4px 16px rgba(0,0,0,0.7)',
+            filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.9)) drop-shadow(0 4px 16px rgba(0,0,0,0.7))',
             animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.45s both',
           }}
         >
-          AI Transformation&nbsp;&nbsp;·&nbsp;&nbsp;Measurable Results
-        </p>
+          <ShimmerText
+            as="p"
+            className="text-[13px] md:text-sm tracking-[0.18em] uppercase font-normal"
+          >
+            AI Transformation&nbsp;&nbsp;·&nbsp;&nbsp;Measurable Results
+          </ShimmerText>
+        </div>
       </div>
+
+      <footer className="absolute bottom-0 inset-x-0 z-10 pb-6 md:pb-8 text-center pointer-events-none">
+        <p
+          className="text-[11px] md:text-xs text-white/30 font-normal tracking-wide"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          © {new Date().getFullYear()} 12 Ventures. All rights reserved.
+        </p>
+      </footer>
 
       <style>{`
         @keyframes appear {
