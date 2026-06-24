@@ -38,6 +38,9 @@ const PAGE_GRADIENT = `
 const VIDEO_EDGE_MASK =
   'radial-gradient(ellipse 40% 62% at 50% 50%, black 16%, rgba(0,0,0,0.55) 52%, transparent 78%)';
 
+const PAGE_TITLE =
+  '12 VENTURES | Building Intelligent Organizations | AI Transformation. Measurable Results.';
+
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
@@ -48,6 +51,19 @@ const VenturesHome: React.FC = () => {
   const scrubTargetRef  = useRef(0);
   const scrubCurrentRef = useRef(0);
   const rafRef          = useRef<number>(0);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    // Defer so this wins over BrandingProvider's default title on mount
+    const id = window.setTimeout(() => {
+      document.title = PAGE_TITLE;
+    }, 0);
+
+    return () => {
+      window.clearTimeout(id);
+      document.title = previousTitle;
+    };
+  }, []);
 
   // ── 1. Deferred load — text renders first, video loads after ────────────
   useEffect(() => {
