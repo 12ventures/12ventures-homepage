@@ -290,7 +290,7 @@ const VenturesHome: React.FC = () => {
           className="text-[11px] md:text-xs text-white/30 font-normal tracking-wide"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          © {new Date().getFullYear()} 12 Ventures. All rights reserved.
+          © {new Date().getFullYear()} 12 VENTURES. All rights reserved.
         </p>
       </footer>
 
