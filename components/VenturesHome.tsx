@@ -39,7 +39,7 @@ const VIDEO_EDGE_MASK =
   'radial-gradient(ellipse 40% 62% at 50% 50%, black 16%, rgba(0,0,0,0.55) 52%, transparent 78%)';
 
 const PAGE_TITLE =
-  '12 VENTURES | Building Intelligent Organizations | AI Transformation. Measurable Results.';
+  '12 VENTURES | Building Intelligent Organizations | AI Transformation. Scalable Results.';
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -280,7 +280,7 @@ const VenturesHome: React.FC = () => {
             as="p"
             className="text-[13px] md:text-sm tracking-[0.18em] uppercase font-normal"
           >
-            AI Transformation&nbsp;&nbsp;·&nbsp;&nbsp;Measurable Results
+            AI Transformation&nbsp;&nbsp;·&nbsp;&nbsp;Scalable Results
           </ShimmerText>
         </div>
       </div>
