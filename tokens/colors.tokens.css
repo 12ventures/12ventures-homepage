@@ -1,0 +1,258 @@
+/**
+ * Color Design Tokens
+ * 
+ * Organized color system with semantic naming for consistent theming.
+ * All colors automatically adjust for light/dark themes.
+ */
+
+:root, 
+:root[data-theme="light"] {
+  /* ============================================
+     BASE PALETTE - Grayscale
+     ============================================ */
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+
+  /* ============================================
+     SEMANTIC SURFACE COLORS
+     ============================================ */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  
+  /* ============================================
+     SEMANTIC TEXT COLORS
+     ============================================ */
+  --text-primary: #212529;
+  --text-heading: #343a40;
+  --text-secondary: #6c757d;
+  --text-tertiary: #495057;
+  
+  /* Text on special backgrounds */
+  --text-on-surface: var(--text-primary);
+  --text-on-card: var(--text-primary);
+  --text-on-tinted: var(--gray-800);
+  
+  /* ============================================
+     BRAND COLORS
+     ============================================ */
+  --primary: #3a86ff;
+  --primary-rgb: 58, 134, 255;
+  --primary-dark: #2667cc;
+  --primary-dark-rgb: 38, 103, 204;
+  
+  --secondary: #ff006e;
+  --secondary-rgb: 255, 0, 110;
+  
+  --accent: #8338ec;
+  --accent-rgb: 131, 56, 236;
+  
+  /* ============================================
+     FEEDBACK/STATUS COLORS
+     ============================================ */
+  --success: #28a745;
+  --success-rgb: 40, 167, 69;
+  
+  --warning: #ffc107;
+  --warning-rgb: 255, 193, 7;
+  --warning-dark: #e6b100;
+  
+  --danger: #dc3545;
+  --danger-rgb: 220, 53, 69;
+  --danger-dark: #c82333;
+  
+  --info: #17a2b8;
+  --info-rgb: 23, 162, 184;
+  
+  /* ============================================
+     GRADIENT COLOR PALETTES
+     For cards, highlights, and visual accents
+     ============================================ */
+  
+  /* Purple palette */
+  --palette-purple-gradient: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+  --palette-purple-gradient-dark: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05));
+  --palette-purple-border: #8b5cf6;
+  --palette-purple-border-rgb: 139, 92, 246;
+  --palette-purple-icon: #7c3aed;
+  
+  /* Mint/Green palette */
+  --palette-mint-gradient: linear-gradient(135deg, #ccfbf1 0%, #a7f3d0 100%);
+  --palette-mint-gradient-dark: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+  --palette-mint-border: #10b981;
+  --palette-mint-border-rgb: 16, 185, 129;
+  --palette-mint-icon: #059669;
+  
+  /* Amber/Yellow palette */
+  --palette-amber-gradient: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  --palette-amber-gradient-dark: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+  --palette-amber-border: #f59e0b;
+  --palette-amber-border-rgb: 245, 158, 11;
+  --palette-amber-icon: #d97706;
+  
+  /* Pink/Rose palette */
+  --palette-pink-gradient: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  --palette-pink-gradient-dark: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+  --palette-pink-border: #ef4444;
+  --palette-pink-border-rgb: 239, 68, 68;
+  --palette-pink-icon: #dc2626;
+  
+  /* Orange palette */
+  --palette-orange-gradient: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+  --palette-orange-gradient-dark: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05));
+  --palette-orange-border: #f97316;
+  --palette-orange-border-rgb: 249, 115, 22;
+  --palette-orange-icon: #ea580c;
+  
+  /* Blue/Sky palette */
+  --palette-blue-gradient: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  --palette-blue-gradient-dark: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+  --palette-blue-border: #3b82f6;
+  --palette-blue-border-rgb: 59, 130, 246;
+  --palette-blue-icon: #2563eb;
+  
+  /* ============================================
+     UTILITY COLORS
+     ============================================ */
+  --border-color: #dee2e6;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  
+  /* ============================================
+     CARD & GLASS COLORS
+     ============================================ */
+  --card-bg: rgba(255, 255, 255, 0.6);
+  --card-border: rgba(0, 0, 0, 0.06);
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.45);
+  --glass-bg-start: rgba(255, 255, 255, 0.6);
+  --glass-bg-end: rgba(255, 255, 255, 0.45);
+  --glass-bg-gradient: linear-gradient(135deg, var(--glass-bg-start), var(--glass-bg-end));
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-border-subtle: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --glass-text: var(--text-primary);
+  --glass-text-secondary: var(--text-secondary);
+  
+  /* ============================================
+     NAVIGATION GRADIENT THEMES
+     ============================================ */
+  /* Side Navigation Background - Default to solid, override with gradient when needed */
+  --nav-side-bg: var(--bg-secondary);
+  --nav-side-gradient-start: #C8C2EC;
+  --nav-side-gradient-end: #E8DDCD;
+  --nav-side-gradient: linear-gradient(to bottom, var(--nav-side-gradient-start), var(--nav-side-gradient-end));
+  
+  /* Top Navigation Background - Default to solid, override with gradient when needed */
+  /* Subtle gradient that blends with side nav top color but stays in lavender family */
+  /* Starts at same color as side nav top (#C8C2EC) and transitions to slightly lighter lavender */
+  --nav-top-bg: var(--bg-primary);
+  --nav-top-gradient-start: #C8C2EC;
+  --nav-top-gradient-end: #D0CBE6;
+  --nav-top-gradient: linear-gradient(to bottom, var(--nav-top-gradient-start), var(--nav-top-gradient-end));
+  
+  /* Enable gradients by setting these variables to the gradient values */
+  /* Example: --nav-side-bg: var(--nav-side-gradient); */
+}
+
+/* ============================================
+   DARK THEME OVERRIDES
+   ============================================ */
+:root[data-theme="dark"] {
+  /* Base palette - inverted for dark mode */
+  --gray-100: #2c2c2c;
+  --gray-200: #343434;
+  --gray-300: #474747;
+  --gray-400: #5c5c5c;
+  --gray-500: #7a7a7a;
+  --gray-600: #9e9e9e;
+  --gray-700: #c4c4c4;
+  --gray-800: #e0e0e0;
+  --gray-900: #f7f7f7;
+  
+  /* Surface colors */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2c2c2c;
+  
+  /* Text colors */
+  --text-primary: #e9ecef;
+  --text-heading: rgba(255, 255, 255, 0.9);
+  --text-secondary: #adb5bd;
+  --text-tertiary: #868e96;
+  --text-on-surface: var(--text-primary);
+  --text-on-card: var(--text-primary);
+  --text-on-tinted: var(--gray-100);
+  
+  /* Brand colors - brightened for dark mode */
+  --primary: #4a96ff;
+  --primary-rgb: 74, 150, 255;
+  --primary-dark: #3a86ff;
+  --primary-dark-rgb: 58, 134, 255;
+  
+  --secondary: #ff2e83;
+  --secondary-rgb: 255, 46, 131;
+  
+  --accent: #9355f1;
+  --accent-rgb: 147, 85, 241;
+  
+  /* Feedback colors - brightened */
+  --success: #2fd353;
+  --success-rgb: 47, 211, 83;
+  
+  --warning: #ffce38;
+  --warning-rgb: 255, 206, 56;
+  --warning-dark: #ffc107;
+  
+  --danger: #ff4a5e;
+  --danger-rgb: 255, 74, 94;
+  --danger-dark: #ff1a33;
+  
+  --info: #26b9d1;
+  --info-rgb: 38, 185, 209;
+  
+  /* Utility colors */
+  --border-color: #444;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  
+  /* Card & glass - darker backgrounds */
+  --card-bg: rgba(40, 40, 40, 0.9);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  
+  --glass-bg: rgba(30, 30, 30, 0.85);
+  --glass-bg-subtle: rgba(30, 30, 30, 0.7);
+  --glass-bg-start: rgba(30, 30, 30, 0.9);
+  --glass-bg-end: rgba(30, 30, 30, 0.75);
+  --glass-bg-gradient: linear-gradient(135deg, var(--glass-bg-start), var(--glass-bg-end));
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-subtle: rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --glass-text: var(--text-primary);
+  --glass-text-secondary: var(--text-secondary);
+  
+  /* ============================================
+     NAVIGATION GRADIENT THEMES (Dark Mode)
+     ============================================ */
+  /* Dark mode - default to solid backgrounds */
+  --nav-side-bg: var(--bg-secondary);
+  --nav-top-bg: var(--bg-primary);
+  
+  /* Dark mode gradients - slightly darker and more muted */
+  --nav-side-gradient-start: #2a2535;
+  --nav-side-gradient-end: #3a2f2a;
+  --nav-side-gradient: linear-gradient(to bottom, var(--nav-side-gradient-start), var(--nav-side-gradient-end));
+  
+  /* Dark mode - subtle gradient staying in dark purple/gray family */
+  --nav-top-gradient-start: #2a2535;
+  --nav-top-gradient-end: #322d3a;
+  --nav-top-gradient: linear-gradient(to bottom, var(--nav-top-gradient-start), var(--nav-top-gradient-end));
+}

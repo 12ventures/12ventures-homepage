@@ -1,0 +1,373 @@
+/* Custom Dropdown Component - Profile Dropdown Style */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+  font-family: inherit;
+}
+
+.custom-dropdown-button {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  outline: none;
+}
+
+/* Glass variant */
+.custom-dropdown.glass .custom-dropdown-button,
+.custom-dropdown-button.glass {
+  background: rgba(17,24,39,0.35);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+}
+.custom-dropdown.glass .custom-dropdown-arrow,
+.custom-dropdown-button.glass .custom-dropdown-arrow { color: rgba(255,255,255,0.9); }
+.custom-dropdown-portal.glass .custom-dropdown-menu {
+  background: rgba(17,24,39,0.35);
+  border: 1px solid rgba(255,255,255,0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+}
+.custom-dropdown-portal.glass .custom-dropdown-option.selected { background: rgba(255,255,255,0.12); color: #fff; }
+.custom-dropdown-portal.glass .custom-dropdown-option:hover:not(.disabled) { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* Increase specificity for timeline usage */
+.timeline-style-select.custom-dropdown.glass .custom-dropdown-button {
+  background: rgba(17,24,39,0.35) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+}
+.timeline-style-select.custom-dropdown.glass .custom-dropdown-button:hover:not(:disabled) {
+  background: rgba(17,24,39,0.5) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+.timeline-style-select.custom-dropdown.glass .custom-dropdown-arrow { color: rgba(255,255,255,0.9) !important; }
+
+/* Mini size (compact for mobile/tight spaces) */
+.custom-dropdown.mini { width: auto; }
+.custom-dropdown-button.mini {
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  min-height: 0;
+  line-height: 1.2;
+  box-shadow: none;
+}
+.custom-dropdown-value.mini { font-size: 12px; }
+.custom-dropdown-arrow.mini { margin-left: 4px; }
+.custom-dropdown-portal.mini .custom-dropdown-menu {
+  min-width: 140px;
+  border-radius: 8px;
+}
+.custom-dropdown-portal.mini .custom-dropdown-option {
+  padding: 6px 10px;
+  font-size: 12px;
+  min-height: 0;
+}
+
+.custom-dropdown-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.938);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Override hover for glass variant to prevent transparency */
+.custom-dropdown.glass .custom-dropdown-button:hover:not(:disabled),
+.custom-dropdown-button.glass:hover:not(:disabled) {
+  background: rgba(17,24,39,0.5) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+.custom-dropdown-button:focus {
+  border-color: var(--primary);
+  background-color: var(--bg-primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+  transform: translateY(-1px);
+}
+
+.custom-dropdown-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--bg-secondary);
+  transform: none;
+}
+
+.custom-dropdown-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-dropdown-value-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.custom-dropdown-value-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.custom-dropdown-option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.custom-dropdown-option-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.custom-dropdown-option-label {
+  flex: 1;
+}
+
+.custom-dropdown-language-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.custom-dropdown-arrow {
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.custom-dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu (rendered inside portal) */
+.custom-dropdown-portal { pointer-events: auto; }
+.custom-dropdown-menu {
+  min-width: 220px;
+  background-color: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  z-index: 3000;
+  overflow: hidden;
+  animation: dropdown-appear 0.2s ease-out;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+@keyframes dropdown-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Options list wrapper — provides positioning context for the fade overlay */
+.custom-dropdown-options-wrap {
+  position: relative;
+}
+
+/* Fade gradient at the bottom — signals overflow on ALL platforms including macOS */
+.custom-dropdown-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--bg-primary, #fff));
+  pointer-events: none;
+  border-radius: 0 0 12px 12px;
+  z-index: 1;
+}
+/* When glass variant, fade matches dark background */
+.custom-dropdown-portal.glass .custom-dropdown-fade {
+  background: linear-gradient(to bottom, transparent, rgba(17,24,39,0.92));
+}
+
+/* Options List */
+.custom-dropdown-options {
+  list-style: none;
+  padding: 4px 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0;
+  /* Cap at ~6 rows so the cutoff is always visible — signals scrollability */
+  max-height: min(220px, calc(100dvh - 120px));
+  /* overflow-y: scroll forces macOS to show the scrollbar track instead of overlay */
+  overflow-y: scroll;
+  overflow-x: hidden;
+
+  /* Custom scrollbar — thin, always visible, looks the same on Win & Mac */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
+/* WebKit custom scrollbar (Chrome, Safari, Edge) */
+.custom-dropdown-options::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-dropdown-options::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+.custom-dropdown-options::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 99px;
+}
+.custom-dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Glass variant scrollbar */
+.custom-dropdown-portal.glass .custom-dropdown-options {
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+.custom-dropdown-portal.glass .custom-dropdown-options::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.custom-dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  min-height: 34px;
+}
+
+.custom-dropdown-option:hover:not(.disabled) {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.custom-dropdown-option.selected {
+  background-color: var(--bg-tertiary);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.custom-dropdown-option.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: var(--text-secondary);
+}
+
+.custom-dropdown-option.disabled:hover {
+  background-color: transparent;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .custom-dropdown-button { padding: 14px 16px; font-size: 16px; min-height: 48px; line-height: 1.4; border-radius: 12px; }
+  .custom-dropdown-button.mini { padding: 2px 6px; font-size: 12px; min-height: 0; border-radius: 8px; }
+
+  .custom-dropdown-option { padding: 10px 16px; font-size: 16px; min-height: 44px; line-height: 1.4; }
+  .custom-dropdown-portal.mini .custom-dropdown-option { padding: 6px 10px; font-size: 12px; min-height: 0; }
+
+  .custom-dropdown-button:focus {
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+  }
+}
+
+@media (max-width: 480px) {
+  .custom-dropdown-button {
+    padding: 16px 18px;
+    font-size: 18px;
+    min-height: 52px;
+    border-radius: 14px;
+  }
+
+  .custom-dropdown-option {
+    padding: 14px 18px;
+    font-size: 18px;
+    min-height: 48px;
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .custom-dropdown-button {
+  border-color: var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .custom-dropdown-menu {
+  border-color: var(--border-color);
+  background-color: var(--bg-primary);
+}
+
+[data-theme="dark"] .custom-dropdown-arrow {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .custom-dropdown-button:hover:not(:disabled) {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+  box-shadow: none;
+  transform: none;
+}
+
+[data-theme="dark"] .custom-dropdown-button:focus {
+  background-color: var(--bg-primary);
+}
+
+[data-theme="dark"] .custom-dropdown-option:hover:not(.disabled) {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .custom-dropdown-option.selected {
+  background-color: rgba(74, 150, 255, 0.12);
+  color: var(--primary);
+}

@@ -24,6 +24,7 @@ import OtterWorkerOperatorOld from './components/OtterWorkerOperator_old';
 import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
 import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
 import MeridaWellness from './components/MeridaWellness';
+import SarhProductionDashboard from './components/sarh/SarhProductionDashboard';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
@@ -206,6 +207,12 @@ const App: React.FC = () => {
                 <MLKCHDashboard />
               </BrandLayout>
             }
+          />
+
+          {/* SARH Voice AI Production Dashboard */}
+          <Route
+            path="/o/sarh/voice-ai/production-dashboard"
+            element={<SarhProductionDashboard />}
           />
 
           {/* Prisma Health Demo Hub & Apps */}
