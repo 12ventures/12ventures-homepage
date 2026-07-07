@@ -1,0 +1,68 @@
+/**
+ * Effects Design Tokens
+ * 
+ * Shadows, transitions, animations, and blur effects.
+ * Provides consistent motion and depth.
+ */
+
+:root {
+  /* ============================================
+     BOX SHADOWS
+     ============================================ */
+  --shadow-xs: 0 1px 2px 0 var(--shadow-color);
+  --shadow-sm: 0 1px 3px 0 var(--shadow-color);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px var(--shadow-color);
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
+  --shadow-xl: 0 20px 25px -5px var(--shadow-color), 0 10px 10px -5px var(--shadow-color);
+  --shadow-2xl: 0 25px 50px -12px var(--shadow-color);
+  --shadow-inner: inset 0 2px 4px 0 var(--shadow-color);
+  --shadow-none: 0 0 #0000;
+  
+  /* Colored shadows for emphasis */
+  --shadow-primary: 0 4px 14px 0 rgba(var(--primary-rgb), 0.25);
+  --shadow-secondary: 0 4px 14px 0 rgba(var(--secondary-rgb), 0.25);
+  --shadow-success: 0 4px 14px 0 rgba(var(--success-rgb), 0.25);
+  --shadow-danger: 0 4px 14px 0 rgba(var(--danger-rgb), 0.25);
+  
+  /* ============================================
+     TRANSITIONS
+     ============================================ */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.35s ease;
+  --transition-all: all var(--transition-normal);
+  
+  /* Easing functions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* ============================================
+     BLUR EFFECTS
+     For glassmorphism and backdrops
+     ============================================ */
+  --glass-blur: 16px;
+  --blur-sm: 8px;
+  --blur-md: 12px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
+  --blur-2xl: 40px;
+  --blur-3xl: 64px;
+  
+  /* ============================================
+     OPACITY LEVELS
+     ============================================ */
+  --opacity-disabled: 0.5;
+  --opacity-hover: 0.8;
+  --opacity-pressed: 0.6;
+  
+  /* ============================================
+     ANIMATION DURATIONS
+     ============================================ */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --duration-slower: 500ms;
+  --duration-slowest: 750ms;
+}

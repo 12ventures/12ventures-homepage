@@ -1,0 +1,35 @@
+/**
+ * Navigation Gradient Theme - Enabled
+ * 
+ * Import this file to enable gradient backgrounds for side nav and top nav.
+ * Remove or comment out to revert to solid colors.
+ * 
+ * Usage:
+ *   import './tokens/nav-gradient-enabled.css';
+ * 
+ * Or add to your main CSS:
+ *   @import './tokens/nav-gradient-enabled.css';
+ */
+
+:root,
+:root[data-theme="light"] {
+  /* Enable side navigation gradient */
+  --nav-side-bg: var(--nav-side-gradient);
+  
+  /* Top nav uses solid color (matches gradient start color) with fade effect */
+  --nav-top-bg: var(--nav-top-gradient-start, var(--bg-primary));
+  
+  /* Disable fade effect when using gradient */
+  --nav-header-fade: none;
+}
+
+:root[data-theme="dark"] {
+  /* Dark mode gradients */
+  --nav-side-bg: var(--nav-side-gradient);
+  
+  /* Top nav uses solid color (matches gradient start color) with fade effect */
+  --nav-top-bg: var(--nav-top-gradient-start, var(--bg-primary));
+  
+  /* Disable fade effect when using gradient */
+  --nav-header-fade: none;
+}

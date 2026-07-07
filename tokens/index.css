@@ -1,0 +1,21 @@
+/**
+ * Design Tokens - Main Entry
+ * 
+ * This file imports all design token files in the correct order.
+ * Import this file in your main index.css to use the token system.
+ * 
+ * Organization:
+ * - Colors: All color values (surfaces, text, brand, feedback, palettes)
+ * - Typography: Font families, sizes, weights, line heights
+ * - Spacing: Spacing scale, border radius, container widths, z-index
+ * - Effects: Shadows, transitions, blur effects, animations
+ * 
+ * Usage:
+ * @import './tokens/index.css';
+ */
+
+@import './colors.tokens.css';
+@import './typography.tokens.css';
+@import './spacing.tokens.css';
+@import './effects.tokens.css';
+@import './animations.tokens.css';
