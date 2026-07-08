@@ -72,10 +72,23 @@ const PERIOD_OPTIONS = [
   { value: 'past_7_days', label: 'Past 7 Days' },
   { value: 'past_30_days', label: 'Past 30 Days' },
   { value: 'past_90_days', label: 'Past 90 Days' },
+  { value: 'pilot', label: 'Since May 27 Pilot' },
   { value: 'this_week', label: 'This Week' },
   { value: 'this_month', label: 'This Month' },
   { value: 'this_year', label: 'This Year' },
 ] as const;
+
+type PeriodDropdownValue = DashboardPeriod | 'pilot';
+
+const PILOT_START_DATE = '2026-05-27';
+const PILOT_RANGE_LABEL = 'Since May 27 Pilot';
+
+function isPilotRange(
+  range: { dateFrom: string; dateTo: string } | null,
+  today = toLocalDateKey(new Date()),
+): boolean {
+  return range?.dateFrom === PILOT_START_DATE && range.dateTo === today;
+}
 
 const PERIOD_LABELS: Record<DashboardPeriod, string> = {
   today: 'Today',
@@ -505,6 +518,7 @@ const OperatorDashboard: React.FC = () => {
   );
 
   const filterLabel = useMemo(() => {
+    if (customRange && isPilotRange(customRange)) return PILOT_RANGE_LABEL;
     if (analytics?.period === 'custom' && analytics.date_from && analytics.date_to) {
       return formatCustomRangeLabel(analytics.date_from, analytics.date_to);
     }
@@ -513,6 +527,11 @@ const OperatorDashboard: React.FC = () => {
     }
     return PERIOD_LABELS[period];
   }, [analytics, customRange, period]);
+
+  const periodDropdownValue = useMemo((): PeriodDropdownValue => {
+    if (customRange && isPilotRange(customRange)) return 'pilot';
+    return period;
+  }, [customRange, period]);
 
   const insightsAvailable = useMemo(
     () => isInsightsFilterAvailable(period, customRange),
@@ -592,6 +611,14 @@ const OperatorDashboard: React.FC = () => {
   const handlePresetPeriod = (p: DashboardPeriod) => {
     setCustomRange(null);
     setPeriod(p);
+  };
+
+  const handlePeriodDropdownChange = (v: PeriodDropdownValue) => {
+    if (v === 'pilot') {
+      setCustomRange({ dateFrom: PILOT_START_DATE, dateTo: toLocalDateKey(new Date()) });
+      return;
+    }
+    handlePresetPeriod(v);
   };
 
   const handleCustomRangeApply = (dateFrom: string, dateTo: string) => {
@@ -726,9 +753,7 @@ const OperatorDashboard: React.FC = () => {
       {/* ── Header ── */}
       <div className="od-header od-reveal" style={odReveal(0)}>
         <div className="od-header-left">
-          <h1>
-            Production Dashboard <span>Overview</span>
-          </h1>
+          <h1>Production Dashboard</h1>
           <p>
             Real-time operations
             <span className="od-last-updated">
@@ -745,12 +770,13 @@ const OperatorDashboard: React.FC = () => {
           )}
           <button
             type="button"
-            className="od-icon-btn od-icon-btn--healthy"
+            className="od-status-btn od-status-btn--healthy"
             onClick={() => setShowMaintenance(true)}
-            aria-label="System maintenance"
-            title="System maintenance"
+            aria-label="Status: Healthy"
+            title="View system status"
           >
             <IoShieldCheckmark size={18} />
+            Status: Healthy
           </button>
           <button
             type="button"
@@ -794,8 +820,8 @@ const OperatorDashboard: React.FC = () => {
           <div className={`od-period-dropdown${periodLoading && !activePill && !isCustomFilter ? ' od-period-dropdown--loading' : ''}`}>
             <CustomDropdown
               options={[...PERIOD_OPTIONS]}
-              value={period}
-              onChange={(v) => handlePresetPeriod(v as DashboardPeriod)}
+              value={periodDropdownValue}
+              onChange={(v) => handlePeriodDropdownChange(v as PeriodDropdownValue)}
               disabled={periodLoading}
               className="od-period-dropdown__control"
               aria-label="Time period"

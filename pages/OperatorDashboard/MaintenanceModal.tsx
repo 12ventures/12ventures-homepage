@@ -28,6 +28,14 @@ function clampPct(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
+function formatWaitTime(seconds: number): string {
+  if (seconds < 1) {
+    const ms = Math.round(seconds * 1000);
+    return `${ms} ms`;
+  }
+  return `~${Math.round(seconds)} s`;
+}
+
 interface MetricProps {
   label: string;
   value: string;
@@ -140,13 +148,10 @@ const MaintenanceModal: React.FC<Props> = ({ onClose }) => {
         <div className="mm-header">
           <div className="mm-header-text">
             <div className="mm-header-title-row">
-              <h2 id="mm-title" className="mm-title">System Maintenance</h2>
-              {data && !error && (
-                <span className="mm-status-badge">
-                  <span className="mm-status-dot" />
-                  Healthy
-                </span>
-              )}
+              <h2 id="mm-title" className="mm-title mm-title--healthy">
+                <span className="mm-status-dot" aria-hidden="true" />
+                Healthy
+              </h2>
             </div>
           </div>
           <button type="button" className="mm-close" onClick={onClose} aria-label="Close">
@@ -190,7 +195,7 @@ const MaintenanceModal: React.FC<Props> = ({ onClose }) => {
                 />
                 <MetricCard
                   label="Average Wait Time"
-                  value={data.wait_time_display}
+                  value={formatWaitTime(data.wait_time_seconds)}
                   barPct={waitBarPct}
                   barDelay={460}
                   animateBars={animateBars}
