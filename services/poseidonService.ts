@@ -31,6 +31,9 @@ export interface CallHistoryItem {
   duration_seconds?: number; // May be missing for ongoing calls - calculate from started_at
   final_agent: string;
   outcome_status: 'completed' | 'incomplete' | 'failed';
+  outcome_reason?: string | null;
+  openai_error_occurred?: boolean;
+  agent_path?: string[];
   report_file_path?: string;
   patient_data?: {
     first_name?: string;
