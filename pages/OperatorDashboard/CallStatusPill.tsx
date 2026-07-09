@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiInfo } from 'react-icons/fi';
 import type { CallHistoryItem } from '../../services/poseidonService';
+import { isNonEngagementCall } from './callHistoryUtils';
 
 const OUTCOME_REASON_MESSAGES: Record<string, string> = {
   completed_normally: 'Call completed successfully.',
@@ -11,6 +12,8 @@ const OUTCOME_REASON_MESSAGES: Record<string, string> = {
   completed_at_triage: 'Call completed during triage routing.',
   repaired_stale_record: 'Record repaired from a stale session.',
 };
+
+const NON_ENGAGEMENT_MESSAGE = 'Caller decided not to proceed with intake.';
 
 const TELEPHONY_OK = 'No telephony errors occurred.';
 const TELEPHONY_ERROR = 'A telephony error occurred during this call.';
@@ -31,7 +34,9 @@ export function getOutcomeDetailLines(call: CallHistoryItem): OutcomeDetailLine[
   const lines: OutcomeDetailLine[] = [];
   const reason = call.outcome_reason?.trim();
 
-  if (reason && reason !== 'openai_error') {
+  if (isNonEngagementCall(call)) {
+    lines.push({ text: NON_ENGAGEMENT_MESSAGE });
+  } else if (reason && reason !== 'openai_error') {
     if (OUTCOME_REASON_MESSAGES[reason]) {
       lines.push({ text: OUTCOME_REASON_MESSAGES[reason] });
     } else {

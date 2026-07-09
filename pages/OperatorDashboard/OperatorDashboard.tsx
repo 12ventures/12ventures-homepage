@@ -38,6 +38,11 @@ import CostDetailModal from './CostDetailModal';
 import MaintenanceModal from './MaintenanceModal';
 import CustomDateRangePicker from './CustomDateRangePicker';
 import CallStatusPill from './CallStatusPill';
+import {
+  fmtDuration,
+  getCallDurationSeconds,
+  getDisplayOutcomeStatus,
+} from './callHistoryUtils';
 import { getOdChartTheme } from './operatorDashboardChartTheme';
 import { useTheme } from '../../contexts/ThemeContext';
 import './OperatorDashboard.css';
@@ -142,12 +147,6 @@ function displayPhone(phone: string | undefined) {
   return PRIVACY_MODE ? maskPhone(phone) : phone ?? '';
 }
 
-function fmtDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}m ${String(s).padStart(2, '0')}s`;
-}
-
 function getRelativeTime(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (secs < 60) return `${secs}s ago`;
@@ -172,22 +171,6 @@ function toLocalDateKey(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
-}
-
-function getCallDurationSeconds(call: CallHistoryItem): number | null {
-  if (call.duration_seconds != null) return call.duration_seconds;
-  if (!call.ended_at) return null;
-  return Math.floor(
-    (new Date(call.ended_at).getTime() - new Date(call.started_at).getTime()) / 1000,
-  );
-}
-
-/** Visual-only status overrides for call history display. */
-function getDisplayOutcomeStatus(call: CallHistoryItem): CallHistoryItem['outcome_status'] {
-  if (call.final_agent?.trim().toLowerCase() === 'triage') return 'completed';
-  const duration = getCallDurationSeconds(call);
-  if (duration != null && duration < 45) return 'completed';
-  return call.outcome_status;
 }
 
 /** Aggregate call list into daily counts; optionally fill every day in the period (zeros). */
@@ -836,6 +819,15 @@ const OperatorDashboard: React.FC = () => {
         </div>
       </div>
 
+      <div
+        className={`od-dashboard-body${periodLoading ? ' od-dashboard-body--loading' : ''}`}
+        aria-busy={periodLoading}
+        aria-live="polite"
+      >
+      {periodLoading && (
+        <span className="od-dashboard-body__loading-label">Updating…</span>
+      )}
+
       {/* ── Active calls strip (only when active) ── */}
       {activeCalls.length > 0 && (
         <div className="od-active-section od-reveal" style={odReveal(2)}>
@@ -867,7 +859,7 @@ const OperatorDashboard: React.FC = () => {
 
       {/* ── Key Metrics ── */}
       <p className="od-section-label od-reveal" style={odReveal(3)}>Key Metrics</p>
-      <div className={`od-metrics-grid${periodLoading ? ' od-metrics-grid--loading' : ''}`}>
+      <div className="od-metrics-grid">
         {/* Total Calls */}
         <div className="od-metric-card od-reveal" style={odReveal(4)}>
           <div className="od-metric-header">
@@ -1075,9 +1067,11 @@ const OperatorDashboard: React.FC = () => {
         insightsAvailable={insightsAvailable}
         includeTestCalls={includeTestCalls}
         insights={insights}
-        loading={periodLoading}
+        loading={false}
         revealBase={13}
       />
+
+      </div>
 
       {showCostDetail && (
         <CostDetailModal
