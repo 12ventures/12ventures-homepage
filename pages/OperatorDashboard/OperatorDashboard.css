@@ -363,11 +363,40 @@
   flex-shrink: 0;
 }
 
-/* ── Loading overlay on metrics grid ──────────── */
-.od-metrics-grid--loading {
-  opacity: 0.55;
+/* ── Period filter loading (dims stale data while fetching) ── */
+.od-dashboard-body {
+  position: relative;
+}
+
+@keyframes od-dashboard-body-pulse {
+  0%, 100% { opacity: 0.38; }
+  50% { opacity: 0.58; }
+}
+
+.od-dashboard-body--loading {
   pointer-events: none;
-  transition: opacity 0.2s;
+  user-select: none;
+  animation: od-dashboard-body-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .od-dashboard-body--loading {
+    animation: none;
+    opacity: 0.42;
+  }
+}
+
+.od-dashboard-body__loading-label {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  z-index: 3;
+  font-size: 0.6875rem;
+  font-weight: var(--od-fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--od-text-muted);
+  pointer-events: none;
 }
 
 /* ── Section headers ─────────────────────────── */
