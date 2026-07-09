@@ -1,2 +1,23 @@
 @import '../tokens/index.css';
 @import '../utils/glassStyles.css';
+
+/* SARH production dashboard — base page color (load + overscroll) */
+:root.sarh-dashboard-page,
+:root.sarh-dashboard-page body,
+:root.sarh-dashboard-page #root {
+  background-color: #06080d;
+  color-scheme: dark;
+}
+
+:root.sarh-dashboard-page ::-webkit-scrollbar-track {
+  background: #0c0f16;
+}
+
+:root.sarh-dashboard-page ::-webkit-scrollbar-thumb {
+  background: #2a3040;
+}
+
+.sarh-dashboard-shell {
+  min-height: 100dvh;
+  background-color: #06080d;
+}

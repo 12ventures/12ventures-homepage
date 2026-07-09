@@ -33,7 +33,7 @@ const SarhPasswordGate: React.FC<SarhPasswordGateProps> = ({ children }) => {
   return (
     <div
       className="min-h-screen flex items-center justify-center"
-      style={{ background: '#060B14' }}
+      style={{ background: '#06080d' }}
     >
       <div
         className="absolute inset-0 pointer-events-none"

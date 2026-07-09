@@ -54,7 +54,19 @@
         }
       }
     </script>
+    <script>
+      (function () {
+        if (window.location.pathname.indexOf('/o/sarh/voice-ai/production-dashboard') !== -1) {
+          document.documentElement.classList.add('sarh-dashboard-page');
+        }
+      })();
+    </script>
     <style>
+      html.sarh-dashboard-page,
+      html.sarh-dashboard-page body,
+      html.sarh-dashboard-page #root {
+        background-color: #06080d;
+      }
       body {
         background-color: #f8fafc;
         color: #0f172a;

@@ -5,6 +5,7 @@ import SarhPasswordGate from './SarhPasswordGate';
 import '../../styles/operator-dashboard.css';
 
 const PAGE_TITLE = 'SARH Voice AI · Production Dashboard';
+const SARH_PAGE_CLASS = 'sarh-dashboard-page';
 
 function DashboardShell() {
   const { setPageThemeOverride } = useTheme();
@@ -25,18 +26,25 @@ function DashboardShell() {
   }, [setPageThemeOverride]);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden">
+    <div className="sarh-dashboard-shell w-full overflow-x-hidden">
       <OperatorDashboard />
     </div>
   );
 }
 
-const SarhProductionDashboard: React.FC = () => (
-  <SarhPasswordGate>
-    <ThemeProvider>
-      <DashboardShell />
-    </ThemeProvider>
-  </SarhPasswordGate>
-);
+const SarhProductionDashboard: React.FC = () => {
+  useEffect(() => {
+    document.documentElement.classList.add(SARH_PAGE_CLASS);
+    return () => document.documentElement.classList.remove(SARH_PAGE_CLASS);
+  }, []);
+
+  return (
+    <SarhPasswordGate>
+      <ThemeProvider>
+        <DashboardShell />
+      </ThemeProvider>
+    </SarhPasswordGate>
+  );
+};
 
 export default SarhProductionDashboard;
