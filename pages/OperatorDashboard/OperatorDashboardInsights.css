@@ -20,9 +20,16 @@
   border: 1px solid var(--od-glass-border);
 }
 
-/* ── KPI row (single caller breakdown card) ──────────────────────── */
+/* ── KPI row ─────────────────────────────────────────────────────── */
 .od-insights-kpi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
   margin-bottom: 20px;
+}
+
+.od-insights-kpi .od-metric-card {
+  flex: 1 1 200px;
   max-width: 280px;
 }
 

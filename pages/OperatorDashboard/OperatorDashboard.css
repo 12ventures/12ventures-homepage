@@ -834,6 +834,11 @@
   font-size: 0.8rem;
 }
 
+/* ── Portaled UI (createPortal → document.body)
+   Popovers/modals outside .od-root do NOT inherit --od-text-* / --od-bg-* tokens.
+   Always set explicit light colors + :root[data-theme="dark"] overrides.
+   See: CustomDateRangePicker.css, .od-status-popover below. ── */
+
 .od-status-pill {
   display: inline-block;
   padding: 2px 9px;
@@ -842,6 +847,97 @@
   font-weight: var(--od-fw-medium);
   text-transform: capitalize;
   white-space: nowrap;
+}
+
+.od-status-pill--btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 10px;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.12s, box-shadow 0.12s;
+}
+
+.od-status-pill--btn:hover {
+  filter: brightness(1.08);
+}
+
+.od-status-pill--btn:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.55);
+  outline-offset: 2px;
+}
+
+.od-status-pill__icon {
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.od-status-popover {
+  position: fixed;
+  z-index: 3200;
+  width: 260px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.22);
+  pointer-events: auto;
+  color: #334155;
+}
+
+:root[data-theme="dark"] .od-status-popover {
+  background: #1e1e2e;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  color: #f1f5f9;
+}
+
+.od-status-popover__title {
+  margin: 0 0 6px;
+  font-size: 0.625rem;
+  font-weight: var(--od-fw-medium, 600);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+:root[data-theme="dark"] .od-status-popover__title {
+  color: #94a3b8;
+}
+
+.od-status-popover__line {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+:root[data-theme="dark"] .od-status-popover__line {
+  color: #e2e8f0;
+}
+
+.od-status-popover__line + .od-status-popover__line {
+  margin-top: 6px;
+}
+
+.od-status-popover__line--telephony-ok {
+  color: #16a34a;
+  font-weight: var(--od-fw-medium, 600);
+}
+
+:root[data-theme="dark"] .od-status-popover__line--telephony-ok {
+  color: #4ade80;
+}
+
+.od-status-popover__line--telephony-error {
+  color: #dc2626;
+  font-weight: var(--od-fw-medium, 600);
+}
+
+:root[data-theme="dark"] .od-status-popover__line--telephony-error {
+  color: #f87171;
 }
 
 .od-status-pill--completed  { background: rgba(16, 185, 129, 0.15); color: #34d399; }

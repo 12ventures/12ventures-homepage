@@ -37,6 +37,7 @@ import OperatorDashboardInsights from './OperatorDashboardInsights';
 import CostDetailModal from './CostDetailModal';
 import MaintenanceModal from './MaintenanceModal';
 import CustomDateRangePicker from './CustomDateRangePicker';
+import CallStatusPill from './CallStatusPill';
 import { getOdChartTheme } from './operatorDashboardChartTheme';
 import { useTheme } from '../../contexts/ThemeContext';
 import './OperatorDashboard.css';
@@ -677,9 +678,7 @@ const OperatorDashboard: React.FC = () => {
                         {durationSeconds != null ? fmtDuration(durationSeconds) : '—'}
                       </td>
                       <td>
-                        <span className={`od-status-pill od-status-pill--${displayStatus}`}>
-                          {displayStatus}
-                        </span>
+                        <CallStatusPill status={displayStatus} call={call} />
                       </td>
                     </tr>
                   );

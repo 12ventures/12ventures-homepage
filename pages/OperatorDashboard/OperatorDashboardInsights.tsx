@@ -11,6 +11,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   sliceGroupedRows,
+  customRangeSpanDays,
   type AnalyticsInsights,
   type AnalyticsInsightsBreakdownField,
   type DashboardFilter,
@@ -32,6 +33,28 @@ function odReveal(idx: number): React.CSSProperties {
 
 function countAnimDelay(revealIdx: number): number {
   return revealIdx * REVEAL_STEP_MS + COUNT_ANIM_DELAY_BASE;
+}
+
+function getPeriodDays(insights: AnalyticsInsights | null, filter: DashboardFilter): number | null {
+  if (!insights) return null;
+  if (insights.span_days != null && insights.span_days > 0) return insights.span_days;
+  if (filter.mode === 'custom') {
+    return customRangeSpanDays(filter.dateFrom, filter.dateTo);
+  }
+  if (insights.date_from && insights.date_to) {
+    return customRangeSpanDays(insights.date_from, insights.date_to);
+  }
+  const presetDays: Partial<Record<string, number>> = {
+    today: 1,
+    yesterday: 1,
+    past_7_days: 7,
+    past_30_days: 30,
+    week: 7,
+  };
+  if (insights.period && presetDays[insights.period] != null) {
+    return presetDays[insights.period]!;
+  }
+  return null;
 }
 
 interface Props {
@@ -181,6 +204,16 @@ const OperatorDashboardInsights: React.FC<Props> = ({
     [insights?.exam_types],
   );
 
+  const periodDays = useMemo(
+    () => getPeriodDays(insights, filter),
+    [insights, filter],
+  );
+
+  const dailyAverageCalls = useMemo(() => {
+    if (!insights || periodDays == null || periodDays <= 0) return null;
+    return insights.total_calls / periodDays;
+  }, [insights, periodDays]);
+
   if (!insightsAvailable) {
     return (
       <div className={sectionClass}>
@@ -233,6 +266,22 @@ const OperatorDashboardInsights: React.FC<Props> = ({
               </>
             ) : (
               '—/—'
+            )}
+          </div>
+        </div>
+        <div className="od-metric-card od-reveal" style={odReveal(rb + 1)}>
+          <div className="od-metric-header">
+            <span className="od-metric-label">Daily Avg Calls</span>
+          </div>
+          <div className="od-metric-value">
+            {dailyAverageCalls != null ? (
+              <AnimatedNumber
+                value={dailyAverageCalls}
+                decimals={1}
+                delay={countAnimDelay(rb + 1) + 60}
+              />
+            ) : (
+              '—'
             )}
           </div>
         </div>

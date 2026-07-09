@@ -83,6 +83,7 @@
   width: 280px;
   padding: 14px;
   border-radius: 12px;
+  /* Portaled — explicit colors required; see OperatorDashboard.css portaled UI note */
   border: 1px solid #e5e7eb;
   background: #ffffff;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
