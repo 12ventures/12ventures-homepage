@@ -11,7 +11,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   sliceGroupedRows,
-  getDailyAverageDivisorDays,
+  computeDailyAverage,
   type AnalyticsInsights,
   type AnalyticsInsightsBreakdownField,
   type DashboardFilter,
@@ -35,47 +35,20 @@ function countAnimDelay(revealIdx: number): number {
   return revealIdx * REVEAL_STEP_MS + COUNT_ANIM_DELAY_BASE;
 }
 
-function getDailyAveragePeriodDays(
+function resolveDateRange(
   insights: AnalyticsInsights | null,
   filter: DashboardFilter,
   dateRange?: { dateFrom: string; dateTo: string } | null,
-): number | null {
-  if (!insights) return null;
-
-  // Prefer the dashboard's hospital-TZ range (covers this_week / this_month even
-  // when insights omits date_from/date_to). Then custom filter, then API meta.
-  let dateFrom: string | null = null;
-  let dateTo: string | null = null;
-
+): { dateFrom: string; dateTo: string } | null {
   if (dateRange?.dateFrom && dateRange?.dateTo) {
-    dateFrom = dateRange.dateFrom;
-    dateTo = dateRange.dateTo;
-  } else if (filter.mode === 'custom') {
-    dateFrom = filter.dateFrom;
-    dateTo = filter.dateTo;
-  } else if (insights.date_from && insights.date_to) {
-    dateFrom = insights.date_from;
-    dateTo = insights.date_to;
+    return { dateFrom: dateRange.dateFrom, dateTo: dateRange.dateTo };
   }
-
-  if (dateFrom && dateTo) {
-    const days = getDailyAverageDivisorDays(dateFrom, dateTo);
-    return days > 0 ? days : null;
+  if (filter.mode === 'custom') {
+    return { dateFrom: filter.dateFrom, dateTo: filter.dateTo };
   }
-
-  // Last resort: fixed calendar lengths (weekends not excluded).
-  const period = insights.period || (filter.mode === 'preset' ? filter.period : null);
-  const presetDays: Partial<Record<string, number>> = {
-    today: 1,
-    yesterday: 1,
-    past_7_days: 7,
-    past_30_days: 30,
-    this_week: 5,
-    week: 5,
-    this_month: 22,
-  };
-  if (period && presetDays[period] != null) return presetDays[period]!;
-  if (insights.span_days != null && insights.span_days > 0) return insights.span_days;
+  if (insights?.date_from && insights?.date_to) {
+    return { dateFrom: insights.date_from, dateTo: insights.date_to };
+  }
   return null;
 }
 
@@ -83,6 +56,8 @@ interface Props {
   filter: DashboardFilter;
   /** Inclusive hospital-TZ YYYY-MM-DD window for the active period filter. */
   dateRange?: { dateFrom: string; dateTo: string } | null;
+  /** Per-day call counts in hospital TZ (from call history). */
+  dailyCallCounts?: Record<string, number> | null;
   periodLabel: string;
   insightsAvailable: boolean;
   includeTestCalls: boolean;
@@ -207,6 +182,7 @@ function VBarChart({
 const OperatorDashboardInsights: React.FC<Props> = ({
   filter,
   dateRange = null,
+  dailyCallCounts = null,
   periodLabel,
   insightsAvailable,
   includeTestCalls,
@@ -229,15 +205,12 @@ const OperatorDashboardInsights: React.FC<Props> = ({
     [insights?.exam_types],
   );
 
-  const dailyAverageDivisorDays = useMemo(
-    () => getDailyAveragePeriodDays(insights, filter, dateRange),
-    [insights, filter, dateRange],
-  );
-
   const dailyAverageCalls = useMemo(() => {
-    if (!insights || dailyAverageDivisorDays == null || dailyAverageDivisorDays <= 0) return null;
-    return insights.total_calls / dailyAverageDivisorDays;
-  }, [insights, dailyAverageDivisorDays]);
+    if (!insights) return null;
+    const range = resolveDateRange(insights, filter, dateRange);
+    if (!range || !dailyCallCounts) return null;
+    return computeDailyAverage(range.dateFrom, range.dateTo, dailyCallCounts)?.average ?? null;
+  }, [insights, filter, dateRange, dailyCallCounts]);
 
   if (!insightsAvailable) {
     return (
@@ -296,7 +269,7 @@ const OperatorDashboardInsights: React.FC<Props> = ({
         </div>
         <div className="od-metric-card od-reveal" style={odReveal(rb + 1)}>
           <div className="od-metric-header">
-            <span className="od-metric-label">Daily Avg Calls</span>
+            <span className="od-metric-label">Avg Calls / Active Day</span>
           </div>
           <div className="od-metric-value">
             {dailyAverageCalls != null ? (

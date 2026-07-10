@@ -38,6 +38,7 @@ import {
   addCalendarDays,
   calendarDayOfWeek,
   formatDateKeyShort,
+  buildDailyCallCounts,
 } from '../../services/poseidonService';
 import OperatorDashboardInsights from './OperatorDashboardInsights';
 // import CostDetailModal from './CostDetailModal'; // TEMP: cost view hidden
@@ -513,6 +514,10 @@ const OperatorDashboard: React.FC = () => {
   const historyCalls = useMemo(
     () => filterCallsInDateKeyRange(allCalls, periodRange),
     [allCalls, periodRange],
+  );
+  const dailyCallCounts = useMemo(
+    () => buildDailyCallCounts(chartCalls, periodRange),
+    [chartCalls, periodRange],
   );
   const isSingleDay = useMemo(() => {
     if (customRange) return customRange.dateFrom === customRange.dateTo;
@@ -992,6 +997,7 @@ const OperatorDashboard: React.FC = () => {
       <OperatorDashboardInsights
         filter={dashboardFilter}
         dateRange={periodRange}
+        dailyCallCounts={dailyCallCounts}
         periodLabel={filterLabel}
         insightsAvailable={insightsAvailable}
         includeTestCalls={includeTestCalls}
