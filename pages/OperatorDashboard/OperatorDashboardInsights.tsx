@@ -11,7 +11,6 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   sliceGroupedRows,
-  customRangeSpanDays,
   getDailyAverageDivisorDays,
   type AnalyticsInsights,
   type AnalyticsInsightsBreakdownField,
@@ -39,13 +38,19 @@ function countAnimDelay(revealIdx: number): number {
 function getDailyAveragePeriodDays(
   insights: AnalyticsInsights | null,
   filter: DashboardFilter,
+  dateRange?: { dateFrom: string; dateTo: string } | null,
 ): number | null {
   if (!insights) return null;
 
+  // Prefer the dashboard's hospital-TZ range (covers this_week / this_month even
+  // when insights omits date_from/date_to). Then custom filter, then API meta.
   let dateFrom: string | null = null;
   let dateTo: string | null = null;
 
-  if (filter.mode === 'custom') {
+  if (dateRange?.dateFrom && dateRange?.dateTo) {
+    dateFrom = dateRange.dateFrom;
+    dateTo = dateRange.dateTo;
+  } else if (filter.mode === 'custom') {
     dateFrom = filter.dateFrom;
     dateTo = filter.dateTo;
   } else if (insights.date_from && insights.date_to) {
@@ -58,33 +63,26 @@ function getDailyAveragePeriodDays(
     return days > 0 ? days : null;
   }
 
-  return getPeriodDays(insights, filter);
-}
-
-function getPeriodDays(insights: AnalyticsInsights | null, filter: DashboardFilter): number | null {
-  if (!insights) return null;
-  if (insights.span_days != null && insights.span_days > 0) return insights.span_days;
-  if (filter.mode === 'custom') {
-    return customRangeSpanDays(filter.dateFrom, filter.dateTo);
-  }
-  if (insights.date_from && insights.date_to) {
-    return customRangeSpanDays(insights.date_from, insights.date_to);
-  }
+  // Last resort: fixed calendar lengths (weekends not excluded).
+  const period = insights.period || (filter.mode === 'preset' ? filter.period : null);
   const presetDays: Partial<Record<string, number>> = {
     today: 1,
     yesterday: 1,
     past_7_days: 7,
     past_30_days: 30,
-    week: 7,
+    this_week: 5,
+    week: 5,
+    this_month: 22,
   };
-  if (insights.period && presetDays[insights.period] != null) {
-    return presetDays[insights.period]!;
-  }
+  if (period && presetDays[period] != null) return presetDays[period]!;
+  if (insights.span_days != null && insights.span_days > 0) return insights.span_days;
   return null;
 }
 
 interface Props {
   filter: DashboardFilter;
+  /** Inclusive hospital-TZ YYYY-MM-DD window for the active period filter. */
+  dateRange?: { dateFrom: string; dateTo: string } | null;
   periodLabel: string;
   insightsAvailable: boolean;
   includeTestCalls: boolean;
@@ -208,6 +206,7 @@ function VBarChart({
 
 const OperatorDashboardInsights: React.FC<Props> = ({
   filter,
+  dateRange = null,
   periodLabel,
   insightsAvailable,
   includeTestCalls,
@@ -231,8 +230,8 @@ const OperatorDashboardInsights: React.FC<Props> = ({
   );
 
   const dailyAverageDivisorDays = useMemo(
-    () => getDailyAveragePeriodDays(insights, filter),
-    [insights, filter],
+    () => getDailyAveragePeriodDays(insights, filter, dateRange),
+    [insights, filter, dateRange],
   );
 
   const dailyAverageCalls = useMemo(() => {
