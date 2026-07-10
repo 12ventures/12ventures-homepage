@@ -22,11 +22,14 @@ export function isNonEngagementCall(call: CallHistoryItem): boolean {
   return false;
 }
 
+/** Display statuses for call history pills (includes UI-only `declined`). */
+export type DisplayOutcomeStatus =
+  | CallHistoryItem['outcome_status']
+  | 'declined';
+
 /** Visual-only status overrides for call history display. */
-export function getDisplayOutcomeStatus(
-  call: CallHistoryItem,
-): CallHistoryItem['outcome_status'] {
-  if (isNonEngagementCall(call)) return 'completed';
+export function getDisplayOutcomeStatus(call: CallHistoryItem): DisplayOutcomeStatus {
+  if (isNonEngagementCall(call)) return 'declined';
   return call.outcome_status;
 }
 
