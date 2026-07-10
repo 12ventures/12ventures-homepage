@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiCalendar, FiX } from 'react-icons/fi';
-import { formatCustomRangeLabel } from '../../services/poseidonService';
+import {
+  formatCustomRangeLabel,
+  todayInDashboardTz,
+  addCalendarDays,
+} from '../../services/poseidonService';
 import './CustomDateRangePicker.css';
 
 const MAX_RANGE_DAYS = 366;
@@ -9,14 +13,11 @@ const POPOVER_WIDTH = 280;
 const POPOVER_GAP = 8;
 
 function todayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return todayInDashboardTz();
 }
 
 function daysAgoKey(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - (days - 1));
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return addCalendarDays(todayInDashboardTz(), -(days - 1));
 }
 
 function spanDays(from: string, to: string): number {

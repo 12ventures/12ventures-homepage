@@ -18,7 +18,7 @@ import {
   FiActivity,
   FiAlertCircle,
   FiArrowUp,
-  // FiDownload, // TEMP: export XLS hidden
+  FiDownload,
   FiTrendingUp,
 } from 'react-icons/fi';
 import { IoShieldCheckmark } from 'react-icons/io5';
@@ -32,9 +32,15 @@ import {
   type DashboardFilter,
   formatCustomRangeLabel,
   customRangeSpanDays,
+  DASHBOARD_TZ,
+  toZonedDateKey,
+  todayInDashboardTz,
+  addCalendarDays,
+  calendarDayOfWeek,
+  formatDateKeyShort,
 } from '../../services/poseidonService';
 import OperatorDashboardInsights from './OperatorDashboardInsights';
-import CostDetailModal from './CostDetailModal';
+// import CostDetailModal from './CostDetailModal'; // TEMP: cost view hidden
 import MaintenanceModal from './MaintenanceModal';
 import CustomDateRangePicker from './CustomDateRangePicker';
 import CallStatusPill from './CallStatusPill';
@@ -91,7 +97,7 @@ const PILOT_RANGE_LABEL = 'Since May 27 Pilot';
 
 function isPilotRange(
   range: { dateFrom: string; dateTo: string } | null,
-  today = toLocalDateKey(new Date()),
+  today = todayInDashboardTz(),
 ): boolean {
   return range?.dateFrom === PILOT_START_DATE && range.dateTo === today;
 }
@@ -166,54 +172,41 @@ function fmtDateTime(iso: string): string {
   });
 }
 
-function toLocalDateKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+type DateKeyRange = { dateFrom: string; dateTo: string };
 
-/** Aggregate call list into daily counts; optionally fill every day in the period (zeros). */
+/** Aggregate call list into daily counts using hospital TZ (not UTC / browser TZ). */
 function aggregateByDate(
   calls: CallHistoryItem[],
-  range?: { start: Date; end: Date },
+  range?: DateKeyRange,
 ): { name: string; value: number }[] {
   const counts: Record<string, number> = {};
 
   if (range) {
-    const cursor = new Date(range.start);
-    cursor.setHours(0, 0, 0, 0);
-    const endDay = new Date(range.end);
-    endDay.setHours(0, 0, 0, 0);
-    while (cursor <= endDay) {
-      counts[toLocalDateKey(cursor)] = 0;
-      cursor.setDate(cursor.getDate() + 1);
+    let cursor = range.dateFrom;
+    while (cursor <= range.dateTo) {
+      counts[cursor] = 0;
+      cursor = addCalendarDays(cursor, 1);
     }
   }
 
   for (const c of calls) {
-    const day = c.started_at.slice(0, 10);
+    const day = toZonedDateKey(c.started_at, DASHBOARD_TZ);
+    if (!day) continue;
     counts[day] = (counts[day] ?? 0) + 1;
   }
 
   return Object.entries(counts)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, value]) => ({
-      name: new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-      }),
+      name: formatDateKeyShort(date),
       value,
     }));
 }
 
 async function fetchCallHistoryForRange(
-  start: Date,
-  end: Date,
+  range: DateKeyRange,
 ): Promise<CallHistoryItem[]> {
-  const startMs = start.getTime();
-  const dateFrom = toLocalDateKey(start);
-  const dateTo = toLocalDateKey(end);
+  const { dateFrom, dateTo } = range;
 
   try {
     const collected: CallHistoryItem[] = [];
@@ -244,98 +237,79 @@ async function fetchCallHistoryForRange(
       if (!res.calls?.length) break;
       collected.push(...res.calls);
 
-      const oldestMs = Math.min(
-        ...res.calls.map((c) => new Date(c.started_at).getTime()),
-      );
-      if (oldestMs < startMs || page >= (res.pages ?? 1)) break;
+      const oldestKey = res.calls.reduce((min, c) => {
+        const key = toZonedDateKey(c.started_at, DASHBOARD_TZ);
+        return !min || key < min ? key : min;
+      }, '');
+      if (oldestKey < dateFrom || page >= (res.pages ?? 1)) break;
       page += 1;
     }
-    return filterCallsInRange(collected, start, end);
+    return filterCallsInDateKeyRange(collected, range);
   }
 }
 
-function filterCallsInRange(
+function filterCallsInDateKeyRange(
   calls: CallHistoryItem[],
-  start: Date,
-  end: Date,
+  range: DateKeyRange,
 ): CallHistoryItem[] {
-  const startMs = start.getTime();
-  const endMs = end.getTime();
   return calls.filter((c) => {
-    const t = new Date(c.started_at).getTime();
-    return t >= startMs && t <= endMs;
+    const day = toZonedDateKey(c.started_at, DASHBOARD_TZ);
+    return day >= range.dateFrom && day <= range.dateTo;
   });
 }
 
-/** Client-side date window for filtering the recent history page by period. */
-function getPeriodDateRange(period: DashboardPeriod): { start: Date; end: Date } {
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+/** Inclusive YYYY-MM-DD window in hospital TZ for the selected period. */
+function getPeriodDateKeyRange(period: DashboardPeriod): DateKeyRange {
+  const today = todayInDashboardTz();
+  let dateFrom = today;
+  let dateTo = today;
 
   switch (period) {
     case 'today':
       break;
     case 'yesterday':
-      start.setDate(start.getDate() - 1);
-      end.setDate(end.getDate() - 1);
+      dateFrom = addCalendarDays(today, -1);
+      dateTo = dateFrom;
       break;
     case 'past_7_days':
-      start.setDate(start.getDate() - 6);
+      dateFrom = addCalendarDays(today, -6);
       break;
     case 'past_30_days':
-      start.setDate(start.getDate() - 29);
+      dateFrom = addCalendarDays(today, -29);
       break;
     case 'past_90_days':
-      start.setDate(start.getDate() - 89);
+      dateFrom = addCalendarDays(today, -89);
       break;
     case 'this_week': {
-      const dow = start.getDay();
+      const dow = calendarDayOfWeek(today);
       const mondayOffset = dow === 0 ? -6 : 1 - dow;
-      start.setDate(start.getDate() + mondayOffset);
-      const friday = new Date(start);
-      friday.setDate(start.getDate() + 4);
-      friday.setHours(23, 59, 59, 999);
-      return { start, end: friday.getTime() > end.getTime() ? end : friday };
+      dateFrom = addCalendarDays(today, mondayOffset);
+      const friday = addCalendarDays(dateFrom, 4);
+      dateTo = friday < today ? friday : today;
+      break;
     }
     case 'this_month':
-      start.setDate(1);
+      dateFrom = `${today.slice(0, 8)}01`;
       break;
     case 'this_year':
-      start.setMonth(0, 1);
+      dateFrom = `${today.slice(0, 4)}-01-01`;
       break;
   }
-  return { start, end };
+  return { dateFrom, dateTo };
 }
 
-function fmtRangeLabel(start: Date, end: Date): string {
-  const fmt = (d: Date) =>
-    d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return `${fmt(start)} – ${fmt(end)}`;
+function fmtRangeLabel(range: DateKeyRange): string {
+  return `${formatDateKeyShort(range.dateFrom)} – ${formatDateKeyShort(range.dateTo)}`;
 }
 
-function parseLocalDateStart(dateStr: string): Date {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d, 0, 0, 0, 0);
-}
-
-function parseLocalDateEnd(dateStr: string): Date {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d, 23, 59, 59, 999);
-}
-
-function getFilterDateRange(
+function getFilterDateKeyRange(
   period: DashboardPeriod,
   customRange: { dateFrom: string; dateTo: string } | null,
-): { start: Date; end: Date } {
+): DateKeyRange {
   if (customRange) {
-    return {
-      start: parseLocalDateStart(customRange.dateFrom),
-      end: parseLocalDateEnd(customRange.dateTo),
-    };
+    return { dateFrom: customRange.dateFrom, dateTo: customRange.dateTo };
   }
-  return getPeriodDateRange(period);
+  return getPeriodDateKeyRange(period);
 }
 
 function buildDashboardFilter(
@@ -343,9 +317,14 @@ function buildDashboardFilter(
   customRange: { dateFrom: string; dateTo: string } | null,
 ): DashboardFilter {
   if (customRange) {
-    return { mode: 'custom', dateFrom: customRange.dateFrom, dateTo: customRange.dateTo };
+    return {
+      mode: 'custom',
+      dateFrom: customRange.dateFrom,
+      dateTo: customRange.dateTo,
+      tz: DASHBOARD_TZ,
+    };
   }
-  return { mode: 'preset', period: toApiPeriod(period) };
+  return { mode: 'preset', period: toApiPeriod(period), tz: DASHBOARD_TZ };
 }
 
 function isInsightsFilterAvailable(
@@ -369,11 +348,11 @@ const OperatorDashboard: React.FC = () => {
   const [allCalls, setAllCalls] = useState<CallHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [periodLoading, setPeriodLoading] = useState(false);
-  // const [downloading, setDownloading] = useState(false); // TEMP: export XLS hidden
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [showCostBasis, setShowCostBasis] = useState(false);
-  const [showCostDetail, setShowCostDetail] = useState(false);
+  // const [showCostBasis, setShowCostBasis] = useState(false); // TEMP: cost view hidden
+  // const [showCostDetail, setShowCostDetail] = useState(false); // TEMP: cost view hidden
   const [showMaintenance, setShowMaintenance] = useState(false);
   const [includeTestCalls, setIncludeTestCalls] = useState(false);
   const includeTestCallsRef = useRef(false);
@@ -404,7 +383,7 @@ const OperatorDashboard: React.FC = () => {
     try {
       const filter = buildDashboardFilter(periodRef.current, customRangeRef.current);
       const testCalls = includeTestCallsRef.current;
-      const range = getFilterDateRange(periodRef.current, customRangeRef.current);
+      const range = getFilterDateKeyRange(periodRef.current, customRangeRef.current);
       const insightsAvailable = isInsightsFilterAvailable(periodRef.current, customRangeRef.current);
 
       const insightsPromise = insightsAvailable
@@ -415,7 +394,7 @@ const OperatorDashboard: React.FC = () => {
         poseidonService.getAnalyticsSummary(filter, testCalls),
         poseidonService.getCostAnalytics(filter, testCalls),
         poseidonService.getActiveCalls(),
-        fetchCallHistoryForRange(range.start, range.end),
+        fetchCallHistoryForRange(range),
         insightsPromise,
       ]);
 
@@ -522,17 +501,17 @@ const OperatorDashboard: React.FC = () => {
     [period, customRange],
   );
 
-  // ── Chart / history data (client-side date filtering) ────────────────
+  // ── Chart / history data (hospital-TZ calendar days) ─────────────────
   const periodRange = useMemo(
-    () => getFilterDateRange(period, customRange),
+    () => getFilterDateKeyRange(period, customRange),
     [period, customRange],
   );
   const chartCalls = useMemo(
-    () => filterCallsInRange(allCalls, periodRange.start, periodRange.end),
+    () => filterCallsInDateKeyRange(allCalls, periodRange),
     [allCalls, periodRange],
   );
   const historyCalls = useMemo(
-    () => filterCallsInRange(allCalls, periodRange.start, periodRange.end),
+    () => filterCallsInDateKeyRange(allCalls, periodRange),
     [allCalls, periodRange],
   );
   const isSingleDay = useMemo(() => {
@@ -541,7 +520,7 @@ const OperatorDashboard: React.FC = () => {
   }, [customRange, period]);
 
   // For today / yesterday use the hourly breakdown from insights (24 bars, "8 AM" etc.)
-  // For multi-day periods fall back to aggregating call history by calendar day.
+  // For multi-day periods aggregate call history by hospital-TZ calendar day.
   const dailyData = useMemo(() => {
     if (isSingleDay && insights?.calls_by_hour?.length) {
       return insights.calls_by_hour.map((h) => ({ name: h.label, value: h.count }));
@@ -554,11 +533,7 @@ const OperatorDashboard: React.FC = () => {
     if (isSingleDay) {
       const historyTotal = fromHistory.reduce((s, d) => s + d.value, 0);
       if (historyTotal === 0 && (analytics?.calls.total ?? 0) > 0) {
-        const dayLabel = new Date(periodRange.start).toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-        });
-        return [{ name: dayLabel, value: analytics!.calls.total }];
+        return [{ name: formatDateKeyShort(periodRange.dateFrom), value: analytics!.calls.total }];
       }
     }
 
@@ -572,15 +547,16 @@ const OperatorDashboard: React.FC = () => {
     const rawPeak = globalPeak > 0 ? globalPeak : periodPeak;
     return Math.min(total, rawPeak);
   }, [analytics]);
-  const callsCost = costAnalytics?.breakdown?.calls?.cost ?? 0;
-  const costChartData = useMemo(
-    () =>
-      (costAnalytics?.chart_data ?? []).map((d) => ({
-        label: d.label,
-        value: d.calls_cost,
-      })),
-    [costAnalytics],
-  );
+  // TEMP: cost view hidden
+  // const callsCost = costAnalytics?.breakdown?.calls?.cost ?? 0;
+  // const costChartData = useMemo(
+  //   () =>
+  //     (costAnalytics?.chart_data ?? []).map((d) => ({
+  //       label: d.label,
+  //       value: d.calls_cost,
+  //     })),
+  //   [costAnalytics],
+  // );
   const volumeChartSubtitle = useMemo(() => {
     if (isSingleDay && insights?.calls_by_hour?.length) {
       const active = insights.calls_by_hour.filter((h) => h.count > 0);
@@ -589,7 +565,7 @@ const OperatorDashboard: React.FC = () => {
       }
       return 'Hourly breakdown';
     }
-    return fmtRangeLabel(periodRange.start, periodRange.end);
+    return fmtRangeLabel(periodRange);
   }, [isSingleDay, insights, periodRange]);
 
   const handlePresetPeriod = (p: DashboardPeriod) => {
@@ -599,7 +575,7 @@ const OperatorDashboard: React.FC = () => {
 
   const handlePeriodDropdownChange = (v: PeriodDropdownValue) => {
     if (v === 'pilot') {
-      setCustomRange({ dateFrom: PILOT_START_DATE, dateTo: toLocalDateKey(new Date()) });
+      setCustomRange({ dateFrom: PILOT_START_DATE, dateTo: todayInDashboardTz() });
       return;
     }
     handlePresetPeriod(v);
@@ -674,37 +650,36 @@ const OperatorDashboard: React.FC = () => {
     </div>
   );
 
-  // TEMP: export XLS hidden
-  // const handleDownload = useCallback(async () => {
-  //   setDownloading(true);
-  //   try {
-  //     await poseidonService.downloadCallsExport(includeTestCalls);
-  //   } catch (err) {
-  //     console.error('[OperatorDashboard] export error', err);
-  //   } finally {
-  //     setDownloading(false);
-  //   }
-  // }, [includeTestCalls]);
+  const handleDownload = useCallback(async () => {
+    setDownloading(true);
+    try {
+      await poseidonService.downloadCallsExport(includeTestCalls);
+    } catch (err) {
+      console.error('[OperatorDashboard] export error', err);
+    } finally {
+      setDownloading(false);
+    }
+  }, [includeTestCalls]);
 
-  // Secret toggle: backtick (`) shows/hides Cost Basis chart
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== '`') return;
-      const el = e.target as HTMLElement | null;
-      if (
-        el &&
-        (el.tagName === 'INPUT' ||
-          el.tagName === 'TEXTAREA' ||
-          el.tagName === 'SELECT' ||
-          el.isContentEditable)
-      ) {
-        return;
-      }
-      setShowCostBasis((v) => !v);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  // TEMP: cost view hidden — backtick (`) toggle
+  // useEffect(() => {
+  //   const onKeyDown = (e: KeyboardEvent) => {
+  //     if (e.key !== '`') return;
+  //     const el = e.target as HTMLElement | null;
+  //     if (
+  //       el &&
+  //       (el.tagName === 'INPUT' ||
+  //         el.tagName === 'TEXTAREA' ||
+  //         el.tagName === 'SELECT' ||
+  //         el.isContentEditable)
+  //     ) {
+  //       return;
+  //     }
+  //     setShowCostBasis((v) => !v);
+  //   };
+  //   window.addEventListener('keydown', onKeyDown);
+  //   return () => window.removeEventListener('keydown', onKeyDown);
+  // }, []);
 
   // ── Render ───────────────────────────────────────────────────────────
   if (loading) {
@@ -760,17 +735,16 @@ const OperatorDashboard: React.FC = () => {
             <IoShieldCheckmark size={18} />
             Status: Healthy
           </button>
-          {/* TEMP: export XLS hidden
           <button
             type="button"
-            className="od-action-btn"
+            className={`od-action-btn${downloading ? ' od-action-btn--exporting' : ''}`}
             onClick={handleDownload}
             disabled={downloading}
+            aria-busy={downloading}
           >
-            <FiDownload size={13} style={{ animation: downloading ? 'od-spin 0.8s linear infinite' : undefined }} />
+            <FiDownload size={13} aria-hidden="true" />
             {downloading ? 'Exporting…' : 'Export XLS'}
           </button>
-          */}
         </div>
       </div>
 
@@ -998,70 +972,19 @@ const OperatorDashboard: React.FC = () => {
           )}
         </div>
 
+        {renderCallHistory(true, 11)}
+        {/* TEMP: cost view hidden
         {showCostBasis ? (
           <div className="od-chart-card od-reveal" style={odReveal(11)}>
-            <div className="od-chart-header">
-              <div className="od-chart-header-left">
-                <p className="od-chart-title">Cost Basis</p>
-                <p className="od-chart-subtitle">
-                  {costAnalytics
-                    ? `Calls only · ${filterLabel} · $${callsCost.toFixed(2)}`
-                    : 'Daily call cost'}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="od-cost-detail-btn"
-                onClick={() => setShowCostDetail(true)}
-                title="View cost breakdown by component"
-              >
-                Detail
-              </button>
-            </div>
-            {!costAnalytics || costChartData.length === 0 ? (
-              <p className="od-chart-empty">No cost data in this period.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={costChartData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }} barSize={16}>
-                  <CartesianGrid strokeDasharray="2 4" vertical={false} stroke={chartTheme.grid} />
-                  <XAxis
-                    dataKey="label"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: chartTheme.tick }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: chartTheme.tick }}
-                    allowDecimals
-                    tickFormatter={(v: number) => `$${v}`}
-                  />
-                  <Tooltip
-                    contentStyle={chartTheme.tooltip}
-                    labelStyle={chartTheme.tooltipLabelStyle}
-                    itemStyle={chartTheme.tooltipItemStyle}
-                    cursor={{ fill: chartTheme.cursor }}
-                    formatter={(v: number) => [`$${v.toFixed(2)}`, 'Calls']}
-                  />
-                  <Bar
-                    dataKey="value"
-                    fill={chartTheme.bar}
-                    activeBar={{ fill: chartTheme.barActive }}
-                    radius={[4, 4, 0, 0]}
-                    name="Calls"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            ...
           </div>
         ) : (
           renderCallHistory(true, 11)
         )}
+        */}
       </div>
 
-      {showCostBasis && renderCallHistory(false, 12)}
+      {/* TEMP: cost view hidden — {showCostBasis && renderCallHistory(false, 12)} */}
 
       <OperatorDashboardInsights
         filter={dashboardFilter}
@@ -1075,6 +998,7 @@ const OperatorDashboard: React.FC = () => {
 
       </div>
 
+      {/* TEMP: cost view hidden
       {showCostDetail && (
         <CostDetailModal
           filter={dashboardFilter}
@@ -1083,6 +1007,7 @@ const OperatorDashboard: React.FC = () => {
           onClose={() => setShowCostDetail(false)}
         />
       )}
+      */}
 
       {showMaintenance && (
         <MaintenanceModal onClose={() => setShowMaintenance(false)} />
