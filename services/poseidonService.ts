@@ -199,6 +199,71 @@ export function getDailyAverageDivisorDays(dateFrom: string, dateTo: string): nu
   return weekdays > 0 ? weekdays : total;
 }
 
+/** Per-day call counts (hospital TZ) for an inclusive YYYY-MM-DD range. */
+export function buildDailyCallCounts(
+  calls: { started_at: string }[],
+  range: { dateFrom: string; dateTo: string },
+  timeZone: string = DASHBOARD_TZ,
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  let cursor = range.dateFrom;
+  while (cursor <= range.dateTo) {
+    counts[cursor] = 0;
+    cursor = addCalendarDays(cursor, 1);
+  }
+  for (const call of calls) {
+    const day = toZonedDateKey(call.started_at, timeZone);
+    if (!day || counts[day] == null) continue;
+    counts[day]++;
+  }
+  return counts;
+}
+
+/** Days with more than this many calls count toward the daily average. */
+export const DAILY_AVERAGE_MIN_CALLS = 2;
+
+export interface DailyAverageResult {
+  average: number;
+  divisorDays: number;
+  qualifyingCalls: number;
+}
+
+/**
+ * Daily average excluding weekends and days with ≤1 call.
+ * Numerator = calls on qualifying days only; divisor = count of those days.
+ */
+export function computeDailyAverage(
+  dateFrom: string,
+  dateTo: string,
+  dailyCounts: Record<string, number>,
+  minCallsPerDay = DAILY_AVERAGE_MIN_CALLS,
+): DailyAverageResult | null {
+  const weekdays = countWeekdaysInRange(dateFrom, dateTo);
+  const useWeekdaysOnly = weekdays > 0;
+
+  let qualifyingCalls = 0;
+  let divisorDays = 0;
+  let cursor = dateFrom;
+  while (cursor <= dateTo) {
+    const dow = calendarDayOfWeek(cursor);
+    const isWeekend = dow === 0 || dow === 6;
+    const dayEligible = useWeekdaysOnly ? !isWeekend : true;
+    const count = dailyCounts[cursor] ?? 0;
+    if (dayEligible && count >= minCallsPerDay) {
+      qualifyingCalls += count;
+      divisorDays++;
+    }
+    cursor = addCalendarDays(cursor, 1);
+  }
+
+  if (divisorDays === 0) return null;
+  return {
+    average: qualifyingCalls / divisorDays,
+    divisorDays,
+    qualifyingCalls,
+  };
+}
+
 export interface AnalyticsSummary extends AnalyticsRangeMeta {
   calls: {
     active: number;
