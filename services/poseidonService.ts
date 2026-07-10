@@ -1,12 +1,60 @@
-/** User's IANA timezone, resolved once at module load. Falls back to LA (API default) on error. */
-const USER_TZ = (() => {
-  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles'; }
-  catch { return 'America/Los_Angeles'; }
-})();
+/**
+ * Hospital / product timezone for SARH dashboard day boundaries.
+ * Must match backend `tz` interpretation — not the viewer's browser timezone.
+ */
+export const DASHBOARD_TZ = 'America/Los_Angeles';
 
 const POSEIDON_API_BASE_URL = import.meta.env.PROD 
   ? 'https://api.poseidonai.12ventures.io' 
   : 'http://localhost:8001';
+
+/** YYYY-MM-DD for an instant in the dashboard (hospital) timezone. */
+export function toZonedDateKey(
+  isoOrDate: string | Date,
+  timeZone: string = DASHBOARD_TZ,
+): string {
+  const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate;
+  if (Number.isNaN(d.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === 'year')?.value ?? '0000';
+  const m = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const day = parts.find((p) => p.type === 'day')?.value ?? '01';
+  return `${y}-${m}-${day}`;
+}
+
+/** Today's calendar date in the dashboard timezone. */
+export function todayInDashboardTz(timeZone: string = DASHBOARD_TZ): string {
+  return toZonedDateKey(new Date(), timeZone);
+}
+
+/** Add/subtract whole calendar days from a YYYY-MM-DD key (timezone-agnostic). */
+export function addCalendarDays(dateKey: string, days: number): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  utc.setUTCDate(utc.getUTCDate() + days);
+  return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, '0')}-${String(utc.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** Day of week for a YYYY-MM-DD key: 0=Sun … 6=Sat (calendar date, not viewer TZ). */
+export function calendarDayOfWeek(dateKey: string): number {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+/** Short chart/table label from YYYY-MM-DD, e.g. "Jul 3". */
+export function formatDateKeyShort(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
 
 // Types based on API Guide
 
@@ -89,7 +137,7 @@ export type DashboardFilter =
 
 export function buildAnalyticsParams(filter: DashboardFilter, includeTestCalls = false): URLSearchParams {
   const params = new URLSearchParams();
-  params.set('tz', filter.tz ?? USER_TZ);
+  params.set('tz', filter.tz ?? DASHBOARD_TZ);
   if (includeTestCalls) params.set('include_test_calls', 'true');
   if (filter.mode === 'custom') {
     params.set('date_from', filter.dateFrom);
@@ -124,9 +172,31 @@ export function formatCustomRangeLabel(dateFrom: string, dateTo: string): string
 export function customRangeSpanDays(dateFrom: string, dateTo: string): number {
   const [y1, m1, d1] = dateFrom.split('-').map(Number);
   const [y2, m2, d2] = dateTo.split('-').map(Number);
-  const start = new Date(y1, m1 - 1, d1);
-  const end = new Date(y2, m2 - 1, d2);
-  return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  const start = Date.UTC(y1, m1 - 1, d1);
+  const end = Date.UTC(y2, m2 - 1, d2);
+  return Math.round((end - start) / 86_400_000) + 1;
+}
+
+/** Mon–Fri days in an inclusive YYYY-MM-DD calendar range. */
+export function countWeekdaysInRange(dateFrom: string, dateTo: string): number {
+  let count = 0;
+  let cursor = dateFrom;
+  while (cursor <= dateTo) {
+    const dow = calendarDayOfWeek(cursor);
+    if (dow !== 0 && dow !== 6) count++;
+    cursor = addCalendarDays(cursor, 1);
+  }
+  return count;
+}
+
+/**
+ * Divisor for daily call averages: weekdays only, unless the period is
+ * exclusively weekend day(s) (e.g. Sat–Sun or a single Saturday).
+ */
+export function getDailyAverageDivisorDays(dateFrom: string, dateTo: string): number {
+  const total = customRangeSpanDays(dateFrom, dateTo);
+  const weekdays = countWeekdaysInRange(dateFrom, dateTo);
+  return weekdays > 0 ? weekdays : total;
 }
 
 export interface AnalyticsSummary extends AnalyticsRangeMeta {
@@ -364,7 +434,11 @@ class PoseidonService {
     dateTo?: string,
     includeTestCalls = false,
   ): Promise<CallHistoryResponse> {
-    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      tz: DASHBOARD_TZ,
+    });
     if (status) params.append('status', status);
     if (dateFrom) params.append('date_from', dateFrom);
     if (dateTo) params.append('date_to', dateTo);
@@ -428,7 +502,7 @@ class PoseidonService {
   }
 
   async downloadCallsExport(includeTestCalls = false): Promise<void> {
-    const params = new URLSearchParams({ tabs: 'true', tz: USER_TZ });
+    const params = new URLSearchParams({ tabs: 'true', tz: DASHBOARD_TZ });
     if (includeTestCalls) params.set('include_test_calls', 'true');
     const url = `${this.baseUrl}/api/dashboard/calls/history/export?${params.toString()}`;
     const response = await fetch(url);

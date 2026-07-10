@@ -12,6 +12,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
   sliceGroupedRows,
   customRangeSpanDays,
+  getDailyAverageDivisorDays,
   type AnalyticsInsights,
   type AnalyticsInsightsBreakdownField,
   type DashboardFilter,
@@ -33,6 +34,31 @@ function odReveal(idx: number): React.CSSProperties {
 
 function countAnimDelay(revealIdx: number): number {
   return revealIdx * REVEAL_STEP_MS + COUNT_ANIM_DELAY_BASE;
+}
+
+function getDailyAveragePeriodDays(
+  insights: AnalyticsInsights | null,
+  filter: DashboardFilter,
+): number | null {
+  if (!insights) return null;
+
+  let dateFrom: string | null = null;
+  let dateTo: string | null = null;
+
+  if (filter.mode === 'custom') {
+    dateFrom = filter.dateFrom;
+    dateTo = filter.dateTo;
+  } else if (insights.date_from && insights.date_to) {
+    dateFrom = insights.date_from;
+    dateTo = insights.date_to;
+  }
+
+  if (dateFrom && dateTo) {
+    const days = getDailyAverageDivisorDays(dateFrom, dateTo);
+    return days > 0 ? days : null;
+  }
+
+  return getPeriodDays(insights, filter);
 }
 
 function getPeriodDays(insights: AnalyticsInsights | null, filter: DashboardFilter): number | null {
@@ -204,15 +230,15 @@ const OperatorDashboardInsights: React.FC<Props> = ({
     [insights?.exam_types],
   );
 
-  const periodDays = useMemo(
-    () => getPeriodDays(insights, filter),
+  const dailyAverageDivisorDays = useMemo(
+    () => getDailyAveragePeriodDays(insights, filter),
     [insights, filter],
   );
 
   const dailyAverageCalls = useMemo(() => {
-    if (!insights || periodDays == null || periodDays <= 0) return null;
-    return insights.total_calls / periodDays;
-  }, [insights, periodDays]);
+    if (!insights || dailyAverageDivisorDays == null || dailyAverageDivisorDays <= 0) return null;
+    return insights.total_calls / dailyAverageDivisorDays;
+  }, [insights, dailyAverageDivisorDays]);
 
   if (!insightsAvailable) {
     return (
