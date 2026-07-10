@@ -991,6 +991,7 @@ const OperatorDashboard: React.FC = () => {
 
       <OperatorDashboardInsights
         filter={dashboardFilter}
+        dateRange={periodRange}
         periodLabel={filterLabel}
         insightsAvailable={insightsAvailable}
         includeTestCalls={includeTestCalls}
