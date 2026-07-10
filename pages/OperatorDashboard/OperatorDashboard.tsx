@@ -18,7 +18,7 @@ import {
   FiActivity,
   FiAlertCircle,
   FiArrowUp,
-  FiDownload,
+  // FiDownload, // TEMP: export XLS hidden
   FiTrendingUp,
 } from 'react-icons/fi';
 import { IoShieldCheckmark } from 'react-icons/io5';
@@ -348,7 +348,7 @@ const OperatorDashboard: React.FC = () => {
   const [allCalls, setAllCalls] = useState<CallHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [periodLoading, setPeriodLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  // const [downloading, setDownloading] = useState(false); // TEMP: export XLS hidden
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   // const [showCostBasis, setShowCostBasis] = useState(false); // TEMP: cost view hidden
@@ -650,16 +650,17 @@ const OperatorDashboard: React.FC = () => {
     </div>
   );
 
-  const handleDownload = useCallback(async () => {
-    setDownloading(true);
-    try {
-      await poseidonService.downloadCallsExport(includeTestCalls);
-    } catch (err) {
-      console.error('[OperatorDashboard] export error', err);
-    } finally {
-      setDownloading(false);
-    }
-  }, [includeTestCalls]);
+  // TEMP: export XLS hidden
+  // const handleDownload = useCallback(async () => {
+  //   setDownloading(true);
+  //   try {
+  //     await poseidonService.downloadCallsExport(includeTestCalls);
+  //   } catch (err) {
+  //     console.error('[OperatorDashboard] export error', err);
+  //   } finally {
+  //     setDownloading(false);
+  //   }
+  // }, [includeTestCalls]);
 
   // TEMP: cost view hidden — backtick (`) toggle
   // useEffect(() => {
@@ -735,6 +736,7 @@ const OperatorDashboard: React.FC = () => {
             <IoShieldCheckmark size={18} />
             Status: Healthy
           </button>
+          {/* TEMP: export XLS hidden
           <button
             type="button"
             className={`od-action-btn${downloading ? ' od-action-btn--exporting' : ''}`}
@@ -745,6 +747,7 @@ const OperatorDashboard: React.FC = () => {
             <FiDownload size={13} aria-hidden="true" />
             {downloading ? 'Exporting…' : 'Export XLS'}
           </button>
+          */}
         </div>
       </div>
 
