@@ -880,7 +880,7 @@ const OperatorDashboard: React.FC = () => {
           </div>
           <span className="od-metric-badge">
             <FiArrowUp size={10} />
-            <AnimatedNumber value={totalCalls} delay={countAnimDelay(5) + 80} duration={700} /> completed
+            <AnimatedNumber value={totalCalls} delay={countAnimDelay(5) + 80} duration={700} /> answered
           </span>
         </div>
 
