@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiInfo } from 'react-icons/fi';
 import type { CallHistoryItem } from '../../services/poseidonService';
-import { isNonEngagementCall } from './callHistoryUtils';
+import { isNonEngagementCall, type DisplayOutcomeStatus } from './callHistoryUtils';
 
 const OUTCOME_REASON_MESSAGES: Record<string, string> = {
   completed_normally: 'Call completed successfully.',
@@ -58,7 +58,7 @@ export function getOutcomeDetailLines(call: CallHistoryItem): OutcomeDetailLine[
 }
 
 interface Props {
-  status: CallHistoryItem['outcome_status'];
+  status: DisplayOutcomeStatus;
   call: CallHistoryItem;
 }
 
