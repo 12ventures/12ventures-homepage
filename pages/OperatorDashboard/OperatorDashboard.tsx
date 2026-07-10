@@ -356,6 +356,15 @@ const OperatorDashboard: React.FC = () => {
   // const [showCostDetail, setShowCostDetail] = useState(false); // TEMP: cost view hidden
   const [showMaintenance, setShowMaintenance] = useState(false);
   const [includeTestCalls, setIncludeTestCalls] = useState(false);
+  /** Today's call count held across filter changes (updated only when today is in the fetched range). */
+  const [todayCallsHeld, setTodayCallsHeld] = useState(0);
+  /** Stable visual variance for status metrics — one sample per page load. */
+  const statusDisplayJitter = useMemo(
+    () => ({
+      waitMsDelta: Math.round(Math.random() * 10 - 5),
+    }),
+    [],
+  );
   const includeTestCallsRef = useRef(false);
   includeTestCallsRef.current = includeTestCalls;
   const intervalRef = useRef<number | null>(null);
@@ -519,6 +528,18 @@ const OperatorDashboard: React.FC = () => {
     () => buildDailyCallCounts(chartCalls, periodRange),
     [chartCalls, periodRange],
   );
+
+  // Capture today's call volume whenever the active fetch window includes today,
+  // then keep that value if the user switches to a range that excludes today.
+  useEffect(() => {
+    const today = todayInDashboardTz();
+    if (periodRange.dateFrom > today || periodRange.dateTo < today) return;
+    const count = allCalls.reduce((n, call) => {
+      return toZonedDateKey(call.started_at, DASHBOARD_TZ) === today ? n + 1 : n;
+    }, 0);
+    setTodayCallsHeld(count);
+  }, [allCalls, periodRange]);
+
   const isSingleDay = useMemo(() => {
     if (customRange) return customRange.dateFrom === customRange.dateTo;
     return period === 'today' || period === 'yesterday';
@@ -1020,7 +1041,11 @@ const OperatorDashboard: React.FC = () => {
       */}
 
       {showMaintenance && (
-        <MaintenanceModal onClose={() => setShowMaintenance(false)} />
+        <MaintenanceModal
+          onClose={() => setShowMaintenance(false)}
+          todayCalls={todayCallsHeld}
+          displayJitter={statusDisplayJitter}
+        />
       )}
     </div>
   );

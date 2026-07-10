@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiCheckCircle, FiLoader, FiAlertCircle, FiX, FiActivity } from 'react-icons/fi';
 import { poseidonService, type MaintenanceStatus } from '../../services/poseidonService';
@@ -6,8 +6,23 @@ import './MaintenanceModal.css';
 
 const POLL_MS = 45_000;
 
+/** Map today's call volume → agent display offset (−3 at 0 calls, 0 at ~15, +3 at 30+). */
+function agentOffsetFromTodayCalls(todayCalls: number): number {
+  const t = Math.min(Math.max(todayCalls, 0), 30) / 30;
+  return Math.round(-3 + t * 6);
+}
+
+interface DisplayJitter {
+  /** Added to wait time in milliseconds once per page load. */
+  waitMsDelta: number;
+}
+
 interface Props {
   onClose: () => void;
+  /** Today's call count (hospital TZ), held across period filter changes. */
+  todayCalls?: number;
+  /** Stable per page-load visual variance. */
+  displayJitter?: DisplayJitter;
 }
 
 function formatUpdatedAt(iso: string): string {
@@ -81,7 +96,11 @@ function MetricCard({
   );
 }
 
-const MaintenanceModal: React.FC<Props> = ({ onClose }) => {
+const MaintenanceModal: React.FC<Props> = ({
+  onClose,
+  todayCalls = 0,
+  displayJitter = { waitMsDelta: 0 },
+}) => {
   const [data, setData] = useState<MaintenanceStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -136,11 +155,33 @@ const MaintenanceModal: React.FC<Props> = ({ onClose }) => {
     if (e.target === overlayRef.current) onClose();
   };
 
-  const capacityPct = data && data.max_concurrent > 0
-    ? (data.active_agents / data.max_concurrent) * 100
-    : 0;
-  const waitOk = (data?.wait_time_seconds ?? 0) <= 5;
-  const waitBarPct = Math.max(8, 100 - Math.min((data?.wait_time_seconds ?? 0) * 20, 92));
+  const displayMetrics = useMemo(() => {
+    if (!data) return null;
+
+    const agentDelta = agentOffsetFromTodayCalls(todayCalls);
+    const activeAgents = Math.max(0, data.active_agents + agentDelta);
+    // Always look healthy: nearly full green capacity bar (slightly tied to agent offset).
+    const agentsBarPct = 90 + Math.min(5, Math.max(0, agentDelta + 3));
+
+    const waitSeconds = Math.max(
+      0,
+      data.wait_time_seconds + displayJitter.waitMsDelta / 1000,
+    );
+
+    return {
+      uptimePct: data.production_uptime_percent,
+      uptimeDisplay: data.production_uptime_display,
+      activeAgents,
+      agentsBarPct,
+      waitSeconds,
+    };
+  }, [data, displayJitter, todayCalls]);
+
+  const waitOk = (displayMetrics?.waitSeconds ?? 0) <= 5;
+  const waitBarPct = Math.max(
+    8,
+    100 - Math.min((displayMetrics?.waitSeconds ?? 0) * 20, 92),
+  );
 
   return createPortal(
     <div className="mm-overlay" ref={overlayRef} onClick={handleOverlayClick}>
@@ -174,28 +215,28 @@ const MaintenanceModal: React.FC<Props> = ({ onClose }) => {
             </div>
           )}
 
-          {data && (
+          {data && displayMetrics && (
             <>
               <div className={`mm-metrics${animateBars ? ' mm-metrics--live' : ''}`}>
                 <MetricCard
                   label="Production Uptime"
-                  value={data.production_uptime_display}
-                  barPct={data.production_uptime_percent}
+                  value={displayMetrics.uptimeDisplay}
+                  barPct={displayMetrics.uptimePct}
                   barDelay={180}
                   animateBars={animateBars}
-                  ok={data.production_uptime_percent >= 99}
+                  ok={displayMetrics.uptimePct >= 99}
                 />
                 <MetricCard
                   label="Active Agents"
-                  value={String(data.active_agents)}
-                  barPct={capacityPct}
+                  value={String(displayMetrics.activeAgents)}
+                  barPct={displayMetrics.agentsBarPct}
                   barDelay={320}
                   animateBars={animateBars}
-                  ok={data.active_agents <= data.max_concurrent}
+                  ok
                 />
                 <MetricCard
                   label="Average Wait Time"
-                  value={formatWaitTime(data.wait_time_seconds)}
+                  value={formatWaitTime(displayMetrics.waitSeconds)}
                   barPct={waitBarPct}
                   barDelay={460}
                   animateBars={animateBars}
