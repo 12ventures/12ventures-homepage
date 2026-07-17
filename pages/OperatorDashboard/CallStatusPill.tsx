@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiInfo } from 'react-icons/fi';
 import type { CallHistoryItem } from '../../services/poseidonService';
@@ -62,7 +62,7 @@ interface Props {
   call: CallHistoryItem;
 }
 
-const CallStatusPill: React.FC<Props> = ({ status, call }) => {
+const CallStatusPill = memo(function CallStatusPill({ status, call }: Props) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -145,6 +145,6 @@ const CallStatusPill: React.FC<Props> = ({ status, call }) => {
       {popover && createPortal(popover, document.body)}
     </>
   );
-};
+});
 
 export default CallStatusPill;

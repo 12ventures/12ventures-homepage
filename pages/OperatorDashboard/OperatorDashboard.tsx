@@ -45,6 +45,7 @@ import OperatorDashboardInsights from './OperatorDashboardInsights';
 import MaintenanceModal from './MaintenanceModal';
 import CustomDateRangePicker from './CustomDateRangePicker';
 import CallStatusPill from './CallStatusPill';
+import CallHistoryStatusBreakdown from './CallHistoryStatusBreakdown';
 import {
   fmtDuration,
   getCallDurationSeconds,
@@ -464,8 +465,13 @@ const OperatorDashboard: React.FC = () => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fetch analytics when period, custom range, or test-calls toggle changes
+  // Re-fetch when filters change (skip mount — covered by the effect above)
+  const skipFilterFetchRef = useRef(true);
   useEffect(() => {
+    if (skipFilterFetchRef.current) {
+      skipFilterFetchRef.current = false;
+      return;
+    }
     void fetchAll(true);
   }, [period, customRange, includeTestCalls, fetchAll]);
 
@@ -516,17 +522,14 @@ const OperatorDashboard: React.FC = () => {
     () => getFilterDateKeyRange(period, customRange),
     [period, customRange],
   );
-  const chartCalls = useMemo(
-    () => filterCallsInDateKeyRange(allCalls, periodRange),
-    [allCalls, periodRange],
-  );
   const historyCalls = useMemo(
     () => filterCallsInDateKeyRange(allCalls, periodRange),
     [allCalls, periodRange],
   );
+  const chartCalls = historyCalls;
   const dailyCallCounts = useMemo(
-    () => buildDailyCallCounts(chartCalls, periodRange),
-    [chartCalls, periodRange],
+    () => buildDailyCallCounts(historyCalls, periodRange),
+    [historyCalls, periodRange],
   );
 
   // Capture today's call volume whenever the active fetch window includes today,
@@ -624,9 +627,10 @@ const OperatorDashboard: React.FC = () => {
         <div className="od-expandable-title">
           <FiPhone size={14} />
           Call History · {filterLabel}
-          <span className="od-expandable-count">
-            <AnimatedNumber value={historyCalls.length} delay={countAnimDelay(revealIdx)} duration={700} />
-          </span>
+          <CallHistoryStatusBreakdown
+            calls={historyCalls}
+            periodLabel={filterLabel}
+          />
         </div>
       </div>
 
@@ -995,6 +999,7 @@ const OperatorDashboard: React.FC = () => {
                   fill={chartTheme.bar}
                   activeBar={{ fill: chartTheme.barActive }}
                   radius={[4, 4, 0, 0]}
+                  isAnimationActive={false}
                 />
               </BarChart>
             </ResponsiveContainer>

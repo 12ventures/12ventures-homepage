@@ -125,6 +125,7 @@ function HBarChart({ data, chartTheme }: { data: LabelCount[]; chartTheme: OdCha
           activeBar={{ fill: chartTheme.barActive }}
           radius={[0, 4, 4, 0]}
           name="Calls"
+          isAnimationActive={false}
         />
       </BarChart>
     </ResponsiveContainer>
@@ -173,6 +174,7 @@ function VBarChart({
           activeBar={{ fill: chartTheme.barActive }}
           radius={[4, 4, 0, 0]}
           name="Calls"
+          isAnimationActive={false}
         />
       </BarChart>
     </ResponsiveContainer>
@@ -371,6 +373,7 @@ const OperatorDashboardInsights: React.FC<Props> = ({
                   activeBar={{ fill: chartTheme.barActive }}
                   radius={[4, 4, 0, 0]}
                   name="Calls"
+                  isAnimationActive={false}
                 />
               </BarChart>
             </ResponsiveContainer>
