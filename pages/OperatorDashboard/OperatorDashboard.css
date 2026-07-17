@@ -403,22 +403,11 @@
   position: relative;
 }
 
-@keyframes od-dashboard-body-pulse {
-  0%, 100% { opacity: 0.38; }
-  50% { opacity: 0.58; }
-}
-
+/* Static dim only — pulsing opacity on the whole dashboard tree is expensive. */
 .od-dashboard-body--loading {
+  opacity: 0.42;
   pointer-events: none;
   user-select: none;
-  animation: od-dashboard-body-pulse 1.8s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .od-dashboard-body--loading {
-    animation: none;
-    opacity: 0.42;
-  }
 }
 
 .od-dashboard-body__loading-label {
@@ -432,6 +421,22 @@
   text-transform: uppercase;
   color: var(--od-text-muted);
   pointer-events: none;
+}
+
+@keyframes od-loading-label-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.od-dashboard-body--loading .od-dashboard-body__loading-label {
+  animation: od-loading-label-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .od-dashboard-body--loading .od-dashboard-body__loading-label {
+    animation: none;
+    opacity: 0.85;
+  }
 }
 
 /* ── Section headers ─────────────────────────── */
@@ -1123,19 +1128,19 @@
 /* ── Cascade reveal on load ───────────────────── */
 .od-reveal {
   opacity: 0;
-  transform: translateY(14px);
-  will-change: opacity, transform;
+  transform: translateY(10px);
 }
 
 .od-root--revealed .od-reveal {
-  animation: od-reveal-in 0.62s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: calc(var(--od-reveal-idx, 0) * 65ms);
+  animation: od-reveal-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(var(--od-reveal-idx, 0) * 45ms);
 }
 
 @keyframes od-reveal-in {
   to {
     opacity: 1;
-    transform: translateY(0);
+    /* `none` avoids leaving a live compositor layer after the intro. */
+    transform: none;
   }
 }
 

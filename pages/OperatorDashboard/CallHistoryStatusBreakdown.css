@@ -1,0 +1,241 @@
+.od-history-status-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.od-history-status-chip {
+  font-size: 0.75rem;
+  font-weight: var(--od-fw-medium, 600);
+  padding: 2px 9px;
+  border-radius: 100px;
+  line-height: 1.35;
+}
+
+.od-history-status-chip--completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.od-history-status-chip--declined {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.od-history-status-chip--incomplete {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.od-history-status-chip--failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.od-history-status-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--od-text-faint, #64748b);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.od-history-status-info:hover {
+  color: var(--od-accent, #60a5fa);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+/* Portaled modal — explicit colors (not scoped --od-* alone) */
+.od-history-status-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.od-history-status-modal__overlay {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: default;
+}
+
+.od-history-status-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  max-height: min(85vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #161922;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  color: #e2e8f0;
+}
+
+.od-history-status-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.od-history-status-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.od-history-status-modal__subtitle {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.od-history-status-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.od-history-status-modal__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+
+.od-history-status-modal__body {
+  padding: 14px 18px 18px;
+  overflow: auto;
+}
+
+.od-history-status-modal__list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.od-history-status-modal__row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto 48px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+}
+
+.od-history-status-modal__row--total {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  grid-template-columns: 1fr auto 48px;
+  font-weight: 600;
+}
+
+.od-history-status-modal__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.od-history-status-modal__label {
+  color: #cbd5e1;
+}
+
+.od-history-status-modal__count {
+  color: #f1f5f9;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.od-history-status-modal__pct {
+  color: #94a3b8;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.od-history-status-modal__chart-block {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 12px 8px;
+}
+
+.od-history-status-modal__chart-title {
+  margin: 0 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.od-history-status-modal__chart {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0 4px;
+}
+
+.od-history-status-donut {
+  display: block;
+  contain: strict;
+}
+
+.od-history-status-donut__seg {
+  /* Start hidden at the correct angular position, then grow the arc. */
+  stroke-dasharray: 0 var(--od-donut-circ);
+  stroke-dashoffset: var(--od-donut-offset);
+  animation: od-donut-draw 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--od-donut-delay, 0ms);
+}
+
+@keyframes od-donut-draw {
+  to {
+    stroke-dasharray: var(--od-donut-a) var(--od-donut-b);
+    stroke-dashoffset: var(--od-donut-offset);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .od-history-status-donut__seg {
+    animation: none;
+    stroke-dasharray: var(--od-donut-a) var(--od-donut-b);
+    stroke-dashoffset: var(--od-donut-offset);
+  }
+}
+
+.od-history-status-modal__empty {
+  margin: 24px 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #64748b;
+}

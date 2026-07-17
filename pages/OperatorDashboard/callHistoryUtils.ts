@@ -33,6 +33,55 @@ export function getDisplayOutcomeStatus(call: CallHistoryItem): DisplayOutcomeSt
   return call.outcome_status;
 }
 
+export const DISPLAY_STATUS_ORDER: DisplayOutcomeStatus[] = [
+  'completed',
+  'declined',
+  'incomplete',
+  'failed',
+];
+
+export const DISPLAY_STATUS_LABELS: Record<DisplayOutcomeStatus, string> = {
+  completed: 'Completed',
+  declined: 'Declined',
+  incomplete: 'Incomplete',
+  failed: 'Failed',
+};
+
+export const DISPLAY_STATUS_COLORS: Record<DisplayOutcomeStatus, string> = {
+  completed: '#34d399',
+  declined: '#60a5fa',
+  incomplete: '#fbbf24',
+  failed: '#f87171',
+};
+
+export type CallStatusBreakdownItem = {
+  status: DisplayOutcomeStatus;
+  label: string;
+  count: number;
+  color: string;
+};
+
+export function summarizeCallHistoryStatuses(
+  calls: CallHistoryItem[],
+): { total: number; items: CallStatusBreakdownItem[] } {
+  const counts: Record<DisplayOutcomeStatus, number> = {
+    completed: 0,
+    declined: 0,
+    incomplete: 0,
+    failed: 0,
+  };
+  for (const call of calls) {
+    counts[getDisplayOutcomeStatus(call)]++;
+  }
+  const items = DISPLAY_STATUS_ORDER.map((status) => ({
+    status,
+    label: DISPLAY_STATUS_LABELS[status],
+    count: counts[status],
+    color: DISPLAY_STATUS_COLORS[status],
+  }));
+  return { total: calls.length, items };
+}
+
 export function fmtDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
