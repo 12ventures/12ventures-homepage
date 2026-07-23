@@ -329,7 +329,8 @@ const HavenApp: React.FC = () => {
 
   const revealSrc = incomingJob?.styledImageUrl ?? null;
   const showHotspots = step === 'result' && job && !compareOriginal;
-  const canGenerate = Boolean(localPreview) && !isBusy;
+  const canGenerate = Boolean(localPreview) && !isBusy && step !== 'result';
+  const stylesLocked = isBusy || step === 'result';
 
   const productsById = useMemo(() => {
     const map = new Map<string, HavenProduct>();
@@ -550,9 +551,16 @@ const HavenApp: React.FC = () => {
 
         {localPreview && (
           <div className="hv-controls hv-reveal hv-reveal--3">
-            <p className="hv-chips-label">Choose a style</p>
+            <p className="hv-chips-label">
+              {stylesLocked && step === 'result' ? 'Your style' : 'Choose a style'}
+            </p>
             <div className="hv-controls__row">
-              <div className="hv-chips" role="listbox" aria-label="Style personalities">
+              <div
+                className="hv-chips"
+                role="listbox"
+                aria-label="Style personalities"
+                aria-disabled={stylesLocked}
+              >
                 {STYLE_PERSONALITIES.map((style) => (
                   <button
                     key={style.id}
@@ -560,29 +568,24 @@ const HavenApp: React.FC = () => {
                     role="option"
                     aria-selected={styleId === style.id}
                     className={`hv-chip${styleId === style.id ? ' hv-chip--active' : ''}`}
-                    disabled={isBusy}
-                    onClick={() => {
-                      setStyleId(style.id);
-                      if (step === 'result') setStep('style');
-                    }}
+                    disabled={stylesLocked}
+                    onClick={() => setStyleId(style.id)}
                   >
                     {style.label}
                   </button>
                 ))}
               </div>
               <div className="hv-actions">
-                <button
-                  type="button"
-                  className="hv-btn hv-btn--primary"
-                  disabled={!canGenerate}
-                  onClick={() => void generate()}
-                >
-                  {isBusy
-                    ? 'Styling room…'
-                    : step === 'result'
-                      ? 'Restyle room'
-                      : 'Generate styled room'}
-                </button>
+                {step !== 'result' && (
+                  <button
+                    type="button"
+                    className="hv-btn hv-btn--primary"
+                    disabled={!canGenerate}
+                    onClick={() => void generate()}
+                  >
+                    {isBusy ? 'Styling room…' : 'Generate styled room'}
+                  </button>
+                )}
                 {step === 'result' && job && (
                   <button
                     type="button"
@@ -595,7 +598,9 @@ const HavenApp: React.FC = () => {
               </div>
             </div>
             <p className="hv-style-hint">
-              Transform this room into {selectedStyle.label}. {selectedStyle.blurb}
+              {step === 'result'
+                ? `${selectedStyle.label}. ${selectedStyle.blurb} Start over to try another style.`
+                : `Transform this room into ${selectedStyle.label}. ${selectedStyle.blurb}`}
             </p>
           </div>
         )}
