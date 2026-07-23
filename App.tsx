@@ -25,6 +25,7 @@ import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
 import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
 import MeridaWellness from './components/MeridaWellness';
 import SarhProductionDashboard from './components/sarh/SarhProductionDashboard';
+import HavenApp from './components/haven/HavenApp';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
@@ -197,6 +198,16 @@ const App: React.FC = () => {
           <Route
             path="/meridawellness"
             element={<MeridaWellness />}
+          />
+
+          {/* Haven — AI shopping & inspiration engine (frontend MVP) */}
+          <Route
+            path="/haven"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <HavenApp />
+              </BrandLayout>
+            }
           />
 
           {/* MLKCH x 12 Ventures Dashboard */}
