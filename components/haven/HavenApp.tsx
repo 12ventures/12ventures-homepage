@@ -1,8 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { havenClient } from './api/havenClient';
-import { MOCK_HOTSPOTS_BY_STYLE, MOCK_ORIGINAL_ROOM } from './mock/room';
+import { Link } from 'react-router-dom';
+import { HavenApiError, havenClient } from './api/havenClient';
 import { STYLE_PERSONALITIES } from './mock/styles';
-import type { HavenProduct, HavenStep, RoomJob, StyleId } from './types';
+import type {
+  HavenProduct,
+  HavenStep,
+  RoomJob,
+  RoomSetDetail,
+  StyleId,
+  StylePersonality,
+} from './types';
+import { cssAspectToNumber, resolveStageAspect } from './types';
 import './haven.css';
 
 const PAGE_TITLE = 'Haven · Shop the room';
@@ -42,11 +50,6 @@ function preloadImage(src: string): Promise<void> {
   });
 }
 
-/**
- * Pin an element's top to the top of the viewport.
- * Prefer this over scrollIntoView({ block: 'start' }) near the page end.
- * Browsers otherwise clamp to max scroll and leave the target mid-screen.
- */
 function scrollElementToPageTop(el: HTMLElement | null, offsetPx = 28) {
   if (!el) return;
   const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
@@ -58,18 +61,55 @@ function scrollElementToPageTop(el: HTMLElement | null, offsetPx = 28) {
   });
 }
 
+function roomSetToJob(
+  set: RoomSetDetail,
+  styleId: StyleId,
+  originalImageUrl: string,
+): RoomJob {
+  const notes: RoomJob['notes'] = [];
+  if (set.blurb) {
+    notes.push({ id: 'blurb', text: set.blurb });
+  }
+  if (set.tags?.length) {
+    notes.push({ id: 'tags', text: `Mood: ${set.tags.join(', ')}` });
+  }
+  if (!notes.length) {
+    notes.push({ id: 'look', text: set.label || 'A curated look you can shop.' });
+  }
+  return {
+    id: set.id,
+    styleId,
+    originalImageUrl,
+    styledImageUrl: set.imageUrl,
+    notes,
+    products: set.products,
+    hotspots: set.hotspots,
+    status: 'ready',
+    imageWidth: set.imageWidth,
+    imageHeight: set.imageHeight,
+    aspectRatio: set.aspectRatio,
+    fromCurated: true,
+  };
+}
+
 const HavenApp: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const detailsRef = useRef<HTMLElement>(null);
   const genCancelRef = useRef(0);
   const hotspotLeaveTimerRef = useRef<number | null>(null);
+
   const [step, setStep] = useState<HavenStep>('upload');
-  const [styleId, setStyleId] = useState<StyleId>('organic_modern');
+  const [styles, setStyles] = useState<StylePersonality[]>([]);
+  const [stylesLoading, setStylesLoading] = useState(true);
+  const [styleId, setStyleId] = useState<StyleId>('');
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [localFile, setLocalFile] = useState<File | null>(null);
+  /** Demo path: no upload file — Generate reveals a curated set. */
+  const [usingDemo, setUsingDemo] = useState(false);
   const [job, setJob] = useState<RoomJob | null>(null);
   const [incomingJob, setIncomingJob] = useState<RoomJob | null>(null);
   const [genBaseSrc, setGenBaseSrc] = useState<string | null>(null);
+  const [stageAspect, setStageAspect] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
   const [compareOriginal, setCompareOriginal] = useState(false);
@@ -79,8 +119,8 @@ const HavenApp: React.FC = () => {
   const [genProgress, setGenProgress] = useState(0);
 
   const selectedStyle = useMemo(
-    () => STYLE_PERSONALITIES.find((s) => s.id === styleId)!,
-    [styleId],
+    () => (styleId ? styles.find((s) => s.id === styleId) ?? null : null),
+    [styles, styleId],
   );
 
   const isBusy = step === 'generating' || step === 'revealing';
@@ -90,6 +130,31 @@ const HavenApp: React.FC = () => {
     document.title = PAGE_TITLE;
     return () => {
       document.title = prev;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setStylesLoading(true);
+      try {
+        const items = await havenClient.listStyles();
+        if (cancelled) return;
+        // From GET /styles — do not auto-select a style.
+        const list = items.length ? items : STYLE_PERSONALITIES;
+        setStyles(list);
+        setStyleId((prev) => (prev && list.some((s) => s.id === prev) ? prev : ''));
+      } catch {
+        if (!cancelled) {
+          setStyles(STYLE_PERSONALITIES);
+          setStyleId('');
+        }
+      } finally {
+        if (!cancelled) setStylesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -119,14 +184,12 @@ const HavenApp: React.FC = () => {
     if (hotspotLeaveTimerRef.current != null) {
       window.clearTimeout(hotspotLeaveTimerRef.current);
     }
-    // Keep the open layer elevated through the card fade-out.
     hotspotLeaveTimerRef.current = window.setTimeout(() => {
       setActiveHotspot(null);
       hotspotLeaveTimerRef.current = null;
     }, 220);
   }, []);
 
-  // Fade the floating continue cue once Design decisions / shop enter view.
   useEffect(() => {
     if (step !== 'result' || !job) {
       setDetailsInView(false);
@@ -134,7 +197,6 @@ const HavenApp: React.FC = () => {
     }
     const el = detailsRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => setDetailsInView(entry.isIntersecting && entry.intersectionRatio > 0.12),
       { root: null, threshold: [0, 0.12, 0.25], rootMargin: '-8% 0px -35% 0px' },
@@ -143,21 +205,18 @@ const HavenApp: React.FC = () => {
     return () => observer.disconnect();
   }, [step, job]);
 
-  // Bottom fade while more content remains below the fold.
   useEffect(() => {
     const update = () => {
       const doc = document.documentElement;
       const remaining = doc.scrollHeight - window.scrollY - window.innerHeight;
       setCanScrollMore(remaining > 28);
     };
-
     update();
     const t = window.setTimeout(update, 120);
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
     const ro = new ResizeObserver(update);
     ro.observe(document.documentElement);
-
     return () => {
       window.clearTimeout(t);
       window.removeEventListener('scroll', update);
@@ -166,27 +225,33 @@ const HavenApp: React.FC = () => {
     };
   }, [step, job, localPreview]);
 
-  const onPickFile = useCallback((file: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError('Please choose a photo of your room.');
-      return;
-    }
-    genCancelRef.current += 1;
-    setError(null);
-    setJob(null);
-    setIncomingJob(null);
-    setGenBaseSrc(null);
-    setCompareOriginal(false);
-    setDetailsInView(false);
-    setGenStatus('');
-    setGenProgress(0);
-    if (localPreview?.startsWith('blob:')) URL.revokeObjectURL(localPreview);
-    const url = URL.createObjectURL(file);
-    setLocalFile(file);
-    setLocalPreview(url);
-    setStep('style');
-  }, [localPreview]);
+  const onPickFile = useCallback(
+    (file: File | null) => {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        setError('Please choose a photo of your room.');
+        return;
+      }
+      genCancelRef.current += 1;
+      setError(null);
+      setJob(null);
+      setIncomingJob(null);
+      setGenBaseSrc(null);
+      setCompareOriginal(false);
+      setDetailsInView(false);
+      setGenStatus('');
+      setGenProgress(0);
+      setUsingDemo(false);
+      if (localPreview?.startsWith('blob:')) URL.revokeObjectURL(localPreview);
+      const url = URL.createObjectURL(file);
+      setLocalFile(file);
+      setLocalPreview(url);
+      setStyleId('');
+      setStageAspect(undefined);
+      setStep('style');
+    },
+    [localPreview],
+  );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -197,7 +262,8 @@ const HavenApp: React.FC = () => {
     [onPickFile],
   );
 
-  const useDemoRoom = useCallback(() => {
+  /** Same as choose photo → style step, but with a preset room image (no file). */
+  const useDemoRoom = useCallback(async () => {
     genCancelRef.current += 1;
     setError(null);
     setJob(null);
@@ -208,25 +274,60 @@ const HavenApp: React.FC = () => {
     setGenStatus('');
     setGenProgress(0);
     if (localPreview?.startsWith('blob:')) URL.revokeObjectURL(localPreview);
-    setLocalFile(null);
-    setLocalPreview(MOCK_ORIGINAL_ROOM);
-    setStep('style');
+
+    const enterDemoStylePick = () => {
+      if (localPreview?.startsWith('blob:')) URL.revokeObjectURL(localPreview);
+      setLocalFile(null);
+      setLocalPreview(null);
+      setUsingDemo(true);
+      setStyleId('');
+      setStageAspect('16 / 9');
+      setStep('style');
+    };
+
+    try {
+      // Probe that a demo set exists — do not put the furnished set image in the stage.
+      await havenClient.getDemoRoom();
+      enterDemoStylePick();
+    } catch (err) {
+      if (err instanceof HavenApiError && err.status === 404) {
+        setError('Demo look coming soon — create a featured room set in Admin.');
+        return;
+      }
+      // Offline / mock: still enter style pick without flashing a furnished look.
+      enterDemoStylePick();
+    }
   }, [localPreview]);
 
+  /** Resolve a curated set for the chosen style (demo generate — no AI job). */
+  const resolveCuratedLook = useCallback(async (forStyleId: StyleId): Promise<RoomSetDetail> => {
+    try {
+      const sets = await havenClient.listRoomSets({ styleId: forStyleId });
+      const pick = sets.find((s) => s.featured && s.imageUrl) ?? sets.find((s) => s.imageUrl);
+      if (pick) return havenClient.getRoomSet(pick.id);
+    } catch {
+      /* fall through */
+    }
+    return havenClient.getDemoRoom();
+  }, []);
+
   const generate = useCallback(async () => {
-    if (!localPreview || isBusy) return;
+    if ((!localPreview && !usingDemo) || !styleId || !selectedStyle || isBusy) return;
 
     const runId = ++genCancelRef.current;
     const reduced = prefersReducedMotion();
-    const workMs = reduced ? 700 : 4600;
     const almostMs = reduced ? 180 : 850;
     const revealMs = reduced ? 220 : 1200;
     const lines = GEN_STATUS_LINES(selectedStyle.label);
+    const styleShell = selectedStyle.baseRoomImageUrl || '';
+    const genBackdrop = usingDemo
+      ? styleShell || localPreview || ''
+      : localPreview || '';
 
     setError(null);
     setCompareOriginal(false);
     setIncomingJob(null);
-    setGenBaseSrc(job?.styledImageUrl ?? localPreview);
+    setGenBaseSrc(job?.styledImageUrl ?? genBackdrop);
     setGenProgress(0);
     setGenStatus(lines[0]);
     setStep('generating');
@@ -238,15 +339,14 @@ const HavenApp: React.FC = () => {
       if (genCancelRef.current !== runId) return;
       lineIndex = Math.min(lineIndex + 1, lines.length - 1);
       setGenStatus(lines[lineIndex]);
-    }, reduced ? 160 : 900);
+    }, reduced ? 160 : 1100);
 
     const progressTimer = window.setInterval(() => {
       if (genCancelRef.current !== runId) return;
       const elapsed = performance.now() - started;
-      // Ease toward ~88% while working; the almost/reveal phases finish the meter.
-      const t = Math.min(1, elapsed / workMs);
-      setGenProgress(0.08 + t * 0.8);
-    }, 50);
+      const t = 1 - Math.exp(-elapsed / 12000);
+      setGenProgress(0.08 + t * 0.82);
+    }, 80);
 
     const clearGenTimers = () => {
       window.clearInterval(statusTimer);
@@ -254,13 +354,41 @@ const HavenApp: React.FC = () => {
     };
 
     try {
-      const [result] = await Promise.all([
-        havenClient.createJob(localFile, styleId, localPreview),
-        wait(workMs),
-      ]);
+      let result: RoomJob;
+
+      if (usingDemo) {
+        // Curated path: same choreography, already-available room set (no upload/job).
+        const minSpin = reduced ? 400 : 1600;
+        const [set] = await Promise.all([
+          resolveCuratedLook(styleId),
+          wait(minSpin),
+        ]);
+        if (!set.imageUrl) {
+          throw new Error('No curated look for this style yet.');
+        }
+        result = roomSetToJob(set, styleId, styleShell || set.imageUrl);
+      } else {
+        if (!localPreview) throw new Error('Please choose a photo of your room.');
+        result = await havenClient.styleRoom({
+          file: localFile,
+          previewUrl: localPreview,
+          styleId,
+        });
+      }
 
       clearGenTimers();
       if (genCancelRef.current !== runId) return;
+
+      setStageAspect(
+        resolveStageAspect({
+          width: result.imageWidth,
+          height: result.imageHeight,
+          aspectRatio: result.aspectRatio,
+        }),
+      );
+      if (result.originalImageUrl) {
+        setGenBaseSrc(result.originalImageUrl);
+      }
 
       await preloadImage(result.styledImageUrl);
       if (genCancelRef.current !== runId) return;
@@ -283,17 +411,30 @@ const HavenApp: React.FC = () => {
       setGenStatus('');
       setGenProgress(0);
       setStep('result');
-    } catch {
+    } catch (err) {
       clearGenTimers();
       if (genCancelRef.current !== runId) return;
       setIncomingJob(null);
       setGenBaseSrc(null);
       setGenStatus('');
       setGenProgress(0);
-      setError('Could not style this room. Try again.');
+      if (err instanceof HavenApiError && err.status === 404) {
+        setError('No curated look available yet — create a featured room set in Admin.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Could not style this room. Try again.');
+      }
       setStep(job ? 'result' : 'style');
     }
-  }, [isBusy, job, localFile, localPreview, selectedStyle.label, styleId]);
+  }, [
+    isBusy,
+    job,
+    localFile,
+    localPreview,
+    resolveCuratedLook,
+    selectedStyle,
+    styleId,
+    usingDemo,
+  ]);
 
   const scrollToDetails = useCallback(() => {
     scrollElementToPageTop(detailsRef.current, 28);
@@ -304,6 +445,7 @@ const HavenApp: React.FC = () => {
     if (localPreview?.startsWith('blob:')) URL.revokeObjectURL(localPreview);
     setLocalFile(null);
     setLocalPreview(null);
+    setUsingDemo(false);
     setJob(null);
     setIncomingJob(null);
     setGenBaseSrc(null);
@@ -313,24 +455,83 @@ const HavenApp: React.FC = () => {
     setDetailsInView(false);
     setGenStatus('');
     setGenProgress(0);
+    setStageAspect(undefined);
     setStep('upload');
-    setStyleId('organic_modern');
+    setStyleId('');
   }, [localPreview]);
+
+  // Demo only: size stage to the style shell. Upload path keeps the user’s photo.
+  useEffect(() => {
+    if (step !== 'style' || !usingDemo || !selectedStyle) return;
+    setStageAspect(
+      resolveStageAspect({
+        width: selectedStyle.baseRoomWidth,
+        height: selectedStyle.baseRoomHeight,
+        aspectRatio: selectedStyle.baseRoomAspectRatio,
+      }) || '16 / 9',
+    );
+  }, [step, usingDemo, selectedStyle]);
+
+  const syncStageAspectFromImage = useCallback(
+    (img: HTMLImageElement | null) => {
+      if (!img?.naturalWidth || !img.naturalHeight) return;
+      setStageAspect(`${img.naturalWidth} / ${img.naturalHeight}`);
+    },
+    [],
+  );
 
   const showContinueCue = step === 'result' && job != null && !detailsInView;
 
-  // Locked at generate start so the wipe reveals over the prior room, not the new one.
+  const styleShellUrl = selectedStyle?.baseRoomImageUrl || null;
+  /** Demo path: empty shell until a style is picked (never the furnished set image). */
+  const showAwaitingStyleGradient =
+    step === 'style' && usingDemo && !styleId && !isBusy;
+  /** Demo only — upload path never swaps the user’s photo for a style shell. */
+  const showStyleGradient =
+    step === 'style' && usingDemo && Boolean(styleId) && !styleShellUrl && !isBusy;
+
   const stageBaseSrc =
     step === 'result' && job
       ? compareOriginal
         ? job.originalImageUrl
         : job.styledImageUrl
-      : genBaseSrc ?? localPreview;
+      : isBusy
+        ? genBaseSrc ?? (usingDemo ? styleShellUrl : null) ?? localPreview
+        : usingDemo
+          ? styleId
+            ? styleShellUrl
+            : null
+          : localPreview;
+
+  const showStageMedia =
+    Boolean(stageBaseSrc) ||
+    showStyleGradient ||
+    showAwaitingStyleGradient ||
+    isBusy;
 
   const revealSrc = incomingJob?.styledImageUrl ?? null;
   const showHotspots = step === 'result' && job && !compareOriginal;
-  const canGenerate = Boolean(localPreview) && !isBusy && step !== 'result';
+  const inStyleFlow = Boolean(localPreview) || usingDemo;
+  const canGenerate =
+    inStyleFlow && Boolean(styleId) && !isBusy && step === 'style';
   const stylesLocked = isBusy || step === 'result';
+
+  const stageAspectCss =
+    (step === 'style' && usingDemo && styleId
+      ? resolveStageAspect({
+          width: selectedStyle?.baseRoomWidth,
+          height: selectedStyle?.baseRoomHeight,
+          aspectRatio: selectedStyle?.baseRoomAspectRatio,
+        })
+      : undefined) ||
+    stageAspect ||
+    resolveStageAspect({
+      width: job?.imageWidth ?? incomingJob?.imageWidth,
+      height: job?.imageHeight ?? incomingJob?.imageHeight,
+      aspectRatio: job?.aspectRatio ?? incomingJob?.aspectRatio,
+    }) ||
+    '16 / 9';
+  const stageArNumber = cssAspectToNumber(stageAspectCss);
 
   const productsById = useMemo(() => {
     const map = new Map<string, HavenProduct>();
@@ -338,7 +539,7 @@ const HavenApp: React.FC = () => {
     return map;
   }, [job]);
 
-  const hotspots = job ? MOCK_HOTSPOTS_BY_STYLE[job.styleId] : [];
+  const hotspots = job?.hotspots ?? [];
 
   return (
     <div className="hv-root">
@@ -350,16 +551,21 @@ const HavenApp: React.FC = () => {
               Transform your room into a professionally curated look, then shop the pieces.
             </p>
           </div>
-          {localPreview && (
-            <button
-              type="button"
-              className="hv-btn hv-btn--ghost hv-btn--start-over"
-              onClick={reset}
-              disabled={isBusy}
-            >
-              Start over
-            </button>
-          )}
+          <div className="hv-topbar__actions">
+            <Link to="/haven/admin" className="hv-btn hv-btn--ghost hv-btn--start-over">
+              Admin
+            </Link>
+            {inStyleFlow && (
+              <button
+                type="button"
+                className="hv-btn hv-btn--ghost hv-btn--start-over"
+                onClick={reset}
+                disabled={isBusy}
+              >
+                Start over
+              </button>
+            )}
+          </div>
         </header>
 
         <section
@@ -383,7 +589,7 @@ const HavenApp: React.FC = () => {
             onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
           />
 
-          {!stageBaseSrc ? (
+          {!showStageMedia ? (
             <div
               className="hv-stage__empty"
               role="button"
@@ -418,7 +624,7 @@ const HavenApp: React.FC = () => {
                 className="hv-btn hv-btn--ghost"
                 onClick={(e) => {
                   e.stopPropagation();
-                  useDemoRoom();
+                  void useDemoRoom();
                 }}
               >
                 Use demo room
@@ -426,25 +632,67 @@ const HavenApp: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="hv-stage__frame">
-                <img
-                  className="hv-stage__img hv-stage__img--base"
-                  src={stageBaseSrc}
-                  alt={
-                    step === 'result' && !compareOriginal
-                      ? `Room styled as ${selectedStyle.label}`
-                      : 'Your room'
-                  }
-                />
+              <div
+                className={`hv-stage__frame${stageBaseSrc || revealSrc ? '' : ' hv-stage__frame--ratio'}`}
+                style={
+                  {
+                    '--hv-stage-ar': stageArNumber,
+                  } as React.CSSProperties
+                }
+              >
+                {/* In-flow sizer: real pixels + max-height → frame AR (no letterbox). */}
+                {(stageBaseSrc || revealSrc) && (
+                  <img
+                    className="hv-stage__sizer"
+                    src={revealSrc || stageBaseSrc!}
+                    alt=""
+                    aria-hidden="true"
+                    onLoad={(e) => syncStageAspectFromImage(e.currentTarget)}
+                  />
+                )}
+                {showStyleGradient ||
+                showAwaitingStyleGradient ||
+                (!stageBaseSrc && isBusy) ? (
+                  <div
+                    className="hv-stage__gradient"
+                    role="img"
+                    aria-label={
+                      showAwaitingStyleGradient
+                        ? 'Select your style below'
+                        : selectedStyle
+                          ? `${selectedStyle.label} style preview coming soon`
+                          : 'Style preview'
+                    }
+                  >
+                    {showAwaitingStyleGradient && (
+                      <p className="hv-stage__cue">Select your style below</p>
+                    )}
+                  </div>
+                ) : (
+                  <img
+                    className="hv-stage__img hv-stage__img--base"
+                    src={stageBaseSrc!}
+                    alt={
+                      step === 'result' && !compareOriginal
+                        ? `Room styled as ${selectedStyle?.label ?? 'selected style'}`
+                        : step === 'style' && styleId
+                          ? `${selectedStyle?.label ?? 'Style'} base room`
+                          : usingDemo
+                            ? 'Demo room'
+                            : 'Your room'
+                    }
+                    onLoad={(e) => syncStageAspectFromImage(e.currentTarget)}
+                  />
+                )}
                 {revealSrc && (
                   <img
                     className="hv-stage__img hv-stage__img--incoming"
                     src={revealSrc}
                     alt=""
                     aria-hidden="true"
+                    onLoad={(e) => syncStageAspectFromImage(e.currentTarget)}
                   />
                 )}
-              </div>
 
               {(step === 'generating' || step === 'revealing') && (
                 <div
@@ -455,14 +703,18 @@ const HavenApp: React.FC = () => {
                   <div className="hv-gen__sheen" aria-hidden="true" />
                   <div className="hv-gen__glow" aria-hidden="true" />
                   <div className="hv-gen__copy">
-                    <p className="hv-gen__eyebrow">Styling your room</p>
+                    <p className="hv-gen__eyebrow">
+                      {usingDemo ? 'Pulling a curated look' : 'Styling your room'}
+                    </p>
                     <p className="hv-gen__status" key={genStatus}>
                       {genStatus}
                     </p>
                     <div className="hv-gen__meter" aria-hidden="true">
                       <div
                         className="hv-gen__meter-fill"
-                        style={{ transform: `scaleX(${Math.min(1, Math.max(0, genProgress))})` }}
+                        style={{
+                          transform: `scaleX(${Math.min(1, Math.max(0, genProgress))})`,
+                        }}
                       />
                     </div>
                   </div>
@@ -499,7 +751,9 @@ const HavenApp: React.FC = () => {
                           aria-controls={`hv-hotspot-card-${h.id}`}
                           onFocus={() => openHotspot(h.id)}
                           onBlur={(e) => {
-                            if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) {
+                            if (
+                              !e.currentTarget.parentElement?.contains(e.relatedTarget as Node)
+                            ) {
                               scheduleCloseHotspot();
                             }
                           }}
@@ -510,26 +764,26 @@ const HavenApp: React.FC = () => {
                         />
                         <div
                           id={`hv-hotspot-card-${h.id}`}
-                          className={`hv-hotspot-card hv-hotspot-card--${placement}`}
+                          className={`hv-hotspot-card hv-product hv-hotspot-card--${placement}`}
                           role="dialog"
                           aria-label={product.name}
                           aria-hidden={!open}
                         >
                           <img
-                            className="hv-hotspot-card__img"
+                            className="hv-product__img"
                             src={product.imageUrl}
                             alt=""
                           />
-                          <div className="hv-hotspot-card__body">
-                            <span className="hv-hotspot-card__merchant">
+                          <span className="hv-product__price">
+                            {formatPrice(product.price)}
+                          </span>
+                          <div className="hv-product__body">
+                            <span className="hv-product__merchant">
                               {product.merchant}
                             </span>
-                            <p className="hv-hotspot-card__name">{product.name}</p>
-                            <p className="hv-hotspot-card__price">
-                              {formatPrice(product.price)}
-                            </p>
+                            <p className="hv-product__name">{product.name}</p>
                             <a
-                              className="hv-hotspot-card__buy"
+                              className="hv-product__buy"
                               href={product.affiliateUrl}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -545,11 +799,12 @@ const HavenApp: React.FC = () => {
                   })}
                 </div>
               )}
+              </div>
             </>
           )}
         </section>
 
-        {localPreview && (
+        {inStyleFlow && (
           <div className="hv-controls hv-reveal hv-reveal--3">
             <p className="hv-chips-label">
               {stylesLocked && step === 'result' ? 'Your style' : 'Choose a style'}
@@ -561,19 +816,28 @@ const HavenApp: React.FC = () => {
                 aria-label="Style personalities"
                 aria-disabled={stylesLocked}
               >
-                {STYLE_PERSONALITIES.map((style) => (
-                  <button
-                    key={style.id}
-                    type="button"
-                    role="option"
-                    aria-selected={styleId === style.id}
-                    className={`hv-chip${styleId === style.id ? ' hv-chip--active' : ''}`}
-                    disabled={stylesLocked}
-                    onClick={() => setStyleId(style.id)}
-                  >
-                    {style.label}
-                  </button>
-                ))}
+                {stylesLoading && styles.length === 0 ? (
+                  <span className="hv-chip hv-chip--loading">Loading styles…</span>
+                ) : (
+                  styles.map((style) => (
+                    <button
+                      key={style.id}
+                      type="button"
+                      role="option"
+                      aria-selected={styleId === style.id}
+                      className={`hv-chip${styleId === style.id ? ' hv-chip--active' : ''}`}
+                      disabled={stylesLocked}
+                      onClick={() => setStyleId(style.id)}
+                    >
+                      {style.label}
+                      {style.baseRoomImageUrl ? (
+                        <span className="hv-chip__preview" aria-hidden="true">
+                          <img src={style.baseRoomImageUrl} alt="" />
+                        </span>
+                      ) : null}
+                    </button>
+                  ))
+                )}
               </div>
               <div className="hv-actions">
                 {step !== 'result' && (
@@ -598,9 +862,15 @@ const HavenApp: React.FC = () => {
               </div>
             </div>
             <p className="hv-style-hint">
-              {step === 'result'
+              {step === 'result' && selectedStyle
                 ? `${selectedStyle.label}. ${selectedStyle.blurb} Start over to try another style.`
-                : `Transform this room into ${selectedStyle.label}. ${selectedStyle.blurb}`}
+                : selectedStyle
+                  ? usingDemo
+                    ? `Transform this room into ${selectedStyle.label}. ${selectedStyle.blurb}`
+                    : `${selectedStyle.label}. ${selectedStyle.blurb} We’ll restyle your photo and surface shoppable pieces.`
+                  : usingDemo
+                    ? 'Pick a style to preview its room shell, then generate.'
+                    : 'Pick a style, then generate to restyle your photo.'}
             </p>
           </div>
         )}
@@ -641,10 +911,12 @@ const HavenApp: React.FC = () => {
                       alt=""
                       loading="lazy"
                     />
+                    <span className="hv-product__price">
+                      {formatPrice(product.price)}
+                    </span>
                     <div className="hv-product__body">
                       <span className="hv-product__merchant">{product.merchant}</span>
                       <h3 className="hv-product__name">{product.name}</h3>
-                      <p className="hv-product__price">{formatPrice(product.price)}</p>
                       <a
                         className="hv-product__buy"
                         href={product.affiliateUrl}

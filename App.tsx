@@ -26,6 +26,7 @@ import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
 import MeridaWellness from './components/MeridaWellness';
 import SarhProductionDashboard from './components/sarh/SarhProductionDashboard';
 import HavenApp from './components/haven/HavenApp';
+import HavenAdmin from './components/haven/HavenAdmin';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
@@ -206,6 +207,14 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
                 <HavenApp />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/haven/admin"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <HavenAdmin />
               </BrandLayout>
             }
           />
