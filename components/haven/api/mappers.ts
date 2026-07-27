@@ -37,6 +37,7 @@ export function mapStyle(row: Record<string, unknown>): StylePersonality {
   const baseAspect = row.baseRoomAspectRatio ?? row.base_room_aspect_ratio;
   const baseW = row.baseRoomWidth ?? row.base_room_width;
   const baseH = row.baseRoomHeight ?? row.base_room_height;
+  const previewUrl = row.previewImageUrl ?? row.preview_image_url;
   return {
     id: String(row.id ?? ''),
     label: String(row.label ?? ''),
@@ -53,7 +54,13 @@ export function mapStyle(row: Record<string, unknown>): StylePersonality {
       baseAspect != null && String(baseAspect) ? String(baseAspect) : null,
     baseRoomWidth: baseW != null && baseW !== '' ? Number(baseW) : null,
     baseRoomHeight: baseH != null && baseH !== '' ? Number(baseH) : null,
+    previewImageUrl: previewUrl != null && String(previewUrl) ? String(previewUrl) : null,
   };
+}
+
+/** Style picker thumbnail: furnished preview if present, else empty shell. */
+export function stylePickerThumb(style: StylePersonality): string | null {
+  return style.previewImageUrl || style.baseRoomImageUrl || null;
 }
 
 export function mapProduct(p: Record<string, unknown>): HavenProduct {
@@ -78,10 +85,12 @@ function asHotspotPercent(n: unknown): number {
   return Math.min(100, Math.max(0, pct));
 }
 
-export function mapHotspot(h: Record<string, unknown>): HavenHotspot {
+export function mapHotspot(h: Record<string, unknown>, index = 0): HavenHotspot {
+  const productId = String(h.productId ?? h.product_id ?? '');
+  const rawId = h.id != null && String(h.id) ? String(h.id) : '';
   return {
-    id: String(h.id ?? ''),
-    productId: String(h.productId ?? h.product_id ?? ''),
+    id: rawId || `hs_${productId || 'p'}_${index}`,
+    productId,
     x: asHotspotPercent(h.x),
     y: asHotspotPercent(h.y),
     label: String(h.label ?? ''),
@@ -105,7 +114,7 @@ export function mapRoomSet(row: Record<string, unknown>): RoomSet {
     productIds: Array.isArray(productIds) ? productIds.map(String) : [],
     imageUrl: String(row.imageUrl ?? row.image_url ?? row.referenceImageUrl ?? row.reference_image_url ?? ''),
     hotspots: Array.isArray(hotspots)
-      ? hotspots.map((h) => mapHotspot(h as Record<string, unknown>))
+      ? hotspots.map((h, i) => mapHotspot(h as Record<string, unknown>, i))
       : [],
     tags: Array.isArray(tags) ? tags.map(String) : [],
     featured: Boolean(row.featured),
@@ -214,7 +223,7 @@ export function mapJob(data: Record<string, unknown>): RoomJob {
       };
     }),
     products: productsRaw.map((p) => mapProduct(p as Record<string, unknown>)),
-    hotspots: hotspotsRaw.map((h) => mapHotspot(h as Record<string, unknown>)),
+    hotspots: hotspotsRaw.map((h, i) => mapHotspot(h as Record<string, unknown>, i)),
     status,
     imageWidth:
       data.imageWidth != null

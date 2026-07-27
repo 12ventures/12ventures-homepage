@@ -1,7 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { havenAdminClient, type ProductImportResult } from './api/havenAdminClient';
-import type { HavenHotspot, HavenProduct, RoomSet, RoomSetDetail, StylePersonality } from './types';
+import { stylePickerThumb } from './api/mappers';
+import { HavenAdminAddProduct } from './HavenAdminAddProduct';
+import HavenAdminCreateStyleModal from './HavenAdminCreateStyleModal';
+import { HavenAdminStudio } from './HavenAdminStudio';
+import type {
+  HavenHotspot,
+  HavenProduct,
+  PlacementPin,
+  RoomSet,
+  RoomSetDetail,
+  StylePersonality,
+} from './types';
 import {
   isRoomSetGenerating,
   resolveStageAspect,
@@ -203,7 +214,13 @@ const ProductTile: React.FC<{
       <div className="hv-admin__tile-ratio">
         <button
           type="button"
-          className={`hv-admin__tile-face${busyLabel ? ' is-busy' : ''}`}
+          className={[
+            'hv-admin__tile-face',
+            busyLabel ? 'is-busy' : '',
+            !selected && !hoverLabel && !busyLabel ? 'is-static' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           disabled={disabled}
           onClick={onActivate}
           aria-label={ariaLabel}
@@ -227,9 +244,9 @@ const ProductTile: React.FC<{
             <span className="hv-admin__tile-check" aria-hidden="true">
               <SelectedCheckIcon />
             </span>
-          ) : (
+          ) : hoverLabel || busyLabel ? (
             <span className="hv-admin__tile-hover">{busyLabel || hoverLabel}</span>
-          )}
+          ) : null}
           <span className="hv-admin__tile-copy">
             <span className="hv-admin__tile-name">{product.name}</span>
             <span className="hv-admin__tile-meta">
@@ -278,13 +295,18 @@ const HavenAdmin: React.FC = () => {
   const [editing, setEditing] = useState<RoomSetDetail | null>(null);
   const [draftHotspots, setDraftHotspots] = useState<HavenHotspot[]>([]);
   const [pinEditMode, setPinEditMode] = useState(false);
+  const [movedProductIds, setMovedProductIds] = useState<string[]>([]);
+  const [draggingHotspotId, setDraggingHotspotId] = useState<string | null>(null);
+  /** Keep current room image on screen during rearrange/regen (avoid jumping to list gen card). */
+  const [stageLockSrc, setStageLockSrc] = useState<string | null>(null);
+  const [stageRevealSrc, setStageRevealSrc] = useState<string | null>(null);
+  const [stageRevealing, setStageRevealing] = useState(false);
+  const pinBaselineRef = useRef<HavenHotspot[]>([]);
   const [reusedBaseRoom, setReusedBaseRoom] = useState(false);
   const draggingPinId = useRef<string | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
 
   const [queriesText, setQueriesText] = useState(DEFAULT_QUERIES);
   const [maxPerQuery, setMaxPerQuery] = useState(5);
@@ -294,9 +316,21 @@ const HavenAdmin: React.FC = () => {
   const [roomLabel, setRoomLabel] = useState('');
   const [roomBlurb, setRoomBlurb] = useState('');
   const [roomTags, setRoomTags] = useState('');
-  const [roomFeatured, setRoomFeatured] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<'choose' | 'manual'>('choose');
+  /** While set, Design Myself owns generate UX (in-studio blur loader). */
+  const [studioJobId, setStudioJobId] = useState<string | null>(null);
+  const [studioPins, setStudioPins] = useState<PlacementPin[]>([]);
+  const [readyBannerId, setReadyBannerId] = useState<string | null>(null);
+  const wasGeneratingRef = useRef(false);
+  const editorAnchorRef = useRef<HTMLDivElement>(null);
+  const [studioBaseUrl, setStudioBaseUrl] = useState<string | null>(null);
+  const [studioUploadId, setStudioUploadId] = useState<string | null>(null);
+  const [studioComposeMode, setStudioComposeMode] = useState<'base' | 'furnish'>('base');
+  const [productsTab, setProductsTab] = useState<'scrape' | 'add'>('scrape');
   const [imageTargetId, setImageTargetId] = useState<string | null>(null);
+  const [createStyleOpen, setCreateStyleOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pinStageRef = useRef<HTMLDivElement>(null);
 
@@ -346,8 +380,34 @@ const HavenAdmin: React.FC = () => {
     ]);
     setStyles(styleList);
     setProducts(productList);
-    setRoomStyleId((prev) => prev || styleList[0]?.id || '');
+    setRoomStyleId((prev) => {
+      const next = prev || styleList[0]?.id || '';
+      if (!prev) {
+        const style = styleList.find((s) => s.id === next);
+        if (style?.baseRoomImageUrl) setStudioBaseUrl(style.baseRoomImageUrl);
+        if (style?.label) setRoomLabel(`${style.label} Set`);
+      }
+      return next;
+    });
   }, []);
+
+  const selectStyle = (id: string, list: StylePersonality[] = styles) => {
+    setRoomStyleId(id);
+    setSelectedProductIds([]);
+    setStudioUploadId(null);
+    const style = list.find((s) => s.id === id);
+    setStudioBaseUrl(style?.baseRoomImageUrl || null);
+    setRoomLabel(style?.label ? `${style.label} Set` : '');
+    setError(null);
+  };
+
+  const onStyleCreated = (style: StylePersonality) => {
+    setStyles((prev) => {
+      const without = prev.filter((s) => s.id !== style.id);
+      return [style, ...without];
+    });
+    selectStyle(style.id, [style, ...styles.filter((s) => s.id !== style.id)]);
+  };
 
   /** Keep grid order stable across polls so a generating card doesn’t jump slots. */
   const mergeRoomSets = useCallback((incoming: RoomSet[], preferFrontId?: string) => {
@@ -398,6 +458,12 @@ const HavenAdmin: React.FC = () => {
       const detail = await havenAdminClient.getRoomSet(id);
       applyDetail(detail);
       setPinEditMode(false);
+      setMovedProductIds([]);
+      setDraggingHotspotId(null);
+      setStageLockSrc(null);
+      setStageRevealSrc(null);
+      setStageRevealing(false);
+      pinBaselineRef.current = [];
       draggingPinId.current = null;
       setReusedBaseRoom(false);
     },
@@ -487,7 +553,7 @@ const HavenAdmin: React.FC = () => {
   const toggleProduct = (id: string) => {
     setSelectedProductIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 6) return prev;
+      if (prev.length >= 18) return prev;
       return [...prev, id];
     });
   };
@@ -495,7 +561,6 @@ const HavenAdmin: React.FC = () => {
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key);
     setError(null);
-    setOkMsg(null);
     try {
       await fn();
     } catch (err) {
@@ -520,11 +585,6 @@ const HavenAdmin: React.FC = () => {
       });
       setImportResult(result);
       await refresh();
-      const credits = result.credits_used_estimate ?? result.creditsUsedEstimate;
-      setOkMsg(
-        `Import done: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped` +
-          (credits != null ? ` · ~${credits} credits` : ''),
-      );
     });
 
   const openCreatedSet = async (
@@ -565,17 +625,15 @@ const HavenAdmin: React.FC = () => {
             'Set created but generate failed — use Retry on the card.',
         );
       }
-      setOkMsg(
-        isRoomSetGenerating(status)
-          ? `“${roomSet.label}” curated — generating look…`
-          : `Room set “${roomSet.label}” ready.`,
-      );
     });
 
   const onCreateRoomSet = () =>
     void run('room', async () => {
       if (!roomStyleId) throw new Error('Pick a style.');
       if (!selectedProductIds.length) throw new Error('Select 1–6 products with images.');
+      if (selectedProductIds.length > 6) {
+        throw new Error('Automatic generate supports up to 6 products. Use Design Myself for more.');
+      }
       if (selectedMissingImages.length) {
         throw new Error(
           `Add images for: ${selectedMissingImages.map((p) => p.name).join(', ')}`,
@@ -583,11 +641,18 @@ const HavenAdmin: React.FC = () => {
       }
       const label =
         roomLabel.trim() ||
-        `${selectedStyle?.label ?? roomStyleId} Living Room`;
+        `${selectedStyle?.label ?? roomStyleId} Set`;
       const tags = roomTags
         .split(/,|\n/)
         .map((t) => t.trim())
         .filter(Boolean);
+      const basePreview =
+        selectedStyle?.baseRoomImageUrl || studioBaseUrl || null;
+      if (basePreview) {
+        setStageLockSrc(basePreview);
+        setStageRevealSrc(null);
+        setStageRevealing(false);
+      }
       const { roomSet, generateJob } = await havenAdminClient.createRoomSet({
         styleId: roomStyleId,
         label,
@@ -597,24 +662,160 @@ const HavenAdmin: React.FC = () => {
         aspectRatio: '16:9',
         autoGenerate: true,
         enabled: true,
-        featured: roomFeatured,
+        featured: false,
         sortOrder: 0,
       });
-      setRoomLabel('');
+      setRoomLabel(selectedStyle?.label ? `${selectedStyle.label} Set` : '');
       setRoomBlurb('');
       setRoomTags('');
-      setRoomFeatured(false);
       setSelectedProductIds([]);
+      setCreateMode('choose');
       await openCreatedSet(roomSet, generateJob);
-      setOkMsg(
-        isRoomSetGenerating(generateJob?.status ?? roomSet.generateStatus)
-          ? `“${label}” created — generating look…`
-          : `Room set “${label}” created.`,
-      );
+      window.requestAnimationFrame(() => {
+        editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     });
+
+  const openStudio = () => {
+    if (!roomStyleId) {
+      setError('Pick a style first.');
+      return;
+    }
+    if (!selectedProductIds.length) {
+      setError('Select at least one product with an image.');
+      return;
+    }
+    if (selectedMissingImages.length) {
+      setError(`Add images for: ${selectedMissingImages.map((p) => p.name).join(', ')}`);
+      return;
+    }
+    if (selectedProductIds.length > 18) {
+      setError('Studio supports up to 18 products.');
+      return;
+    }
+    setError(null);
+    // Prefer an already-chosen custom upload; otherwise the style’s cached empty room.
+    if (!studioUploadId) {
+      setStudioBaseUrl(selectedStyle?.baseRoomImageUrl || null);
+    }
+    setStudioPins(
+      selectedProductIds.map((id, i) => ({
+        productId: id,
+        x: 28 + (i % 5) * 12,
+        y: 55 + Math.floor(i / 5) * 10,
+      })),
+    );
+    setStudioOpen(true);
+  };
+
+  const onStudioUploadBase = (file: File) => {
+    void run('studio-base', async () => {
+      const uploaded = await havenAdminClient.uploadBaseImage(file);
+      if (!uploaded.uploadId || !uploaded.originalImageUrl) {
+        throw new Error('Base upload failed.');
+      }
+      setStudioUploadId(uploaded.uploadId);
+      setStudioBaseUrl(uploaded.originalImageUrl);
+    });
+  };
+
+  const onStudioGenerate = () =>
+    void run('studio', async () => {
+      if (!roomStyleId) throw new Error('Pick a style.');
+      if (!selectedProductIds.length) throw new Error('Select products to place.');
+      if (!studioPins.length) throw new Error('Place at least one product on the room.');
+      const label =
+        roomLabel.trim() ||
+        `${selectedStyle?.label ?? roomStyleId} Set`;
+      const tags = roomTags
+        .split(/,|\n/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const usingUpload = Boolean(studioUploadId);
+      const { roomSet, generateJob } = await havenAdminClient.createStudioRoomSet({
+        styleId: roomStyleId,
+        label,
+        blurb: roomBlurb.trim(),
+        tags,
+        productIds: selectedProductIds,
+        baseSource: usingUpload ? 'upload_id' : 'style_cache',
+        uploadId: usingUpload ? studioUploadId : null,
+        baseImageUrl: null,
+        composeMode: studioComposeMode,
+        placementPins: studioPins,
+        enabled: true,
+        featured: false,
+      });
+      // Stay in studio with blur loader while the job runs (list card is for auto only).
+      setStudioJobId(roomSet.id);
+      await openCreatedSet(roomSet, generateJob);
+    });
+
+  const finishStudioJob = useCallback(() => {
+    setStudioOpen(false);
+    setStudioJobId(null);
+    setStudioPins([]);
+    setStudioUploadId(null);
+    setStudioBaseUrl(null);
+    setStudioComposeMode('base');
+    setRoomLabel(selectedStyle?.label ? `${selectedStyle.label} Set` : '');
+    setRoomBlurb('');
+    setRoomTags('');
+    setSelectedProductIds([]);
+    setCreateMode('choose');
+    window.requestAnimationFrame(() => {
+      editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [selectedStyle?.label]);
+
+  useEffect(() => {
+    if (!editing) {
+      wasGeneratingRef.current = false;
+      return;
+    }
+    const generating = isRoomSetGenerating(editing.generateStatus);
+    if (generating) {
+      wasGeneratingRef.current = true;
+      return;
+    }
+    if (
+      wasGeneratingRef.current &&
+      editing.generateStatus === 'ready' &&
+      editing.imageUrl
+    ) {
+      wasGeneratingRef.current = false;
+      setReadyBannerId(editing.id);
+    }
+  }, [editing?.id, editing?.generateStatus, editing?.imageUrl]);
+
+  const closeEditor = () => {
+    setEditing(null);
+    setDraftHotspots([]);
+    setPinEditMode(false);
+    setMovedProductIds([]);
+    setDraggingHotspotId(null);
+    setStageLockSrc(null);
+    setStageRevealSrc(null);
+    setStageRevealing(false);
+    setReadyBannerId(null);
+    setReusedBaseRoom(false);
+  };
+
+  useEffect(() => {
+    if (!studioJobId || !editing || editing.id !== studioJobId) return;
+    if (isRoomSetGenerating(editing.generateStatus)) return;
+    finishStudioJob();
+  }, [studioJobId, editing?.id, editing?.generateStatus, finishStudioJob]);
 
   const onRegenerate = (id: string) =>
     void run(`regen-${id}`, async () => {
+      setReadyBannerId(null);
+      if (editing?.id === id && editing.imageUrl) {
+        setStageLockSrc(editing.imageUrl);
+        setStageRevealSrc(null);
+        setStageRevealing(false);
+        setPinEditMode(false);
+      }
       const { roomSet, generateJob } = await havenAdminClient.regenerateRoomSet(id);
       setReusedBaseRoom(Boolean(generateJob?.reusedBaseRoom));
       const detail = await havenAdminClient.getRoomSet(id);
@@ -627,7 +828,6 @@ const HavenAdmin: React.FC = () => {
         generateMessage: generateJob?.message ?? roomSet.generateMessage,
         generateError: null,
       });
-      setOkMsg('Regenerate started.');
     });
 
   const onDeleteRoomSet = (id: string) =>
@@ -638,7 +838,6 @@ const HavenAdmin: React.FC = () => {
         setDraftHotspots([]);
       }
       await refreshRoomSets();
-      setOkMsg('Room set removed.');
     });
 
   const onToggleFlag = (id: string, patch: { featured?: boolean; enabled?: boolean }) =>
@@ -646,7 +845,6 @@ const HavenAdmin: React.FC = () => {
       const updated = await havenAdminClient.patchRoomSet(id, patch);
       setRoomSets((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
       if (editing?.id === id) setEditing((prev) => (prev ? { ...prev, ...updated } : prev));
-      setOkMsg('Room set updated.');
     });
 
   const openImagePicker = (productId: string) => {
@@ -662,7 +860,6 @@ const HavenAdmin: React.FC = () => {
     void run(`img-${productId}`, async () => {
       const updated = await havenAdminClient.uploadProductImage(productId, file);
       setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      setOkMsg(`Image set for ${updated.name}.`);
     });
   };
 
@@ -679,11 +876,18 @@ const HavenAdmin: React.FC = () => {
     };
   };
 
-  const onPinPointerDown = (e: React.PointerEvent, id: string) => {
+  const onPinPointerDown = (e: React.PointerEvent, hotspot: HavenHotspot) => {
     if (!pinEditMode) return;
+    const alreadyMoved = movedProductIds.includes(hotspot.productId);
+    if (!alreadyMoved && movedProductIds.length >= 3) {
+      setError('Move furniture allows up to 3 items per request. Cancel or submit these first.');
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
-    draggingPinId.current = id;
+    setError(null);
+    draggingPinId.current = hotspot.id;
+    setDraggingHotspotId(hotspot.id);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
@@ -698,40 +902,124 @@ const HavenAdmin: React.FC = () => {
   };
 
   const onPinPointerUp = (e: React.PointerEvent) => {
-    if (draggingPinId.current == null) return;
+    const id = draggingPinId.current;
+    if (id == null) return;
     draggingPinId.current = null;
+    setDraggingHotspotId(null);
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {
       /* already released */
     }
+    const next = percentFromPointer(e.clientX, e.clientY);
+    if (!next) return;
+    const baseline = pinBaselineRef.current.find((h) => h.id === id);
+    setDraftHotspots((prev) => {
+      const updated = prev.map((h) => (h.id === id ? { ...h, x: next.x, y: next.y } : h));
+      const draft = updated.find((h) => h.id === id);
+      if (draft && baseline) {
+        const moved =
+          Math.abs(draft.x - baseline.x) > 0.15 || Math.abs(draft.y - baseline.y) > 0.15;
+        if (moved) {
+          setMovedProductIds((ids) =>
+            ids.includes(draft.productId) ? ids : [...ids, draft.productId].slice(0, 3),
+          );
+        }
+      }
+      return updated;
+    });
   };
 
   const startPinEdit = () => {
     if (!editing) return;
-    setDraftHotspots(editing.hotspots ?? []);
+    const hotspots = editing.hotspots ?? [];
+    setDraftHotspots(hotspots);
+    pinBaselineRef.current = hotspots.map((h) => ({ ...h }));
+    setMovedProductIds([]);
     setPinEditMode(true);
+    setReadyBannerId(null);
+    setError(null);
   };
 
   const cancelPinEdit = () => {
     setDraftHotspots(editing?.hotspots ?? []);
+    pinBaselineRef.current = [];
+    setMovedProductIds([]);
+    setDraggingHotspotId(null);
     setPinEditMode(false);
     draggingPinId.current = null;
+    setError(null);
   };
 
+  /** Recompose furniture via rearrange API (1–3 moved pins). */
+  const onMoveFurniture = () =>
+    void run('rearrange', async () => {
+      if (!editing) return;
+      const pins = draftHotspots
+        .filter((h) => movedProductIds.includes(h.productId))
+        .map((h) => ({ productId: h.productId, x: h.x, y: h.y }));
+      if (!pins.length) throw new Error('Drag at least one item to a new spot first.');
+      if (pins.length > 3) throw new Error('Move furniture allows at most 3 items per request.');
+
+      const generateJob = await havenAdminClient.rearrangeRoomSet(editing.id, pins);
+      setStageLockSrc(editing.imageUrl);
+      setStageRevealSrc(null);
+      setStageRevealing(false);
+      setPinEditMode(false);
+      setMovedProductIds([]);
+      setDraggingHotspotId(null);
+      pinBaselineRef.current = [];
+      draggingPinId.current = null;
+
+      const detail = await havenAdminClient.getRoomSet(editing.id);
+      applyDetail({
+        ...detail,
+        generateJobId: generateJob.jobId ?? detail.generateJobId,
+        generateStatus: generateJob.status ?? detail.generateStatus ?? 'rearranging',
+        generateProgress: generateJob.progress ?? detail.generateProgress,
+        generateMessage: generateJob.message ?? detail.generateMessage,
+        generateError: generateJob.error ?? null,
+      });
+    });
+
+  /** Optional: only update hotspot markers on the current image (no AI recompose). */
   const onSaveHotspots = () =>
     void run('hotspots', async () => {
       if (!editing) return;
       const saved = await havenAdminClient.saveHotspots(editing.id, draftHotspots);
       setDraftHotspots(saved);
+      pinBaselineRef.current = saved.map((h) => ({ ...h }));
+      setMovedProductIds([]);
       setEditing((prev) => (prev ? { ...prev, hotspots: saved } : prev));
       setPinEditMode(false);
-      draggingPinId.current = null;
-      setOkMsg(`Saved ${saved.length} pin position${saved.length === 1 ? '' : 's'}.`);
     });
 
   const editingGenerating = isRoomSetGenerating(editing?.generateStatus);
-  const editorHotspots = pinEditMode ? draftHotspots : (editing?.hotspots ?? []);
+  const studioWorking = Boolean(
+    studioOpen &&
+      (busy === 'studio' ||
+        (studioJobId != null &&
+          editing?.id === studioJobId &&
+          isRoomSetGenerating(editing.generateStatus))),
+  );
+  /** Follow-up gen (rearrange/regen) or manual create — keep detail view with locked image. */
+  const editorInPlaceWorking = Boolean(
+    editing &&
+      editingGenerating &&
+      !studioOpen &&
+      (stageLockSrc || editing.imageUrl),
+  );
+  const showEditor =
+    Boolean(editing) &&
+    !studioOpen &&
+    (Boolean(editing?.imageUrl) || Boolean(stageLockSrc) || !editingGenerating);
+  const editorStageSrc = stageLockSrc || editing?.imageUrl || '';
+  const editorHotspots =
+    editorInPlaceWorking || stageRevealing
+      ? []
+      : pinEditMode
+        ? draftHotspots
+        : (editing?.hotspots ?? []);
   const editorStageAspect =
     editing &&
     (resolveStageAspect({
@@ -740,6 +1028,41 @@ const HavenAdmin: React.FC = () => {
       aspectRatio: editing.aspectRatio,
     }) ||
       '16 / 9');
+  const editorGenPct = Math.min(
+    100,
+    Math.max(0, Math.round(Number(editing?.generateProgress ?? 0))),
+  );
+  const editorGenCopy = roomSetGenerateCopy(
+    editing?.generateStatus,
+    editing?.generateMessage,
+  );
+
+  useEffect(() => {
+    if (!editing || !stageLockSrc) return;
+    if (isRoomSetGenerating(editing.generateStatus)) return;
+
+    if (editing.generateStatus === 'failed') {
+      setStageLockSrc(null);
+      setStageRevealSrc(null);
+      setStageRevealing(false);
+      return;
+    }
+
+    if (editing.imageUrl && editing.imageUrl !== stageLockSrc) {
+      setStageRevealSrc(editing.imageUrl);
+      setStageRevealing(true);
+      const t = window.setTimeout(() => {
+        setStageLockSrc(null);
+        setStageRevealSrc(null);
+        setStageRevealing(false);
+      }, 1150);
+      return () => window.clearTimeout(t);
+    }
+
+    setStageLockSrc(null);
+    setStageRevealSrc(null);
+    setStageRevealing(false);
+  }, [editing?.generateStatus, editing?.imageUrl, editing?.generateError, stageLockSrc]);
 
   return (
     <div className="hv-admin">
@@ -777,7 +1100,6 @@ const HavenAdmin: React.FC = () => {
             {error}
           </p>
         )}
-        {okMsg && !error && <p className="hv-admin__msg hv-admin__msg--ok">{okMsg}</p>}
 
         {loading ? (
           <p className="hv-admin__empty">Loading catalog…</p>
@@ -796,156 +1118,289 @@ const HavenAdmin: React.FC = () => {
             <section className="hv-admin__panel hv-admin__panel--room">
               <div className="hv-admin__panel-head">
                 <h2 className="hv-admin__panel-title">Curated room sets</h2>
-              </div>
-
-              <div className="hv-admin__auto-create">
-                <label className="hv-admin__field hv-admin__field--inline">
-                  <span className="hv-admin__label">Style</span>
-                  <select
-                    className="hv-admin__select"
-                    value={roomStyleId}
-                    onChange={(e) => {
-                      setRoomStyleId(e.target.value);
-                      setSelectedProductIds([]);
-                    }}
-                    disabled={!styles.length}
-                  >
-                    {!styles.length && <option value="">No styles available</option>}
-                    {styles.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="hv-admin__btn hv-admin__btn--primary"
-                  disabled={
-                    busy != null || !roomStyleId || !styles.length || productsWithImages < 3
-                  }
-                  onClick={onAutoCreateRoomSet}
-                  title={
-                    productsWithImages < 3
-                      ? 'Import at least 3 products with images first'
-                      : 'LLM picks products + label, then generates the look'
-                  }
-                >
-                  {busy === 'auto-room' ? 'Generating for you…' : 'Generate for me'}
-                </button>
-              </div>
-
-              <details className="hv-admin__manual">
-                <summary className="hv-admin__manual-summary">Manual create (pick products)</summary>
-                <div className="hv-admin__room-layout">
-                <div className="hv-admin__form">
-                  <label className="hv-admin__field">
-                    <span className="hv-admin__label">Label</span>
-                    <input
-                      className="hv-admin__input"
-                      value={roomLabel}
-                      onChange={(e) => setRoomLabel(e.target.value)}
-                      placeholder={
-                        selectedStyle
-                          ? `${selectedStyle.label} Living Room`
-                          : 'Organic Modern Living Room'
-                      }
-                    />
-                  </label>
-                  <label className="hv-admin__field">
-                    <span className="hv-admin__label">Blurb</span>
-                    <input
-                      className="hv-admin__input"
-                      value={roomBlurb}
-                      onChange={(e) => setRoomBlurb(e.target.value)}
-                      placeholder="optional"
-                    />
-                  </label>
-                  <label className="hv-admin__field">
-                    <span className="hv-admin__label">Tags</span>
-                    <input
-                      className="hv-admin__input"
-                      value={roomTags}
-                      onChange={(e) => setRoomTags(e.target.value)}
-                      placeholder="living, calm"
-                    />
-                  </label>
-                  <label className="hv-admin__check">
-                    <input
-                      type="checkbox"
-                      checked={roomFeatured}
-                      onChange={(e) => setRoomFeatured(e.target.checked)}
-                    />
-                    Feature for Use demo room
-                  </label>
-                  <p className="hv-admin__panel-meta">
-                    Selected {selectedProductIds.length}/6
-                    {selectedMissingImages.length
-                      ? ` · ${selectedMissingImages.length} missing image`
-                      : ''}
-                  </p>
+                {studioOpen ? (
                   <button
                     type="button"
-                    className="hv-admin__btn hv-admin__btn--primary"
-                    disabled={
-                      busy != null ||
-                      !roomStyleId ||
-                      selectedProductIds.length < 1 ||
-                      selectedProductIds.length > 6 ||
-                      selectedMissingImages.length > 0
-                    }
-                    onClick={onCreateRoomSet}
+                    className="hv-admin__btn hv-admin__btn--ghost"
+                    disabled={busy === 'studio' || studioWorking}
+                    onClick={() => {
+                      if (studioJobId) return;
+                      setStudioOpen(false);
+                    }}
                   >
-                    {busy === 'room' ? 'Creating…' : 'Create & generate'}
+                    Back
                   </button>
+                ) : null}
+              </div>
+
+              {studioOpen ? (
+                <HavenAdminStudio
+                  style={selectedStyle}
+                  label={
+                    roomLabel.trim() ||
+                    `${selectedStyle?.label ?? roomStyleId} Set`
+                  }
+                  products={selectedProductIds
+                    .map((id) => productsById.get(id))
+                    .filter((p): p is HavenProduct => Boolean(p))}
+                  allProducts={products}
+                  pins={studioPins}
+                  busy={busy === 'studio'}
+                  baseBusy={busy === 'studio-base'}
+                  baseImageUrl={studioBaseUrl}
+                  onPinsChange={setStudioPins}
+                  onProductsChange={setSelectedProductIds}
+                  composeMode={studioComposeMode}
+                  onComposeModeChange={setStudioComposeMode}
+                  onGenerate={onStudioGenerate}
+                  onUploadBase={onStudioUploadBase}
+                  working={studioWorking}
+                  genStatus={
+                    editing?.id === studioJobId ? editing.generateStatus : null
+                  }
+                  genProgress={
+                    editing?.id === studioJobId ? editing.generateProgress : null
+                  }
+                  genMessage={
+                    editing?.id === studioJobId ? editing.generateMessage : null
+                  }
+                />
+              ) : (
+                <>
+              <div className="hv-admin__auto-create hv-admin__auto-create--visual">
+                <div className="hv-admin__style-picker-head">
+                  <p className="hv-admin__label">Style &amp; base room</p>
+                  <p className="hv-admin__panel-meta">
+                    {selectedStyle
+                      ? `${selectedStyle.label}${selectedStyle.baseRoomImageUrl ? '' : ' · no cached base yet'}`
+                      : 'Pick a style'}
+                  </p>
+                </div>
+                <div className="hv-admin__style-picker" role="listbox" aria-label="Styles">
+                  <button
+                    type="button"
+                    className="hv-admin__style-card hv-admin__style-card--create"
+                    disabled={busy != null}
+                    title="Create a new style from a room photo"
+                    onClick={() => setCreateStyleOpen(true)}
+                  >
+                    <span className="hv-admin__style-card-media">
+                      <span className="hv-admin__style-card-empty">+</span>
+                    </span>
+                    <span className="hv-admin__style-card-label">Create Room</span>
+                  </button>
+                  {styles.map((s) => {
+                    const active = roomStyleId === s.id;
+                    const thumb = stylePickerThumb(s);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        className={`hv-admin__style-card${active ? ' is-active' : ''}`}
+                        disabled={busy != null}
+                        onClick={() => selectStyle(s.id)}
+                      >
+                        <span className="hv-admin__style-card-media">
+                          {thumb ? (
+                            <img src={thumb} alt="" />
+                          ) : (
+                            <span className="hv-admin__style-card-empty">No base</span>
+                          )}
+                        </span>
+                        <span className="hv-admin__style-card-label">{s.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <div>
-                  <p className="hv-admin__label">Pick products (need images)</p>
-                  {products.length === 0 ? (
-                    <p className="hv-admin__empty" style={{ marginTop: 8 }}>
-                      No products yet. Import a few queries above.
-                    </p>
-                  ) : (
-                    <div className="hv-admin__tiles hv-admin__tiles--picker">
-                      {products.map((p) => {
-                        const selected = selectedProductIds.includes(p.id);
-                        const noImg = !hasProductImage(p);
-                        return (
-                          <ProductTile
-                            key={p.id}
-                            product={p}
-                            selected={selected}
-                            disabled={
-                              busy != null ||
-                              (!selected && selectedProductIds.length >= 6) ||
-                              (noImg && !selected)
-                            }
-                            hoverLabel={
-                              noImg ? 'Needs image' : selected ? 'Selected' : 'Select'
-                            }
-                            ariaLabel={
-                              noImg
-                                ? `${p.name} needs an image before it can be used`
-                                : selected
-                                  ? `Deselect ${p.name}`
-                                  : `Select ${p.name} for room set`
-                            }
-                            onActivate={() => {
-                              if (noImg) {
-                                openImagePicker(p.id);
-                                return;
-                              }
-                              toggleProduct(p.id);
-                            }}
-                          />
-                        );
-                      })}
+                {createMode === 'choose' ? (
+                  <div className="hv-admin__create-actions">
+                    <button
+                      type="button"
+                      className="hv-admin__btn hv-admin__btn--primary"
+                      disabled={
+                        busy != null ||
+                        !roomStyleId ||
+                        !styles.length ||
+                        productsWithImages < 3
+                      }
+                      onClick={onAutoCreateRoomSet}
+                      title={
+                        productsWithImages < 3
+                          ? 'Import at least 3 products with images first'
+                          : 'We’ll pick products and build a look for this style'
+                      }
+                    >
+                      {busy === 'auto-room' ? 'Generating for you…' : 'Generate for me'}
+                    </button>
+                    <button
+                      type="button"
+                      className="hv-admin__btn hv-admin__btn--ghost"
+                      disabled={busy != null || !roomStyleId}
+                      onClick={() => {
+                        if (selectedStyle?.label && !roomLabel.trim()) {
+                          setRoomLabel(`${selectedStyle.label} Set`);
+                        }
+                        setCreateMode('manual');
+                      }}
+                    >
+                      Create myself
+                    </button>
+                  </div>
+                ) : (
+                  <div className="hv-admin__create-manual">
+                    <div className="hv-admin__create-manual-bar">
+                      <button
+                        type="button"
+                        className="hv-admin__back"
+                        disabled={busy != null}
+                        onClick={() => setCreateMode('choose')}
+                      >
+                        ← Back
+                      </button>
+                      <p className="hv-admin__create-manual-title">
+                        Creating with{' '}
+                        <span>{selectedStyle?.label ?? 'this style'}</span>
+                      </p>
                     </div>
-                  )}
-                </div>
+
+                    <div className="hv-admin__create-steps">
+                      <section className="hv-admin__create-step" aria-labelledby="create-step-details">
+                        <header className="hv-admin__create-step-head">
+                          <span className="hv-admin__create-step-num" aria-hidden="true">
+                            1
+                          </span>
+                          <h3 id="create-step-details" className="hv-admin__create-step-title">
+                            Name this look
+                          </h3>
+                        </header>
+                        <div className="hv-admin__form hv-admin__form--create">
+                          <label className="hv-admin__field">
+                            <span className="hv-admin__label">Label</span>
+                            <input
+                              className="hv-admin__input"
+                              value={roomLabel}
+                              onChange={(e) => setRoomLabel(e.target.value)}
+                              placeholder={
+                                selectedStyle ? `${selectedStyle.label} Set` : 'Style Set'
+                              }
+                            />
+                          </label>
+                          <div className="hv-admin__form-row hv-admin__form-row--optional">
+                            <label className="hv-admin__field">
+                              <span className="hv-admin__label">
+                                Blurb
+                                <span className="hv-admin__optional">optional</span>
+                              </span>
+                              <input
+                                className="hv-admin__input"
+                                value={roomBlurb}
+                                onChange={(e) => setRoomBlurb(e.target.value)}
+                                placeholder="Short description for shoppers"
+                              />
+                            </label>
+                            <label className="hv-admin__field">
+                              <span className="hv-admin__label">
+                                Tags
+                                <span className="hv-admin__optional">optional</span>
+                              </span>
+                              <input
+                                className="hv-admin__input"
+                                value={roomTags}
+                                onChange={(e) => setRoomTags(e.target.value)}
+                                placeholder="living, calm"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section className="hv-admin__create-step" aria-labelledby="create-step-products">
+                        <header className="hv-admin__create-step-head">
+                          <span className="hv-admin__create-step-num" aria-hidden="true">
+                            2
+                          </span>
+                          <h3 id="create-step-products" className="hv-admin__create-step-title">
+                            Pick products
+                          </h3>
+                        </header>
+                        {products.length === 0 ? (
+                          <p className="hv-admin__empty">No products yet. Import a few below.</p>
+                        ) : (
+                          <div className="hv-admin__tiles hv-admin__tiles--picker">
+                            {products.map((p) => {
+                              const selected = selectedProductIds.includes(p.id);
+                              const noImg = !hasProductImage(p);
+                              return (
+                                <ProductTile
+                                  key={p.id}
+                                  product={p}
+                                  selected={selected}
+                                  disabled={
+                                    busy != null ||
+                                    (!selected && selectedProductIds.length >= 18) ||
+                                    (noImg && !selected)
+                                  }
+                                  hoverLabel={
+                                    noImg ? 'Needs image' : selected ? 'Selected' : 'Select'
+                                  }
+                                  ariaLabel={
+                                    noImg
+                                      ? `${p.name} needs an image before it can be used`
+                                      : selected
+                                        ? `Deselect ${p.name}`
+                                        : `Select ${p.name} for room set`
+                                  }
+                                  onActivate={() => {
+                                    if (noImg) {
+                                      openImagePicker(p.id);
+                                      return;
+                                    }
+                                    toggleProduct(p.id);
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
+                      </section>
+                    </div>
+
+                    <div className="hv-admin__create-manual-actions">
+                      <button
+                        type="button"
+                        className="hv-admin__btn hv-admin__btn--primary"
+                        disabled={
+                          busy != null ||
+                          !roomStyleId ||
+                          selectedProductIds.length < 1 ||
+                          selectedProductIds.length > 6 ||
+                          selectedMissingImages.length > 0
+                        }
+                        onClick={onCreateRoomSet}
+                      >
+                        {busy === 'room' ? 'Creating…' : 'Generate Automatically'}
+                      </button>
+                      <button
+                        type="button"
+                        className="hv-admin__btn hv-admin__btn--ghost"
+                        disabled={
+                          busy != null ||
+                          !roomStyleId ||
+                          selectedProductIds.length < 1 ||
+                          selectedProductIds.length > 18 ||
+                          selectedMissingImages.length > 0
+                        }
+                        onClick={openStudio}
+                      >
+                        Design Myself
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              </details>
 
               <div className="hv-admin__sets-head">
                 <p className="hv-admin__label">Room sets</p>
@@ -1014,6 +1469,13 @@ const HavenAdmin: React.FC = () => {
                           <span className="hv-admin__set-shade" aria-hidden="true" />
 
                           {generating ? (
+                            studioJobId === set.id ||
+                            (editorInPlaceWorking && editing?.id === set.id) ? (
+                              <div className="hv-admin__set-gen">
+                                <span className="hv-admin__set-label">{set.label}</span>
+                                <span className="hv-admin__set-meta">Creating above…</span>
+                              </div>
+                            ) : (
                             <div className="hv-admin__set-gen">
                               <span className="hv-admin__set-label">{set.label}</span>
                               <span className="hv-admin__gen-copy">
@@ -1032,6 +1494,7 @@ const HavenAdmin: React.FC = () => {
                               </div>
                               <span className="hv-admin__set-meta">{pct}%</span>
                             </div>
+                            )
                           ) : (
                             <>
                               <button
@@ -1124,13 +1587,22 @@ const HavenAdmin: React.FC = () => {
                 </div>
               )}
 
-              {editing && !editingGenerating && (
-                <div className="hv-admin__editor">
+              {showEditor && editing && (
+                <div className="hv-admin__editor" ref={editorAnchorRef}>
                   <div className="hv-admin__panel-head">
                     <h3 className="hv-admin__panel-title">{editing.label}</h3>
                   </div>
 
-                  {editing.generateStatus === 'failed' && (
+                  {readyBannerId === editing.id &&
+                    !editorInPlaceWorking &&
+                    !stageRevealing &&
+                    !pinEditMode && (
+                      <p className="hv-admin__ready-banner" role="status">
+                        Your set is ready
+                      </p>
+                    )}
+
+                  {editing.generateStatus === 'failed' && !editorInPlaceWorking && (
                     <div className="hv-admin__gen hv-admin__gen--failed">
                       <p className="hv-admin__gen-title">Generation failed</p>
                       <p className="hv-admin__gen-copy">
@@ -1150,24 +1622,44 @@ const HavenAdmin: React.FC = () => {
                     </div>
                   )}
 
-                  {!editingGenerating && editing.imageUrl && (
+                  {editorStageSrc && (
                     <>
                       <div
                         ref={pinStageRef}
-                        className={`hv-admin__pin-stage${pinEditMode ? ' hv-admin__pin-stage--editing' : ''}`}
+                        className={[
+                          'hv-admin__pin-stage',
+                          pinEditMode ? 'hv-admin__pin-stage--editing' : '',
+                          editorInPlaceWorking ? 'hv-admin__pin-stage--working' : '',
+                          stageRevealing ? 'hv-admin__pin-stage--revealing' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
                         style={{ aspectRatio: editorStageAspect || '16 / 9' }}
                       >
-                        <img src={editing.imageUrl} alt="" className="hv-admin__pin-img" />
-                        {editorHotspots.map((h) => {
+                        <img
+                          src={editorStageSrc}
+                          alt=""
+                          className="hv-admin__pin-img hv-admin__pin-img--base"
+                        />
+                        {stageRevealSrc && (
+                          <img
+                            src={stageRevealSrc}
+                            alt=""
+                            className="hv-admin__pin-img hv-admin__pin-img--incoming"
+                          />
+                        )}
+                        {editorHotspots.map((h, i) => {
                           const product = productsById.get(h.productId);
                           const placement =
                             h.y > 72 ? 'above' : h.y < 28 ? 'below' : h.x < 55 ? 'right' : 'left';
+                          const pinKey = h.id || `${h.productId}-${i}`;
+                          const showCard = Boolean(product) && draggingHotspotId !== h.id;
                           return (
                             <div
-                              key={h.id}
-                              className={`hv-admin__hotspot${pinEditMode ? ' hv-admin__hotspot--dragging' : ''}`}
+                              key={pinKey}
+                              className={`hv-admin__hotspot${pinEditMode ? ' hv-admin__hotspot--dragging' : ''}${movedProductIds.includes(h.productId) ? ' hv-admin__hotspot--moved' : ''}`}
                               style={{ left: `${h.x}%`, top: `${h.y}%` }}
-                              onPointerDown={(e) => onPinPointerDown(e, h.id)}
+                              onPointerDown={(e) => onPinPointerDown(e, h)}
                               onPointerMove={onPinPointerMove}
                               onPointerUp={onPinPointerUp}
                               onPointerCancel={onPinPointerUp}
@@ -1184,7 +1676,7 @@ const HavenAdmin: React.FC = () => {
                                       : h.label
                                 }
                               />
-                              {!pinEditMode && product && (
+                              {showCard && product && (
                                 <div
                                   className={`hv-admin__hotspot-card hv-admin__hotspot-card--${placement}`}
                                   role="tooltip"
@@ -1208,51 +1700,102 @@ const HavenAdmin: React.FC = () => {
                             </div>
                           );
                         })}
+                        {(editorInPlaceWorking || stageRevealing) && (
+                          <div
+                            className={`hv-admin__stage-gen${stageRevealing ? ' hv-admin__stage-gen--leaving' : ''}`}
+                            aria-live="polite"
+                          >
+                            <div className="hv-admin__stage-gen__veil" aria-hidden="true" />
+                            <div className="hv-admin__stage-gen__sheen" aria-hidden="true" />
+                            {!stageRevealing && (
+                              <div className="hv-admin__stage-gen__copy">
+                                <p className="hv-admin__stage-gen__eyebrow">
+                                  {editing.imageUrl ? 'Updating look' : 'Creating look'}
+                                </p>
+                                <p className="hv-admin__stage-gen__status">{editorGenCopy}</p>
+                                <div className="hv-admin__stage-gen__meter" aria-hidden="true">
+                                  <div
+                                    className="hv-admin__stage-gen__meter-fill"
+                                    style={{
+                                      transform: `scaleX(${Math.min(1, Math.max(0.08, editorGenPct / 100))})`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="hv-admin__row" style={{ marginTop: 12 }}>
-                        <button
-                          type="button"
-                          className="hv-admin__btn hv-admin__btn--ghost"
-                          disabled={busy != null || pinEditMode}
-                          onClick={() => onRegenerate(editing.id)}
-                        >
-                          {busy === `regen-${editing.id}` ? 'Regenerating…' : 'Regenerate'}
-                        </button>
-                        {pinEditMode ? (
-                          <>
-                            <button
-                              type="button"
-                              className="hv-admin__btn hv-admin__btn--ghost"
-                              disabled={busy != null}
-                              onClick={cancelPinEdit}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              className="hv-admin__btn hv-admin__btn--primary"
-                              disabled={busy != null}
-                              onClick={onSaveHotspots}
-                            >
-                              {busy === 'hotspots' ? 'Saving…' : 'Save'}
-                            </button>
-                          </>
-                        ) : (
+                      {!editorInPlaceWorking && !stageRevealing && (
+                        <div className="hv-admin__row hv-admin__row--editor-actions">
                           <button
                             type="button"
                             className="hv-admin__btn hv-admin__btn--ghost"
-                            disabled={busy != null || editorHotspots.length === 0}
-                            onClick={startPinEdit}
+                            disabled={busy != null || pinEditMode}
+                            onClick={() => onRegenerate(editing.id)}
                           >
-                            Reposition pins
+                            {busy === `regen-${editing.id}` ? 'Regenerating…' : 'Regenerate'}
                           </button>
-                        )}
-                      </div>
+                          {pinEditMode ? (
+                            <>
+                              <p className="hv-admin__panel-meta" style={{ margin: 0, flex: 1 }}>
+                                Drag up to 3 items · {movedProductIds.length}/3 moved
+                                {' · '}approximate, not pixel-perfect
+                              </p>
+                              <button
+                                type="button"
+                                className="hv-admin__btn hv-admin__btn--ghost"
+                                disabled={busy != null}
+                                onClick={cancelPinEdit}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                className="hv-admin__btn hv-admin__btn--ghost"
+                                disabled={busy != null || movedProductIds.length === 0}
+                                onClick={onSaveHotspots}
+                                title="Only updates shoppable pin markers on the current image"
+                              >
+                                {busy === 'hotspots' ? 'Saving…' : 'Save markers only'}
+                              </button>
+                              <button
+                                type="button"
+                                className="hv-admin__btn hv-admin__btn--primary"
+                                disabled={busy != null || movedProductIds.length === 0}
+                                onClick={onMoveFurniture}
+                              >
+                                {busy === 'rearrange' ? 'Moving…' : 'Move furniture'}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="hv-admin__btn hv-admin__btn--ghost"
+                              disabled={busy != null || editorHotspots.length === 0}
+                              onClick={startPinEdit}
+                            >
+                              Move furniture
+                            </button>
+                          )}
+                          {!pinEditMode && (
+                            <button
+                              type="button"
+                              className="hv-admin__btn hv-admin__btn--primary hv-admin__btn--finish"
+                              disabled={busy != null}
+                              onClick={closeEditor}
+                            >
+                              Finish
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
 
                   {!editingGenerating &&
                     !editing.imageUrl &&
+                    !stageLockSrc &&
                     editing.generateStatus !== 'failed' && (
                       <div className="hv-admin__gen">
                         <p className="hv-admin__gen-copy">
@@ -1272,6 +1815,8 @@ const HavenAdmin: React.FC = () => {
                     )}
                 </div>
               )}
+                </>
+              )}
             </section>
 
             <section className="hv-admin__panel hv-admin__panel--products">
@@ -1282,47 +1827,85 @@ const HavenAdmin: React.FC = () => {
                   {missingImageCount ? ` · ${missingImageCount} missing image` : ''}
                 </p>
               </div>
-              <div className="hv-admin__form">
-                <div className="hv-admin__scrape-row">
-                  <label className="hv-admin__field hv-admin__field--grow">
-                    <span className="hv-admin__label">Search queries</span>
-                    <input
-                      className="hv-admin__input"
-                      value={queriesText}
-                      onChange={(e) => setQueriesText(e.target.value)}
-                      placeholder="linen sofa, jute rug, oak table"
-                    />
-                  </label>
-                  <label className="hv-admin__field hv-admin__field--max">
-                    <span className="hv-admin__label">Max</span>
-                    <input
-                      className="hv-admin__input"
-                      type="number"
-                      min={1}
-                      max={20}
-                      value={maxPerQuery}
-                      onChange={(e) => setMaxPerQuery(Number(e.target.value) || 1)}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="hv-admin__btn hv-admin__btn--primary hv-admin__scrape-btn"
-                    disabled={busy != null}
-                    onClick={onImport}
-                  >
-                    {busy === 'import' ? 'Scraping…' : 'Scrape Web for Products'}
-                  </button>
-                </div>
-                {importResult?.errors?.length ? (
-                  <p className="hv-admin__msg hv-admin__msg--error">
-                    {importResult.errors.slice(0, 3).join(' · ')}
-                  </p>
-                ) : null}
+
+              <div className="hv-admin__seg" role="tablist" aria-label="Products tools">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={productsTab === 'scrape'}
+                  className={`hv-admin__seg-btn${productsTab === 'scrape' ? ' is-active' : ''}`}
+                  onClick={() => setProductsTab('scrape')}
+                >
+                  Scrape
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={productsTab === 'add'}
+                  className={`hv-admin__seg-btn${productsTab === 'add' ? ' is-active' : ''}`}
+                  onClick={() => setProductsTab('add')}
+                >
+                  Add product
+                </button>
               </div>
+
+              {productsTab === 'scrape' ? (
+                <div className="hv-admin__form">
+                  <div className="hv-admin__scrape-row">
+                    <label className="hv-admin__field hv-admin__field--grow">
+                      <span className="hv-admin__label">Search queries</span>
+                      <input
+                        className="hv-admin__input"
+                        value={queriesText}
+                        onChange={(e) => setQueriesText(e.target.value)}
+                        placeholder="linen sofa, jute rug, oak table"
+                      />
+                    </label>
+                    <label className="hv-admin__field hv-admin__field--max">
+                      <span className="hv-admin__label">Max</span>
+                      <input
+                        className="hv-admin__input"
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={maxPerQuery}
+                        onChange={(e) => setMaxPerQuery(Number(e.target.value) || 1)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="hv-admin__btn hv-admin__btn--primary hv-admin__scrape-btn"
+                      disabled={busy != null}
+                      onClick={onImport}
+                    >
+                      {busy === 'import' ? 'Scraping…' : 'Scrape Web for Products'}
+                    </button>
+                  </div>
+                  {importResult?.errors?.length ? (
+                    <p className="hv-admin__msg hv-admin__msg--error">
+                      {importResult.errors.slice(0, 3).join(' · ')}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <HavenAdminAddProduct
+                  busy={busy}
+                  onBusy={setBusy}
+                  onError={setError}
+                  onCreated={(product) => {
+                    setProducts((prev) => {
+                      if (prev.some((p) => p.id === product.id)) {
+                        return prev.map((p) => (p.id === product.id ? product : p));
+                      }
+                      return [product, ...prev];
+                    });
+                  }}
+                />
+              )}
 
               {products.length === 0 ? (
                 <p className="hv-admin__empty" style={{ marginTop: 12 }}>
-                  No products yet. Scrape a few queries above.
+                  No products yet. Scrape or add one above.
                 </p>
               ) : (
                 <div className="hv-admin__tiles">
@@ -1333,17 +1916,20 @@ const HavenAdmin: React.FC = () => {
                       <ProductTile
                         key={p.id}
                         product={p}
-                        disabled={busy != null}
+                        disabled={busy != null && !hasImage}
                         busyLabel={uploading ? 'Uploading…' : null}
-                        hoverLabel={hasImage ? 'Replace' : 'Add image'}
+                        hoverLabel={hasImage ? '' : 'Add image'}
                         ariaLabel={
                           uploading
                             ? `Uploading image for ${p.name}`
                             : hasImage
-                              ? `Replace image for ${p.name}`
+                              ? p.name
                               : `Add image for ${p.name}`
                         }
-                        onActivate={() => openImagePicker(p.id)}
+                        onActivate={() => {
+                          if (hasImage) return;
+                          openImagePicker(p.id);
+                        }}
                       />
                     );
                   })}
@@ -1353,6 +1939,12 @@ const HavenAdmin: React.FC = () => {
           </div>
         )}
       </div>
+
+      <HavenAdminCreateStyleModal
+        open={createStyleOpen}
+        onClose={() => setCreateStyleOpen(false)}
+        onCreated={onStyleCreated}
+      />
     </div>
   );
 };
