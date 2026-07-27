@@ -123,9 +123,140 @@ export const havenAdminClient = {
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   },
 
+  /**
+   * Upload a room photo → AI prime/clean → durable style with baseRoomImageUrl.
+   * Expect 30–90s. Creates a real haven_styles doc (not a one-off studio upload).
+   */
+  async createStyleFromRoom(input: {
+    file: File;
+    label: string;
+    blurb?: string;
+    styleId?: string;
+    aspectRatio?: '16:9' | '9:16';
+  }): Promise<{
+    style: StylePersonality;
+    originalImageUrl: string;
+    primedImageUrl: string;
+  }> {
+    const fd = new FormData();
+    fd.append('file', input.file);
+    fd.append('label', input.label.trim());
+    if (input.blurb?.trim()) fd.append('blurb', input.blurb.trim());
+    if (input.styleId?.trim()) fd.append('styleId', input.styleId.trim());
+    if (input.aspectRatio) fd.append('aspectRatio', input.aspectRatio);
+
+    const data = await adminFetch<Record<string, unknown>>('/admin/styles/from-room', {
+      method: 'POST',
+      body: fd,
+    });
+
+    const styleRow = (data.style ?? data) as Record<string, unknown>;
+    const style = mapStyle(styleRow);
+    const primed =
+      data.primedImageUrl ??
+      data.primed_image_url ??
+      style.baseRoomImageUrl ??
+      '';
+    const original = data.originalImageUrl ?? data.original_image_url ?? '';
+
+    if (!style.id) throw new Error('Style create failed: missing style id.');
+    if (!style.baseRoomImageUrl && primed) {
+      style.baseRoomImageUrl = String(primed);
+    }
+    if (!style.previewImageUrl) {
+      style.previewImageUrl = style.baseRoomImageUrl;
+    }
+
+    return {
+      style,
+      originalImageUrl: String(original || ''),
+      primedImageUrl: String(primed || style.baseRoomImageUrl || ''),
+    };
+  },
+
   async listProducts(): Promise<HavenProduct[]> {
     const data = await adminFetch<unknown>('/admin/products');
     return itemsOf<Record<string, unknown>>(data).map(mapProduct).filter((p) => p.id);
+  },
+
+  async createProduct(input: {
+    name: string;
+    merchant?: string;
+    price?: number | null;
+    imageUrl?: string;
+    affiliateUrl?: string;
+    category?: string;
+    active?: boolean;
+    externalSku?: string | null;
+    source?: string | null;
+  }): Promise<HavenProduct> {
+    const data = await adminFetch<Record<string, unknown>>('/admin/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: input.name,
+        merchant: input.merchant ?? '',
+        price: input.price ?? null,
+        imageUrl: input.imageUrl ?? '',
+        affiliateUrl: input.affiliateUrl ?? '',
+        category: input.category ?? 'other',
+        active: input.active ?? true,
+        ...(input.externalSku != null ? { externalSku: input.externalSku } : {}),
+        ...(input.source != null ? { source: input.source } : {}),
+      }),
+    });
+    return mapProduct(data);
+  },
+
+  async previewProductFromUrl(url: string): Promise<{
+    preview: {
+      name: string;
+      merchant: string;
+      price: number | null;
+      imageUrl: string;
+      affiliateUrl: string;
+      category: string;
+      active: boolean;
+      source?: string;
+      externalSku?: string | null;
+    };
+    matched: boolean;
+    matchConfidence: string;
+    sourceUrl: string;
+    notes: string[];
+  }> {
+    const data = await adminFetch<Record<string, unknown>>('/admin/products/from-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    const previewRaw = (data.preview ?? {}) as Record<string, unknown>;
+    const notes = data.notes;
+    return {
+      preview: {
+        name: String(previewRaw.name ?? ''),
+        merchant: String(previewRaw.merchant ?? ''),
+        price:
+          previewRaw.price == null || previewRaw.price === ''
+            ? null
+            : Number(previewRaw.price),
+        imageUrl: String(previewRaw.imageUrl ?? previewRaw.image_url ?? ''),
+        affiliateUrl: String(previewRaw.affiliateUrl ?? previewRaw.affiliate_url ?? url),
+        category: String(previewRaw.category ?? 'other'),
+        active: previewRaw.active !== false,
+        source: previewRaw.source != null ? String(previewRaw.source) : undefined,
+        externalSku:
+          previewRaw.externalSku != null
+            ? String(previewRaw.externalSku)
+            : previewRaw.external_sku != null
+              ? String(previewRaw.external_sku)
+              : null,
+      },
+      matched: Boolean(data.matched),
+      matchConfidence: String(data.matchConfidence ?? data.match_confidence ?? 'none'),
+      sourceUrl: String(data.sourceUrl ?? data.source_url ?? url),
+      notes: Array.isArray(notes) ? notes.map(String) : [],
+    };
   },
 
   async uploadProductImage(productId: string, file: File): Promise<HavenProduct> {
@@ -231,6 +362,80 @@ export const havenAdminClient = {
     return unwrapCreateResult(data);
   },
 
+  /** Consumer upload — used as a custom studio base room. */
+  async uploadBaseImage(file: File): Promise<{
+    uploadId: string;
+    originalImageUrl: string;
+    width: number;
+    height: number;
+    aspectRatio: string;
+  }> {
+    const fd = new FormData();
+    fd.append('file', file);
+    const data = await adminFetch<Record<string, unknown>>('/uploads', {
+      method: 'POST',
+      body: fd,
+    });
+    return {
+      uploadId: String(data.uploadId ?? data.upload_id ?? ''),
+      originalImageUrl: String(data.originalImageUrl ?? data.original_image_url ?? ''),
+      width: Number(data.width ?? 0),
+      height: Number(data.height ?? 0),
+      aspectRatio: String(data.aspectRatio ?? data.aspect_ratio ?? '16:9'),
+    };
+  },
+
+  async createStudioRoomSet(input: {
+    styleId: string;
+    label: string;
+    blurb?: string;
+    tags?: string[];
+    productIds: string[];
+    baseSource?: 'style_cache' | 'upload_id' | 'url';
+    baseImageUrl?: string | null;
+    uploadId?: string | null;
+    composeMode?: 'base' | 'furnish';
+    placementPins?: { productId: string; x: number; y: number }[];
+    enabled?: boolean;
+    featured?: boolean;
+  }): Promise<CreateRoomSetResult> {
+    const data = await adminFetch<Record<string, unknown>>('/admin/room-sets/studio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        styleId: input.styleId,
+        label: input.label,
+        blurb: input.blurb ?? '',
+        tags: input.tags ?? [],
+        productIds: input.productIds,
+        baseSource: input.baseSource ?? 'style_cache',
+        baseImageUrl: input.baseImageUrl ?? null,
+        uploadId: input.uploadId ?? null,
+        composeMode: input.composeMode ?? 'base',
+        placementPins: input.placementPins ?? [],
+        aspectRatio: '16:9',
+        enabled: input.enabled ?? true,
+        featured: input.featured ?? false,
+      }),
+    });
+    return unwrapCreateResult(data);
+  },
+
+  async rearrangeRoomSet(
+    id: string,
+    pins: { productId: string; x: number; y: number }[],
+  ): Promise<RoomSetGenerateJob> {
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/room-sets/${encodeURIComponent(id)}/rearrange`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pins }),
+      },
+    );
+    return mapRoomSetGenerateJob(data);
+  },
+
   async regenerateRoomSet(id: string): Promise<CreateRoomSetResult> {
     const data = await adminFetch<Record<string, unknown>>(
       `/admin/room-sets/${encodeURIComponent(id)}/generate`,
@@ -307,7 +512,7 @@ export const havenAdminClient = {
         : Array.isArray(data)
           ? data
           : [];
-    return list.map((h) => mapHotspot(h as Record<string, unknown>));
+    return list.map((h, i) => mapHotspot(h as Record<string, unknown>, i));
   },
 
   async deleteRoomSet(id: string): Promise<void> {

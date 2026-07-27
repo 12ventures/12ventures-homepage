@@ -31,6 +31,8 @@ export interface StylePersonality {
   baseRoomAspectRatio?: string | null;
   baseRoomWidth?: number | null;
   baseRoomHeight?: number | null;
+  /** Picker thumb: base shell or newest furnished room-set for the style */
+  previewImageUrl?: string | null;
 }
 
 export interface DesignNote {
@@ -64,11 +66,24 @@ export type RoomSetGenerateStatus =
   | 'queued'
   | 'ensuring_base_room'
   | 'composing_products'
+  | 'placing_batch'
   | 'detecting_hotspots'
+  | 'rearranging'
   | 'ready'
   | 'failed'
   | string
   | null;
+
+/** Soft placement bias for studio create / rearrange (percent of image). */
+export interface PlacementPin {
+  productId: string;
+  x: number;
+  y: number;
+}
+
+export type ComposeMode = 'base' | 'furnish';
+
+export type StudioBaseSource = 'style_cache' | 'upload_id' | 'url';
 
 /** Curated shoppable look (default free path). */
 export interface RoomSet {
@@ -106,32 +121,74 @@ const IN_PROGRESS_GENERATE: ReadonlySet<string> = new Set([
   'queued',
   'ensuring_base_room',
   'composing_products',
+  'placing_batch',
   'detecting_hotspots',
+  'rearranging',
 ]);
 
 export function isRoomSetGenerating(status?: RoomSetGenerateStatus): boolean {
   return status != null && IN_PROGRESS_GENERATE.has(String(status));
 }
 
+const PLACING_FUN_LINES = [
+  'Adjusting couches…',
+  'Straightening paintings…',
+  'Fluffing the pillows…',
+  'Lining up the lamps…',
+  'Nudging the coffee table…',
+  'Settling the rugs…',
+  'Balancing the bookshelves…',
+  'Softening the corners…',
+  'Centering the chairs…',
+  'Letting the light settle…',
+] as const;
+
+/** Parse "batch 2/4" style progress from API messages. */
+function parseBatchProgress(message?: string | null): { current: number; total: number } | null {
+  if (!message) return null;
+  const m = message.match(/(\d+)\s*\/\s*(\d+)/);
+  if (!m) return null;
+  const current = Number(m[1]);
+  const total = Number(m[2]);
+  if (!Number.isFinite(current) || !Number.isFinite(total) || total < 1) return null;
+  return { current, total };
+}
+
+function placingCopy(message?: string | null): string {
+  const batch = parseBatchProgress(message);
+  if (!batch || batch.total <= 1) return 'Placing furniture…';
+  const idx = Math.max(0, batch.current - 1) % PLACING_FUN_LINES.length;
+  return PLACING_FUN_LINES[idx];
+}
+
 export function roomSetGenerateCopy(
   status?: RoomSetGenerateStatus,
   message?: string | null,
 ): string {
-  if (message?.trim()) return message.trim();
+  const msg = message?.trim() ?? '';
+  const looksLikeBatch =
+    /batch/i.test(msg) || /\d+\s*\/\s*\d+/.test(msg) || /placing furniture/i.test(msg);
+
   switch (status) {
     case 'queued':
       return 'Queued…';
     case 'ensuring_base_room':
-      return 'Preparing style base room…';
+      return 'Preparing base room…';
     case 'composing_products':
-      return 'Placing furniture in the room…';
+      return looksLikeBatch || !msg ? placingCopy(msg) : msg;
+    case 'placing_batch':
+      return placingCopy(msg);
     case 'detecting_hotspots':
       return 'Finding shoppable pins…';
+    case 'rearranging':
+      return 'Moving furniture…';
     case 'ready':
       return 'Ready';
     case 'failed':
       return 'Generation failed';
     default:
+      if (looksLikeBatch) return placingCopy(msg);
+      if (msg) return msg;
       return 'Generating…';
   }
 }

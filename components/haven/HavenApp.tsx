@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { HavenApiError, havenClient } from './api/havenClient';
+import { stylePickerThumb } from './api/mappers';
 import { STYLE_PERSONALITIES } from './mock/styles';
 import type {
   HavenProduct,
@@ -819,7 +820,9 @@ const HavenApp: React.FC = () => {
                 {stylesLoading && styles.length === 0 ? (
                   <span className="hv-chip hv-chip--loading">Loading styles…</span>
                 ) : (
-                  styles.map((style) => (
+                  styles.map((style) => {
+                    const thumb = stylePickerThumb(style);
+                    return (
                     <button
                       key={style.id}
                       type="button"
@@ -830,13 +833,14 @@ const HavenApp: React.FC = () => {
                       onClick={() => setStyleId(style.id)}
                     >
                       {style.label}
-                      {style.baseRoomImageUrl ? (
+                      {thumb ? (
                         <span className="hv-chip__preview" aria-hidden="true">
-                          <img src={style.baseRoomImageUrl} alt="" />
+                          <img src={thumb} alt="" />
                         </span>
                       ) : null}
                     </button>
-                  ))
+                    );
+                  })
                 )}
               </div>
               <div className="hv-actions">
