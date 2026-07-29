@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import GlassDropdown from './ui/GlassDropdown';
 import type {
   DashboardSection,
@@ -242,13 +243,16 @@ const InitiativeEditPanel: React.FC<Props> = ({
     );
   };
 
+  const backdropDismiss = useBackdropDismiss(onClose);
+
   return (
     <div className="fixed inset-0 z-[60] flex justify-end">
       <button
         type="button"
         className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
         aria-label="Close editor"
-        onClick={onClose}
+        onMouseDown={backdropDismiss.onMouseDown}
+        onClick={backdropDismiss.onClick}
       />
 
       <aside

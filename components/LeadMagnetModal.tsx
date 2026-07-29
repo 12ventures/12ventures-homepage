@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
+import { useBackdropDismiss } from '../hooks/useBackdropDismiss';
 import { openCalendarBooking } from '../utils/calendar';
 
 interface LeadMagnetModalProps {
@@ -15,6 +16,7 @@ const LeadMagnetModal: React.FC<LeadMagnetModalProps> = ({ isOpen, onClose, hasS
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const backdropDismiss = useBackdropDismiss(onClose, isOpen);
 
   if (!isOpen) return null;
 
@@ -124,7 +126,8 @@ const LeadMagnetModal: React.FC<LeadMagnetModalProps> = ({ isOpen, onClose, hasS
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity animate-in fade-in duration-500" 
-        onClick={onClose}
+        onMouseDown={backdropDismiss.onMouseDown}
+        onClick={backdropDismiss.onClick}
       />
 
       {/* Modal Container */}

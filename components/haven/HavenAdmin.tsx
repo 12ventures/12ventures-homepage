@@ -1,29 +1,59 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import { havenAdminClient, type ProductImportResult } from './api/havenAdminClient';
 import { stylePickerThumb } from './api/mappers';
 import { HavenAdminAddProduct } from './HavenAdminAddProduct';
 import HavenAdminCreateStyleModal from './HavenAdminCreateStyleModal';
 import { HavenAdminStudio } from './HavenAdminStudio';
+import { HavenAdminTrends } from './HavenAdminTrends';
+import { HavenProductFilterMenu } from './HavenProductFilterMenu';
+import {
+  applyProductFilters,
+  categoryLabel,
+  collectStoreOptions,
+  DEFAULT_PRODUCT_FILTERS,
+} from './productFilters';
 import type {
   HavenHotspot,
+  HavenMoodboard,
   HavenProduct,
+  MoodboardCard,
   PlacementPin,
+  ProductCatalogFilters,
   RoomSet,
   RoomSetDetail,
   StylePersonality,
+  StudioView,
 } from './types';
 import {
+  createEmptyMoodboard,
+  moodboardCoverImageUrl,
+  serializeMoodboardItems,
   isRoomSetGenerating,
   resolveStageAspect,
   roomSetGenerateCopy,
 } from './types';
+import { HavenAdminSkeleton } from './HavenSkeleton';
 import './haven-admin.css';
 
 const POLL_MS = 2000;
 
 function hasProductImage(p: HavenProduct): boolean {
   return Boolean(p.imageUrl?.trim());
+}
+
+/** Derive a moodboard title from the room-set label. */
+function defaultMoodboardName(roomLabel: string, styleLabel?: string | null): string {
+  const label = roomLabel.trim();
+  if (!label) {
+    return styleLabel?.trim() ? `${styleLabel.trim()} Mood Board` : 'Untitled Mood Board';
+  }
+  if (/ mood board$/i.test(label)) return label;
+  if (/\s+set$/i.test(label)) {
+    return label.replace(/\s+set$/i, ' Mood Board');
+  }
+  return `${label} Mood Board`;
 }
 
 function ExternalLinkIcon() {
@@ -49,6 +79,37 @@ function ExternalLinkIcon() {
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MoodboardIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1.75" y="2.5" width="6" height="7" rx="1.25" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="8.75" y="2.5" width="5.5" height="4" rx="1.25" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="8.75" y="7.75" width="5.5" height="5.75" rx="1.25" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="1.75" y="10.75" width="6" height="2.75" rx="1" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+function BackArrowIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M9.75 3.5L5.25 8L9.75 12.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.5 8H13"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
       />
     </svg>
   );
@@ -203,6 +264,7 @@ const ProductTile: React.FC<{
   const hasImage = hasProductImage(product);
   return (
     <div
+      data-product-id={product.id}
       className={[
         'hv-admin__tile',
         hasImage ? '' : 'hv-admin__tile--empty',
@@ -252,6 +314,7 @@ const ProductTile: React.FC<{
             <span className="hv-admin__tile-meta">
               <strong>{formatPrice(product.price)}</strong>
               {product.externalSku ? ` · ${product.externalSku}` : ''}
+              {product.category ? ` · ${categoryLabel(product.category)}` : ''}
             </span>
           </span>
         </button>
@@ -318,7 +381,8 @@ const HavenAdmin: React.FC = () => {
   const [roomTags, setRoomTags] = useState('');
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [studioOpen, setStudioOpen] = useState(false);
-  const [createMode, setCreateMode] = useState<'choose' | 'manual'>('choose');
+  /** 0 = landing, 1 = style, 2 = name look, 3 = pick products */
+  const [createStep, setCreateStep] = useState<0 | 1 | 2 | 3>(0);
   /** While set, Design Myself owns generate UX (in-studio blur loader). */
   const [studioJobId, setStudioJobId] = useState<string | null>(null);
   const [studioPins, setStudioPins] = useState<PlacementPin[]>([]);
@@ -327,8 +391,18 @@ const HavenAdmin: React.FC = () => {
   const editorAnchorRef = useRef<HTMLDivElement>(null);
   const [studioBaseUrl, setStudioBaseUrl] = useState<string | null>(null);
   const [studioUploadId, setStudioUploadId] = useState<string | null>(null);
-  const [studioComposeMode, setStudioComposeMode] = useState<'base' | 'furnish'>('base');
-  const [productsTab, setProductsTab] = useState<'scrape' | 'add'>('scrape');
+  const [studioComposeMode, setStudioComposeMode] = useState<'base' | 'furnish'>('furnish');
+  const [studioView, setStudioView] = useState<StudioView>('compose');
+  const [studioDraftId, setStudioDraftId] = useState<string>(() => crypto.randomUUID());
+  const [moodboard, setMoodboard] = useState<HavenMoodboard | null>(null);
+  const [moodboardLibrary, setMoodboardLibrary] = useState<MoodboardCard[]>([]);
+  const [productsModal, setProductsModal] = useState<null | 'scrape' | 'add'>(null);
+  const [addProductInitialUrl, setAddProductInitialUrl] = useState('');
+  const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
+  const [catalogFilters, setCatalogFilters] =
+    useState<ProductCatalogFilters>(DEFAULT_PRODUCT_FILTERS);
+  const [createProductFilters, setCreateProductFilters] =
+    useState<ProductCatalogFilters>(DEFAULT_PRODUCT_FILTERS);
   const [imageTargetId, setImageTargetId] = useState<string | null>(null);
   const [createStyleOpen, setCreateStyleOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -346,6 +420,18 @@ const HavenAdmin: React.FC = () => {
     return map;
   }, [products, editing]);
 
+  const productStoreOptions = useMemo(() => collectStoreOptions(products), [products]);
+
+  const filteredCatalogProducts = useMemo(
+    () => applyProductFilters(products, catalogFilters),
+    [products, catalogFilters],
+  );
+
+  const filteredCreateProducts = useMemo(
+    () => applyProductFilters(products, createProductFilters),
+    [products, createProductFilters],
+  );
+
   const styleLabelById = useMemo(() => {
     const map = new Map<string, string>();
     styles.forEach((s) => map.set(s.id, s.label));
@@ -358,11 +444,6 @@ const HavenAdmin: React.FC = () => {
         .map((id) => productsById.get(id))
         .filter((p): p is HavenProduct => Boolean(p) && !hasProductImage(p)),
     [selectedProductIds, productsById],
-  );
-
-  const productsWithImages = useMemo(
-    () => products.filter((p) => hasProductImage(p)).length,
-    [products],
   );
 
   const anyGenerating = useMemo(
@@ -477,6 +558,14 @@ const HavenAdmin: React.FC = () => {
       try {
         await refresh();
         if (!cancelled) await refreshRoomSets();
+        if (!cancelled) {
+          try {
+            const page = await havenAdminClient.listMoodboards({ limit: 48 });
+            if (!cancelled) setMoodboardLibrary(page.items);
+          } catch {
+            /* moodboard API may not exist yet */
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Could not load admin data.');
@@ -570,23 +659,6 @@ const HavenAdmin: React.FC = () => {
     }
   };
 
-  const onImport = () =>
-    void run('import', async () => {
-      const queries = queriesText
-        .split(/\n|,/)
-        .map((q) => q.trim())
-        .filter(Boolean);
-      if (!queries.length) throw new Error('Add at least one search query.');
-      const result = await havenAdminClient.importProducts({
-        queries,
-        max_per_query: maxPerQuery,
-        page: 1,
-        fetch_details_when_no_image: true,
-      });
-      setImportResult(result);
-      await refresh();
-    });
-
   const openCreatedSet = async (
     roomSet: RoomSet,
     generateJob?: { jobId: string; status: string; progress?: number; message?: string; reusedBaseRoom?: boolean },
@@ -605,27 +677,6 @@ const HavenAdmin: React.FC = () => {
       generateMessage: generateJob?.message ?? roomSet.generateMessage,
     });
   };
-
-  const onAutoCreateRoomSet = () =>
-    void run('auto-room', async () => {
-      if (!roomStyleId) throw new Error('Pick a style.');
-      if (productsWithImages < 3) {
-        throw new Error(
-          'Need at least 3 catalog products with images before auto-generate.',
-        );
-      }
-      const { roomSet, generateJob } = await havenAdminClient.autoCreateRoomSet({
-        styleId: roomStyleId,
-      });
-      await openCreatedSet(roomSet, generateJob);
-      const status = generateJob?.status ?? roomSet.generateStatus;
-      if (status === 'failed') {
-        throw new Error(
-          roomSet.generateError ||
-            'Set created but generate failed — use Retry on the card.',
-        );
-      }
-    });
 
   const onCreateRoomSet = () =>
     void run('room', async () => {
@@ -669,7 +720,7 @@ const HavenAdmin: React.FC = () => {
       setRoomBlurb('');
       setRoomTags('');
       setSelectedProductIds([]);
-      setCreateMode('choose');
+      setCreateStep(0);
       await openCreatedSet(roomSet, generateJob);
       window.requestAnimationFrame(() => {
         editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -705,7 +756,342 @@ const HavenAdmin: React.FC = () => {
         y: 55 + Math.floor(i / 5) * 10,
       })),
     );
+    const draftId = crypto.randomUUID();
+    setStudioDraftId(draftId);
+    setStudioView('compose');
+    setMoodboard(null);
+    // Drop empty drafts from prior sessions so the library stays clean.
+    setMoodboardLibrary((prev) => prev.filter((c) => c.itemCount > 0));
+    void refreshMoodboardLibrary(draftId);
     setStudioOpen(true);
+  };
+
+  const cardFromBoard = (board: HavenMoodboard): MoodboardCard => ({
+    id: board.id,
+    name: board.name,
+    styleId: board.styleId ?? null,
+    roomSetId: board.roomSetId ?? null,
+    pendingStudioDraftId: board.pendingStudioDraftId ?? null,
+    coverImageUrl: moodboardCoverImageUrl(board.items),
+    palettePreview: board.palette.map((s) => s.hex).filter((h): h is string => Boolean(h)),
+    itemCount: board.items.length,
+    updatedAt: board.updatedAt,
+  });
+
+  const refreshMoodboardLibrary = async (draftId?: string) => {
+    const pending = draftId ?? studioDraftId;
+    try {
+      const page = await havenAdminClient.listMoodboards({ limit: 48 });
+      // Ignore empty remote boards — those were often accidental auto-creates.
+      setMoodboardLibrary((prev) => {
+        const locals = prev.filter((c) => c.id.startsWith('local_'));
+        const fromApi = page.items.filter((c) => c.itemCount > 0);
+        const byId = new Map<string, MoodboardCard>();
+        for (const c of fromApi) byId.set(c.id, c);
+        for (const c of locals) byId.set(c.id, c);
+        return [...byId.values()];
+      });
+    } catch {
+      // Backend may not be ready — keep local library entries.
+      setMoodboardLibrary((prev) => {
+        if (!moodboard) return prev;
+        if (prev.some((c) => c.id === moodboard.id)) {
+          return prev.map((c) => (c.id === moodboard.id ? cardFromBoard(moodboard) : c));
+        }
+        return [cardFromBoard(moodboard), ...prev];
+      });
+    }
+    void pending;
+  };
+
+  const onMoodboardCreate = () => {
+    // Drafts stay local until Save — do not POST empty boards.
+    const name = defaultMoodboardName(roomLabel, selectedStyle?.label);
+    const local = createEmptyMoodboard({
+      id: `local_${crypto.randomUUID()}`,
+      name,
+      styleId: roomStyleId || null,
+      pendingStudioDraftId: studioOpen ? studioDraftId : null,
+    });
+    setMoodboard(local);
+    setMoodboardLibrary((prev) => [
+      cardFromBoard(local),
+      ...prev.filter((c) => c.id !== local.id),
+    ]);
+    if (studioOpen) setStudioView('moodboard');
+  };
+
+  /** Open moodboard view; reuse current draft or make one local board (no API). */
+  const ensureStudioMoodboard = () => {
+    setStudioView('moodboard');
+    if (moodboard) return;
+    const reusable = moodboardLibrary.find(
+      (c) =>
+        (c.pendingStudioDraftId && c.pendingStudioDraftId === studioDraftId) ||
+        (studioJobId && c.roomSetId === studioJobId),
+    );
+    if (reusable) {
+      void onMoodboardSelect(reusable.id);
+      return;
+    }
+    onMoodboardCreate();
+  };
+
+  const onMoodboardSelect = (id: string) =>
+    void run('moodboard', async () => {
+      if (moodboard?.id === id) return;
+      if (id.startsWith('local_')) {
+        const local = moodboardLibrary.find((c) => c.id === id);
+        if (!local) return;
+        // Prefer keeping the live board if it matches; otherwise open a draft shell.
+        setMoodboard(
+          createEmptyMoodboard({
+            id: local.id,
+            name: local.name,
+            styleId: local.styleId,
+            roomSetId: local.roomSetId,
+            pendingStudioDraftId: local.pendingStudioDraftId,
+          }),
+        );
+        return;
+      }
+      try {
+        const detail = await havenAdminClient.getMoodboard(id);
+        setMoodboard(detail);
+      } catch {
+        const local = moodboardLibrary.find((c) => c.id === id);
+        if (local) {
+          setMoodboard(
+            createEmptyMoodboard({
+              id: local.id,
+              name: local.name,
+              styleId: local.styleId,
+              roomSetId: local.roomSetId,
+              pendingStudioDraftId: local.pendingStudioDraftId,
+            }),
+          );
+        }
+      }
+    });
+
+  const onMoodboardSave = () =>
+    void run('moodboard', async () => {
+      if (!moodboard) return;
+      if (moodboard.id.startsWith('local_')) {
+        try {
+          const created = await havenAdminClient.createMoodboard({
+            name: moodboard.name,
+            styleId: moodboard.styleId,
+            roomSetId: moodboard.roomSetId,
+            pendingStudioDraftId: moodboard.pendingStudioDraftId ?? (studioOpen ? studioDraftId : null),
+            boardAspectRatio: moodboard.boardAspectRatio,
+            palette: moodboard.palette,
+            palettePosition: moodboard.palettePosition,
+            items: serializeMoodboardItems(moodboard.items),
+          });
+          setMoodboard(created);
+          setMoodboardLibrary((prev) => [
+            cardFromBoard(created),
+            ...prev.filter((c) => c.id !== moodboard.id && c.id !== created.id),
+          ]);
+        } catch {
+          setMoodboardLibrary((prev) => {
+            const card = cardFromBoard(moodboard);
+            if (prev.some((c) => c.id === moodboard.id)) {
+              return prev.map((c) => (c.id === moodboard.id ? card : c));
+            }
+            return [card, ...prev];
+          });
+        }
+        return;
+      }
+      try {
+        const saved = await havenAdminClient.patchMoodboard(moodboard.id, {
+          name: moodboard.name,
+          styleId: moodboard.styleId,
+          boardAspectRatio: moodboard.boardAspectRatio,
+          palette: moodboard.palette,
+          palettePosition: moodboard.palettePosition,
+          items: serializeMoodboardItems(moodboard.items),
+        });
+        setMoodboard(saved);
+        setMoodboardLibrary((prev) =>
+          prev.map((c) => (c.id === saved.id ? cardFromBoard(saved) : c)),
+        );
+      } catch {
+        setMoodboardLibrary((prev) =>
+          prev.map((c) => (c.id === moodboard.id ? cardFromBoard(moodboard) : c)),
+        );
+      }
+    });
+
+  const onMoodboardDelete = (id: string) =>
+    void run('moodboard', async () => {
+      try {
+        if (!id.startsWith('local_')) await havenAdminClient.deleteMoodboard(id);
+      } catch {
+        /* allow local delete */
+      }
+      setMoodboardLibrary((prev) => prev.filter((c) => c.id !== id));
+      if (moodboard?.id === id) setMoodboard(null);
+    });
+
+  const onMoodboardLink = () =>
+    void run('moodboard', async () => {
+      if (!moodboard) return;
+      const linkPayload = studioJobId
+        ? ({ roomSetId: studioJobId } as const)
+        : ({ pendingStudioDraftId: studioDraftId } as const);
+      if (moodboard.id.startsWith('local_')) {
+        const next = {
+          ...moodboard,
+          roomSetId: studioJobId,
+          pendingStudioDraftId: studioJobId ? null : studioDraftId,
+          updatedAt: new Date().toISOString(),
+        };
+        setMoodboard(next);
+        setMoodboardLibrary((prev) =>
+          prev.map((c) => (c.id === next.id ? cardFromBoard(next) : c)),
+        );
+        return;
+      }
+      try {
+        const linked = await havenAdminClient.linkMoodboard(moodboard.id, linkPayload);
+        setMoodboard(linked);
+        setMoodboardLibrary((prev) =>
+          prev.map((c) => (c.id === linked.id ? cardFromBoard(linked) : c)),
+        );
+      } catch {
+        const next = {
+          ...moodboard,
+          roomSetId: studioJobId,
+          pendingStudioDraftId: studioJobId ? null : studioDraftId,
+          updatedAt: new Date().toISOString(),
+        };
+        setMoodboard(next);
+      }
+    });
+
+  const onMoodboardUnlink = () =>
+    void run('moodboard', async () => {
+      if (!moodboard) return;
+      if (moodboard.id.startsWith('local_')) {
+        const next = {
+          ...moodboard,
+          pendingStudioDraftId: null,
+          roomSetId: null,
+          updatedAt: new Date().toISOString(),
+        };
+        setMoodboard(next);
+        setMoodboardLibrary((prev) =>
+          prev.map((c) => (c.id === next.id ? cardFromBoard(next) : c)),
+        );
+        return;
+      }
+      try {
+        const unlinked = await havenAdminClient.unlinkMoodboard(moodboard.id);
+        setMoodboard(unlinked);
+        setMoodboardLibrary((prev) =>
+          prev.map((c) => (c.id === unlinked.id ? cardFromBoard(unlinked) : c)),
+        );
+      } catch {
+        const next = {
+          ...moodboard,
+          pendingStudioDraftId: null,
+          roomSetId: null,
+          updatedAt: new Date().toISOString(),
+        };
+        setMoodboard(next);
+      }
+    });
+
+  const onMoodboardUpload = (files: FileList) => {
+    if (!moodboard) return;
+    const list = Array.from(files).slice(0, Math.max(0, 24 - moodboard.items.length));
+    if (!list.length) return;
+
+    const pending = list.map((file, i) => {
+      const col = i % 3;
+      const row = Math.floor(i / 3);
+      return {
+        file,
+        blobUrl: URL.createObjectURL(file),
+        id: `item_${crypto.randomUUID()}`,
+        x: 8 + col * 30,
+        y: 18 + row * 28,
+        w: 26,
+        h: 26,
+        zIndex: moodboard.items.length + i,
+      };
+    });
+
+    // Show items immediately with local preview + loading state.
+    const placeholders = pending.map(({ blobUrl, id, x, y, w, h, zIndex }) => ({
+      id,
+      kind: 'image' as const,
+      imageUrl: blobUrl,
+      uploadId: null as string | null,
+      uploading: true,
+      x,
+      y,
+      w,
+      h,
+      zIndex,
+      link: null,
+    }));
+
+    const withPlaceholders = {
+      ...moodboard,
+      items: [...moodboard.items, ...placeholders],
+      updatedAt: new Date().toISOString(),
+    };
+    setMoodboard(withPlaceholders);
+    setMoodboardLibrary((prev) =>
+      prev.map((c) => (c.id === withPlaceholders.id ? cardFromBoard(withPlaceholders) : c)),
+    );
+
+    void (async () => {
+      setError(null);
+      await Promise.all(
+        pending.map(async ({ file, blobUrl, id }) => {
+          let imageUrl = blobUrl;
+          let uploadId: string | null = null;
+          let ok = false;
+          try {
+            const uploaded = await havenAdminClient.uploadBaseImage(file);
+            if (uploaded.originalImageUrl) {
+              imageUrl = uploaded.originalImageUrl;
+              uploadId = uploaded.uploadId;
+              ok = true;
+            }
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Image upload failed.');
+          }
+
+          setMoodboard((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              items: prev.items.map((it) =>
+                it.id === id && it.kind === 'image'
+                  ? {
+                      ...it,
+                      imageUrl,
+                      uploadId,
+                      uploading: false,
+                    }
+                  : it,
+              ),
+              updatedAt: new Date().toISOString(),
+            };
+          });
+
+          if (ok && blobUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(blobUrl);
+          }
+        }),
+      );
+    })();
   };
 
   const onStudioUploadBase = (file: File) => {
@@ -745,6 +1131,7 @@ const HavenAdmin: React.FC = () => {
         placementPins: studioPins,
         enabled: true,
         featured: false,
+        studioDraftId,
       });
       // Stay in studio with blur loader while the job runs (list card is for auto only).
       setStudioJobId(roomSet.id);
@@ -757,12 +1144,15 @@ const HavenAdmin: React.FC = () => {
     setStudioPins([]);
     setStudioUploadId(null);
     setStudioBaseUrl(null);
-    setStudioComposeMode('base');
+    setStudioComposeMode('furnish');
+    setStudioView('compose');
+    setStudioDraftId(crypto.randomUUID());
+    setMoodboard(null);
     setRoomLabel(selectedStyle?.label ? `${selectedStyle.label} Set` : '');
     setRoomBlurb('');
     setRoomTags('');
     setSelectedProductIds([]);
-    setCreateMode('choose');
+    setCreateStep(0);
     window.requestAnimationFrame(() => {
       editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
@@ -1064,6 +1454,24 @@ const HavenAdmin: React.FC = () => {
     setStageRevealing(false);
   }, [editing?.generateStatus, editing?.imageUrl, editing?.generateError, stageLockSrc]);
 
+  const closeScrapeModal = useCallback(() => {
+    if (busy !== 'import') setProductsModal(null);
+  }, [busy]);
+  const closeAddProductModal = useCallback(() => {
+    if (busy == null) {
+      setProductsModal(null);
+      setAddProductInitialUrl('');
+    }
+  }, [busy]);
+  const scrapeBackdrop = useBackdropDismiss(
+    closeScrapeModal,
+    productsModal === 'scrape',
+  );
+  const addProductBackdrop = useBackdropDismiss(
+    closeAddProductModal,
+    productsModal === 'add',
+  );
+
   return (
     <div className="hv-admin">
       <div className="hv-admin__shell">
@@ -1089,6 +1497,9 @@ const HavenAdmin: React.FC = () => {
             >
               Refresh
             </button>
+            <Link to="/haven/store" className="hv-admin__btn hv-admin__btn--ghost">
+              Store
+            </Link>
             <Link to="/haven" className="hv-admin__btn hv-admin__btn--primary">
               Open Haven
             </Link>
@@ -1102,7 +1513,7 @@ const HavenAdmin: React.FC = () => {
         )}
 
         {loading ? (
-          <p className="hv-admin__empty">Loading catalog…</p>
+          <HavenAdminSkeleton />
         ) : (
           <div className="hv-admin__grid">
             <input
@@ -1117,19 +1528,50 @@ const HavenAdmin: React.FC = () => {
 
             <section className="hv-admin__panel hv-admin__panel--room">
               <div className="hv-admin__panel-head">
-                <h2 className="hv-admin__panel-title">Curated room sets</h2>
+                <h2 className="hv-admin__panel-title">
+                  {studioOpen ? 'Room Set Designer' : 'Curated room sets'}
+                </h2>
                 {studioOpen ? (
-                  <button
-                    type="button"
-                    className="hv-admin__btn hv-admin__btn--ghost"
-                    disabled={busy === 'studio' || studioWorking}
-                    onClick={() => {
-                      if (studioJobId) return;
-                      setStudioOpen(false);
-                    }}
-                  >
-                    Back
-                  </button>
+                  <div className="hv-admin__row">
+                    <button
+                      type="button"
+                      className={`hv-admin__btn hv-admin__btn--moodboard${studioView === 'moodboard' ? ' is-active' : ''}`}
+                      aria-pressed={studioView === 'moodboard'}
+                      disabled={busy === 'studio' || studioWorking}
+                      onClick={() => {
+                        if (studioView === 'moodboard') {
+                          setStudioView('compose');
+                          return;
+                        }
+                        ensureStudioMoodboard();
+                      }}
+                      title={
+                        studioView === 'moodboard'
+                          ? 'Back to product placement on the room'
+                          : 'Brainstorm a moodboard for this look'
+                      }
+                    >
+                      <span className="hv-admin__btn-icon" aria-hidden="true">
+                        {studioView === 'moodboard' ? <BackArrowIcon /> : <MoodboardIcon />}
+                      </span>
+                      <span>
+                        {studioView === 'moodboard' ? 'Back to room designer' : 'Moodboard'}
+                      </span>
+                    </button>
+                    {studioView !== 'moodboard' ? (
+                      <button
+                        type="button"
+                        className="hv-admin__btn hv-admin__btn--ghost"
+                        disabled={busy === 'studio' || studioWorking}
+                        onClick={() => {
+                          if (studioJobId) return;
+                          setStudioOpen(false);
+                        }}
+                      >
+                        Back
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
 
@@ -1152,6 +1594,14 @@ const HavenAdmin: React.FC = () => {
                   onProductsChange={setSelectedProductIds}
                   composeMode={studioComposeMode}
                   onComposeModeChange={setStudioComposeMode}
+                  studioView={studioView}
+                  onStudioViewChange={(view) => {
+                    if (view === 'moodboard') {
+                      ensureStudioMoodboard();
+                      return;
+                    }
+                    setStudioView(view);
+                  }}
                   onGenerate={onStudioGenerate}
                   onUploadBase={onStudioUploadBase}
                   working={studioWorking}
@@ -1164,99 +1614,146 @@ const HavenAdmin: React.FC = () => {
                   genMessage={
                     editing?.id === studioJobId ? editing.generateMessage : null
                   }
+                  moodboard={moodboard}
+                  moodboardLibrary={moodboardLibrary.filter(
+                    (c) => c.id === moodboard?.id || c.itemCount > 0,
+                  )}
+                  moodboardBusy={busy === 'moodboard'}
+                  studioDraftId={studioDraftId}
+                  linkedRoomSetId={studioJobId}
+                  onMoodboardChange={setMoodboard}
+                  onMoodboardSave={onMoodboardSave}
+                  onMoodboardSelect={onMoodboardSelect}
+                  onMoodboardCreate={onMoodboardCreate}
+                  onMoodboardDelete={onMoodboardDelete}
+                  onMoodboardLink={onMoodboardLink}
+                  onMoodboardUnlink={onMoodboardUnlink}
+                  onMoodboardUpload={onMoodboardUpload}
                 />
               ) : (
                 <>
               <div className="hv-admin__auto-create hv-admin__auto-create--visual">
-                <div className="hv-admin__style-picker-head">
-                  <p className="hv-admin__label">Style &amp; base room</p>
-                  <p className="hv-admin__panel-meta">
-                    {selectedStyle
-                      ? `${selectedStyle.label}${selectedStyle.baseRoomImageUrl ? '' : ' · no cached base yet'}`
-                      : 'Pick a style'}
-                  </p>
+                <div className="hv-admin__create-section-head">
+                  <p className="hv-admin__create-section-title">Room Set Designer</p>
                 </div>
-                <div className="hv-admin__style-picker" role="listbox" aria-label="Styles">
-                  <button
-                    type="button"
-                    className="hv-admin__style-card hv-admin__style-card--create"
-                    disabled={busy != null}
-                    title="Create a new style from a room photo"
-                    onClick={() => setCreateStyleOpen(true)}
+                {createStep === 0 ? (
+                  <div
+                    key="create-step-0"
+                    className="hv-admin__create-landing hv-enter-cascade"
                   >
-                    <span className="hv-admin__style-card-media">
-                      <span className="hv-admin__style-card-empty">+</span>
-                    </span>
-                    <span className="hv-admin__style-card-label">Create Room</span>
-                  </button>
-                  {styles.map((s) => {
-                    const active = roomStyleId === s.id;
-                    const thumb = stylePickerThumb(s);
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        role="option"
-                        aria-selected={active}
-                        className={`hv-admin__style-card${active ? ' is-active' : ''}`}
-                        disabled={busy != null}
-                        onClick={() => selectStyle(s.id)}
-                      >
-                        <span className="hv-admin__style-card-media">
-                          {thumb ? (
-                            <img src={thumb} alt="" />
-                          ) : (
-                            <span className="hv-admin__style-card-empty">No base</span>
-                          )}
-                        </span>
-                        <span className="hv-admin__style-card-label">{s.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {createMode === 'choose' ? (
-                  <div className="hv-admin__create-actions">
+                    <div className="hv-admin__create-landing-copy">
+                      <h3 className="hv-admin__create-landing-title">Design a Room Set</h3>
+                      <p className="hv-admin__create-landing-sub">
+                        Choose a style, name the look, then pick products.
+                      </p>
+                    </div>
                     <button
                       type="button"
                       className="hv-admin__btn hv-admin__btn--primary"
-                      disabled={
-                        busy != null ||
-                        !roomStyleId ||
-                        !styles.length ||
-                        productsWithImages < 3
-                      }
-                      onClick={onAutoCreateRoomSet}
-                      title={
-                        productsWithImages < 3
-                          ? 'Import at least 3 products with images first'
-                          : 'We’ll pick products and build a look for this style'
-                      }
+                      disabled={busy != null}
+                      onClick={() => setCreateStep(1)}
                     >
-                      {busy === 'auto-room' ? 'Generating for you…' : 'Generate for me'}
-                    </button>
-                    <button
-                      type="button"
-                      className="hv-admin__btn hv-admin__btn--ghost"
-                      disabled={busy != null || !roomStyleId}
-                      onClick={() => {
-                        if (selectedStyle?.label && !roomLabel.trim()) {
-                          setRoomLabel(`${selectedStyle.label} Set`);
-                        }
-                        setCreateMode('manual');
-                      }}
-                    >
-                      Create myself
+                      Create
                     </button>
                   </div>
-                ) : (
-                  <div className="hv-admin__create-manual">
+                ) : createStep === 1 ? (
+                  <div key="create-step-1" className="hv-admin__create-step-pane hv-enter-cascade">
                     <div className="hv-admin__create-manual-bar">
                       <button
                         type="button"
                         className="hv-admin__back"
                         disabled={busy != null}
-                        onClick={() => setCreateMode('choose')}
+                        onClick={() => setCreateStep(0)}
+                      >
+                        ← Back
+                      </button>
+                    </div>
+                    <section
+                      className="hv-admin__create-step"
+                      aria-labelledby="create-step-style"
+                    >
+                      <header className="hv-admin__create-step-head">
+                        <span className="hv-admin__create-step-num" aria-hidden="true">
+                          1
+                        </span>
+                        <h3 id="create-step-style" className="hv-admin__create-step-title">
+                          Choose a style
+                        </h3>
+                        <p className="hv-admin__panel-meta hv-admin__create-step-meta">
+                          {selectedStyle
+                            ? `${selectedStyle.label}${selectedStyle.baseRoomImageUrl ? '' : ' · no cached base yet'}`
+                            : 'Pick a style'}
+                        </p>
+                      </header>
+                      <div className="hv-admin__style-picker" role="listbox" aria-label="Styles">
+                        <button
+                          type="button"
+                          className="hv-admin__style-card hv-admin__style-card--create"
+                          disabled={busy != null}
+                          title="Create a new style from a room photo"
+                          onClick={() => setCreateStyleOpen(true)}
+                        >
+                          <span className="hv-admin__style-card-media">
+                            <span className="hv-admin__style-card-empty">+</span>
+                          </span>
+                          <span className="hv-admin__style-card-label">Create Room</span>
+                        </button>
+                        {styles.map((s) => {
+                          const active = roomStyleId === s.id;
+                          const thumb = stylePickerThumb(s);
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              role="option"
+                              aria-selected={active}
+                              className={`hv-admin__style-card${active ? ' is-active' : ''}`}
+                              disabled={busy != null}
+                              onClick={() => selectStyle(s.id)}
+                            >
+                              <span className="hv-admin__style-card-media">
+                                {thumb ? (
+                                  <img src={thumb} alt="" />
+                                ) : (
+                                  <span className="hv-admin__style-card-empty">No base</span>
+                                )}
+                              </span>
+                              <span className="hv-admin__style-card-label">{s.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                    <div className="hv-admin__create-actions">
+                      <button
+                        type="button"
+                        className="hv-admin__btn hv-admin__btn--primary"
+                        disabled={busy != null || !roomStyleId}
+                        onClick={() => {
+                          if (selectedStyle?.label && !roomLabel.trim()) {
+                            setRoomLabel(`${selectedStyle.label} Set`);
+                          }
+                          setCreateStep(2);
+                        }}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div key="create-manual" className="hv-admin__create-manual hv-enter-cascade">
+                    <div className="hv-admin__create-manual-bar">
+                      <button
+                        type="button"
+                        className="hv-admin__back"
+                        disabled={busy != null}
+                        onClick={() => {
+                          if (createStep === 3) {
+                            setCreateStep(2);
+                            return;
+                          }
+                          setCreateStep(1);
+                        }}
                       >
                         ← Back
                       </button>
@@ -1266,137 +1763,172 @@ const HavenAdmin: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="hv-admin__create-steps">
-                      <section className="hv-admin__create-step" aria-labelledby="create-step-details">
-                        <header className="hv-admin__create-step-head">
-                          <span className="hv-admin__create-step-num" aria-hidden="true">
-                            1
-                          </span>
-                          <h3 id="create-step-details" className="hv-admin__create-step-title">
-                            Name this look
-                          </h3>
-                        </header>
-                        <div className="hv-admin__form hv-admin__form--create">
-                          <label className="hv-admin__field">
-                            <span className="hv-admin__label">Label</span>
-                            <input
-                              className="hv-admin__input"
-                              value={roomLabel}
-                              onChange={(e) => setRoomLabel(e.target.value)}
-                              placeholder={
-                                selectedStyle ? `${selectedStyle.label} Set` : 'Style Set'
-                              }
-                            />
-                          </label>
-                          <div className="hv-admin__form-row hv-admin__form-row--optional">
-                            <label className="hv-admin__field">
-                              <span className="hv-admin__label">
-                                Blurb
-                                <span className="hv-admin__optional">optional</span>
+                    <div
+                      key={`create-step-${createStep}`}
+                      className="hv-admin__create-step-pane hv-enter-cascade"
+                    >
+                      <div className="hv-admin__create-steps">
+                        {createStep === 2 ? (
+                          <section
+                            className="hv-admin__create-step"
+                            aria-labelledby="create-step-details"
+                          >
+                            <header className="hv-admin__create-step-head">
+                              <span className="hv-admin__create-step-num" aria-hidden="true">
+                                2
                               </span>
-                              <input
-                                className="hv-admin__input"
-                                value={roomBlurb}
-                                onChange={(e) => setRoomBlurb(e.target.value)}
-                                placeholder="Short description for shoppers"
-                              />
-                            </label>
-                            <label className="hv-admin__field">
-                              <span className="hv-admin__label">
-                                Tags
-                                <span className="hv-admin__optional">optional</span>
-                              </span>
-                              <input
-                                className="hv-admin__input"
-                                value={roomTags}
-                                onChange={(e) => setRoomTags(e.target.value)}
-                                placeholder="living, calm"
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </section>
-
-                      <section className="hv-admin__create-step" aria-labelledby="create-step-products">
-                        <header className="hv-admin__create-step-head">
-                          <span className="hv-admin__create-step-num" aria-hidden="true">
-                            2
-                          </span>
-                          <h3 id="create-step-products" className="hv-admin__create-step-title">
-                            Pick products
-                          </h3>
-                        </header>
-                        {products.length === 0 ? (
-                          <p className="hv-admin__empty">No products yet. Import a few below.</p>
-                        ) : (
-                          <div className="hv-admin__tiles hv-admin__tiles--picker">
-                            {products.map((p) => {
-                              const selected = selectedProductIds.includes(p.id);
-                              const noImg = !hasProductImage(p);
-                              return (
-                                <ProductTile
-                                  key={p.id}
-                                  product={p}
-                                  selected={selected}
-                                  disabled={
-                                    busy != null ||
-                                    (!selected && selectedProductIds.length >= 18) ||
-                                    (noImg && !selected)
+                              <h3 id="create-step-details" className="hv-admin__create-step-title">
+                                Name this look
+                              </h3>
+                            </header>
+                            <div className="hv-admin__form hv-admin__form--create">
+                              <label className="hv-admin__field">
+                                <span className="hv-admin__label">Label</span>
+                                <input
+                                  className="hv-admin__input"
+                                  value={roomLabel}
+                                  onChange={(e) => setRoomLabel(e.target.value)}
+                                  placeholder={
+                                    selectedStyle ? `${selectedStyle.label} Set` : 'Style Set'
                                   }
-                                  hoverLabel={
-                                    noImg ? 'Needs image' : selected ? 'Selected' : 'Select'
-                                  }
-                                  ariaLabel={
-                                    noImg
-                                      ? `${p.name} needs an image before it can be used`
-                                      : selected
-                                        ? `Deselect ${p.name}`
-                                        : `Select ${p.name} for room set`
-                                  }
-                                  onActivate={() => {
-                                    if (noImg) {
-                                      openImagePicker(p.id);
-                                      return;
-                                    }
-                                    toggleProduct(p.id);
-                                  }}
                                 />
-                              );
-                            })}
-                          </div>
+                              </label>
+                              <div className="hv-admin__form-row hv-admin__form-row--optional">
+                                <label className="hv-admin__field">
+                                  <span className="hv-admin__label">
+                                    Blurb
+                                    <span className="hv-admin__optional">optional</span>
+                                  </span>
+                                  <input
+                                    className="hv-admin__input"
+                                    value={roomBlurb}
+                                    onChange={(e) => setRoomBlurb(e.target.value)}
+                                    placeholder="Short description for shoppers"
+                                  />
+                                </label>
+                                <label className="hv-admin__field">
+                                  <span className="hv-admin__label">
+                                    Tags
+                                    <span className="hv-admin__optional">optional</span>
+                                  </span>
+                                  <input
+                                    className="hv-admin__input"
+                                    value={roomTags}
+                                    onChange={(e) => setRoomTags(e.target.value)}
+                                    placeholder="living, calm"
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </section>
+                        ) : (
+                          <section
+                            className="hv-admin__create-step"
+                            aria-labelledby="create-step-products"
+                          >
+                            <header className="hv-admin__create-step-head">
+                              <span className="hv-admin__create-step-num" aria-hidden="true">
+                                3
+                              </span>
+                              <h3 id="create-step-products" className="hv-admin__create-step-title">
+                                Pick products
+                              </h3>
+                              <HavenProductFilterMenu
+                                value={createProductFilters}
+                                onChange={setCreateProductFilters}
+                                storeOptions={productStoreOptions}
+                                disabled={busy != null}
+                                align="end"
+                              />
+                            </header>
+                            {products.length === 0 ? (
+                              <p className="hv-admin__empty">No products yet. Import a few below.</p>
+                            ) : filteredCreateProducts.length === 0 ? (
+                              <p className="hv-admin__empty">No products match these filters.</p>
+                            ) : (
+                              <div className="hv-admin__tiles hv-admin__tiles--picker">
+                                {filteredCreateProducts.map((p) => {
+                                  const selected = selectedProductIds.includes(p.id);
+                                  const noImg = !hasProductImage(p);
+                                  return (
+                                    <ProductTile
+                                      key={p.id}
+                                      product={p}
+                                      selected={selected}
+                                      disabled={
+                                        busy != null ||
+                                        (!selected && selectedProductIds.length >= 18) ||
+                                        (noImg && !selected)
+                                      }
+                                      hoverLabel={
+                                        noImg ? 'Needs image' : selected ? 'Selected' : 'Select'
+                                      }
+                                      ariaLabel={
+                                        noImg
+                                          ? `${p.name} needs an image before it can be used`
+                                          : selected
+                                            ? `Deselect ${p.name}`
+                                            : `Select ${p.name} for room set`
+                                      }
+                                      onActivate={() => {
+                                        if (noImg) {
+                                          openImagePicker(p.id);
+                                          return;
+                                        }
+                                        toggleProduct(p.id);
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </section>
                         )}
-                      </section>
-                    </div>
+                      </div>
 
-                    <div className="hv-admin__create-manual-actions">
-                      <button
-                        type="button"
-                        className="hv-admin__btn hv-admin__btn--primary"
-                        disabled={
-                          busy != null ||
-                          !roomStyleId ||
-                          selectedProductIds.length < 1 ||
-                          selectedProductIds.length > 6 ||
-                          selectedMissingImages.length > 0
-                        }
-                        onClick={onCreateRoomSet}
-                      >
-                        {busy === 'room' ? 'Creating…' : 'Generate Automatically'}
-                      </button>
-                      <button
-                        type="button"
-                        className="hv-admin__btn hv-admin__btn--ghost"
-                        disabled={
-                          busy != null ||
-                          !roomStyleId ||
-                          selectedProductIds.length < 1 ||
-                          selectedProductIds.length > 18 ||
-                          selectedMissingImages.length > 0
-                        }
-                        onClick={openStudio}
-                      >
-                        Design Myself
-                      </button>
+                      {createStep === 2 ? (
+                        <div className="hv-admin__create-manual-actions">
+                          <button
+                            type="button"
+                            className="hv-admin__btn hv-admin__btn--primary"
+                            disabled={busy != null || !roomLabel.trim()}
+                            onClick={() => setCreateStep(3)}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="hv-admin__create-manual-actions">
+                          <button
+                            type="button"
+                            className="hv-admin__btn hv-admin__btn--primary"
+                            disabled={
+                              busy != null ||
+                              !roomStyleId ||
+                              selectedProductIds.length < 1 ||
+                              selectedProductIds.length > 6 ||
+                              selectedMissingImages.length > 0
+                            }
+                            onClick={onCreateRoomSet}
+                          >
+                            {busy === 'room' ? 'Creating…' : 'Generate Automatically'}
+                          </button>
+                          <button
+                            type="button"
+                            className="hv-admin__btn hv-admin__btn--ghost"
+                            disabled={
+                              busy != null ||
+                              !roomStyleId ||
+                              selectedProductIds.length < 1 ||
+                              selectedProductIds.length > 18 ||
+                              selectedMissingImages.length > 0
+                            }
+                            onClick={openStudio}
+                          >
+                            Design Myself
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1819,103 +2351,98 @@ const HavenAdmin: React.FC = () => {
               )}
             </section>
 
+            <HavenAdminTrends
+              busy={busy}
+              onBusy={setBusy}
+              onError={setError}
+              onImportUrl={(url) => {
+                setAddProductInitialUrl(url);
+                setProductsModal('add');
+              }}
+              onViewProduct={(productId) => {
+                setHighlightProductId(productId);
+                window.requestAnimationFrame(() => {
+                  const el = document.querySelector(
+                    `[data-product-id="${CSS.escape(productId)}"]`,
+                  );
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+                window.setTimeout(() => setHighlightProductId(null), 2400);
+              }}
+              onImportQueries={(queries) => {
+                void run('import', async () => {
+                  if (!queries.length) throw new Error('No import queries on this trend.');
+                  setQueriesText(queries.join(', '));
+                  const result = await havenAdminClient.importProducts({
+                    queries,
+                    max_per_query: 10,
+                    page: 1,
+                    fetch_details_when_no_image: true,
+                  });
+                  setImportResult(result);
+                  await refresh();
+                });
+              }}
+            />
+
             <section className="hv-admin__panel hv-admin__panel--products">
               <div className="hv-admin__panel-head">
-                <h2 className="hv-admin__panel-title">Products</h2>
-                <p className="hv-admin__panel-meta">
-                  {products.length} in catalog
-                  {missingImageCount ? ` · ${missingImageCount} missing image` : ''}
-                </p>
-              </div>
-
-              <div className="hv-admin__seg" role="tablist" aria-label="Products tools">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={productsTab === 'scrape'}
-                  className={`hv-admin__seg-btn${productsTab === 'scrape' ? ' is-active' : ''}`}
-                  onClick={() => setProductsTab('scrape')}
-                >
-                  Scrape
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={productsTab === 'add'}
-                  className={`hv-admin__seg-btn${productsTab === 'add' ? ' is-active' : ''}`}
-                  onClick={() => setProductsTab('add')}
-                >
-                  Add product
-                </button>
-              </div>
-
-              {productsTab === 'scrape' ? (
-                <div className="hv-admin__form">
-                  <div className="hv-admin__scrape-row">
-                    <label className="hv-admin__field hv-admin__field--grow">
-                      <span className="hv-admin__label">Search queries</span>
-                      <input
-                        className="hv-admin__input"
-                        value={queriesText}
-                        onChange={(e) => setQueriesText(e.target.value)}
-                        placeholder="linen sofa, jute rug, oak table"
-                      />
-                    </label>
-                    <label className="hv-admin__field hv-admin__field--max">
-                      <span className="hv-admin__label">Max</span>
-                      <input
-                        className="hv-admin__input"
-                        type="number"
-                        min={1}
-                        max={20}
-                        value={maxPerQuery}
-                        onChange={(e) => setMaxPerQuery(Number(e.target.value) || 1)}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className="hv-admin__btn hv-admin__btn--primary hv-admin__scrape-btn"
-                      disabled={busy != null}
-                      onClick={onImport}
-                    >
-                      {busy === 'import' ? 'Scraping…' : 'Scrape Web for Products'}
-                    </button>
-                  </div>
-                  {importResult?.errors?.length ? (
-                    <p className="hv-admin__msg hv-admin__msg--error">
-                      {importResult.errors.slice(0, 3).join(' · ')}
-                    </p>
-                  ) : null}
+                <div>
+                  <h2 className="hv-admin__panel-title">Products</h2>
+                  <p className="hv-admin__panel-meta">
+                    {filteredCatalogProducts.length}
+                    {filteredCatalogProducts.length !== products.length
+                      ? ` of ${products.length}`
+                      : ''}{' '}
+                    in catalog
+                    {missingImageCount ? ` · ${missingImageCount} missing image` : ''}
+                  </p>
                 </div>
-              ) : (
-                <HavenAdminAddProduct
-                  busy={busy}
-                  onBusy={setBusy}
-                  onError={setError}
-                  onCreated={(product) => {
-                    setProducts((prev) => {
-                      if (prev.some((p) => p.id === product.id)) {
-                        return prev.map((p) => (p.id === product.id ? product : p));
-                      }
-                      return [product, ...prev];
-                    });
-                  }}
-                />
-              )}
+                <div className="hv-admin__panel-tools">
+                  <button
+                    type="button"
+                    className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
+                    disabled={busy != null}
+                    onClick={() => setProductsModal('scrape')}
+                  >
+                    Scrape
+                  </button>
+                  <button
+                    type="button"
+                    className="hv-admin__btn hv-admin__btn--primary hv-admin__btn--compact"
+                    disabled={busy != null}
+                    onClick={() => setProductsModal('add')}
+                  >
+                    Add product
+                  </button>
+                  <HavenProductFilterMenu
+                    value={catalogFilters}
+                    onChange={setCatalogFilters}
+                    storeOptions={productStoreOptions}
+                    disabled={busy != null}
+                    align="end"
+                  />
+                </div>
+              </div>
 
               {products.length === 0 ? (
                 <p className="hv-admin__empty" style={{ marginTop: 12 }}>
-                  No products yet. Scrape or add one above.
+                  No products yet. Add or scrape some to get started.
+                </p>
+              ) : filteredCatalogProducts.length === 0 ? (
+                <p className="hv-admin__empty" style={{ marginTop: 12 }}>
+                  No products match these filters.
                 </p>
               ) : (
                 <div className="hv-admin__tiles">
-                  {products.map((p) => {
+                  {filteredCatalogProducts.map((p) => {
                     const hasImage = hasProductImage(p);
                     const uploading = busy === `img-${p.id}`;
                     return (
                       <ProductTile
                         key={p.id}
                         product={p}
+                        selected={highlightProductId === p.id}
                         disabled={busy != null && !hasImage}
                         busyLabel={uploading ? 'Uploading…' : null}
                         hoverLabel={hasImage ? '' : 'Add image'}
@@ -1945,6 +2472,147 @@ const HavenAdmin: React.FC = () => {
         onClose={() => setCreateStyleOpen(false)}
         onCreated={onStyleCreated}
       />
+
+      {productsModal === 'scrape' ? (
+        <div
+          className="hv-admin__modal-backdrop"
+          role="presentation"
+          onMouseDown={scrapeBackdrop.onMouseDown}
+          onClick={scrapeBackdrop.onClick}
+        >
+          <div
+            className="hv-admin__modal hv-admin__modal--wide"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="products-scrape-title"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="products-scrape-title" className="hv-admin__modal-title">
+              Scrape products
+            </h2>
+            <p className="hv-admin__modal-copy">
+              Search the web for furniture and decor to add to your catalog.
+            </p>
+            <div className="hv-admin__form">
+              <div className="hv-admin__scrape-row">
+                <label className="hv-admin__field hv-admin__field--grow">
+                  <span className="hv-admin__label">Search queries</span>
+                  <input
+                    className="hv-admin__input"
+                    value={queriesText}
+                    onChange={(e) => setQueriesText(e.target.value)}
+                    placeholder="linen sofa, jute rug, oak table"
+                    disabled={busy === 'import'}
+                  />
+                </label>
+                <label className="hv-admin__field hv-admin__field--max">
+                  <span className="hv-admin__label">Max</span>
+                  <input
+                    className="hv-admin__input"
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={maxPerQuery}
+                    onChange={(e) => setMaxPerQuery(Number(e.target.value) || 1)}
+                    disabled={busy === 'import'}
+                  />
+                </label>
+              </div>
+              {importResult?.errors?.length ? (
+                <p className="hv-admin__msg hv-admin__msg--error">
+                  {importResult.errors.slice(0, 3).join(' · ')}
+                </p>
+              ) : null}
+            </div>
+            <div className="hv-admin__modal-actions">
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--ghost"
+                disabled={busy === 'import'}
+                onClick={() => setProductsModal(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--primary"
+                disabled={busy != null}
+                onClick={() => {
+                  void run('import', async () => {
+                    const queries = queriesText
+                      .split(/\n|,/)
+                      .map((q) => q.trim())
+                      .filter(Boolean);
+                    if (!queries.length) throw new Error('Add at least one search query.');
+                    const result = await havenAdminClient.importProducts({
+                      queries,
+                      max_per_query: maxPerQuery,
+                      page: 1,
+                      fetch_details_when_no_image: true,
+                    });
+                    setImportResult(result);
+                    await refresh();
+                    setProductsModal(null);
+                  });
+                }}
+              >
+                {busy === 'import' ? 'Scraping…' : 'Scrape Web for Products'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {productsModal === 'add' ? (
+        <div
+          className="hv-admin__modal-backdrop"
+          role="presentation"
+          onMouseDown={addProductBackdrop.onMouseDown}
+          onClick={addProductBackdrop.onClick}
+        >
+          <div
+            className="hv-admin__modal hv-admin__modal--wide"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="products-add-title"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="hv-admin__modal-head">
+              <h2 id="products-add-title" className="hv-admin__modal-title">
+                Add product
+              </h2>
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
+                disabled={busy != null}
+                onClick={() => {
+                  setProductsModal(null);
+                  setAddProductInitialUrl('');
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <HavenAdminAddProduct
+              key={addProductInitialUrl || 'add-product'}
+              busy={busy}
+              onBusy={setBusy}
+              onError={setError}
+              initialUrl={addProductInitialUrl}
+              onCreated={(product) => {
+                setProducts((prev) => {
+                  if (prev.some((p) => p.id === product.id)) {
+                    return prev.map((p) => (p.id === product.id ? product : p));
+                  }
+                  return [product, ...prev];
+                });
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

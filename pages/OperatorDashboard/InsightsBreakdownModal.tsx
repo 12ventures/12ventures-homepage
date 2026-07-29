@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiChevronLeft, FiX } from 'react-icons/fi';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import {
   isBreakdownVariantView,
   poseidonService,
@@ -94,6 +95,8 @@ const InsightsBreakdownModal: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose, selectedGroup]);
 
+  const backdropDismiss = useBackdropDismiss(onClose, isOpen);
+
   const meta = field ? FIELD_META[field] : null;
   const isVariantView = data != null && isBreakdownVariantView(data);
   const maxCount = useMemo(
@@ -118,8 +121,16 @@ const InsightsBreakdownModal: React.FC<Props> = ({
       aria-modal="true"
       aria-labelledby="od-breakdown-modal-title"
     >
-      <div className="od-breakdown-modal__overlay" onClick={onClose} />
-      <div className="od-breakdown-modal__panel">
+      <div
+        className="od-breakdown-modal__overlay"
+        onMouseDown={backdropDismiss.onMouseDown}
+        onClick={backdropDismiss.onClick}
+      />
+      <div
+        className="od-breakdown-modal__panel"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="od-breakdown-modal__header">
           <div className="od-breakdown-modal__header-main">
             {selectedGroup && (

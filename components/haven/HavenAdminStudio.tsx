@@ -1,5 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { HavenProduct, PlacementPin, StylePersonality } from './types';
+import { HavenMoodboardEditor } from './HavenMoodboard';
+import { HavenProductFilterMenu } from './HavenProductFilterMenu';
+import {
+  applyProductFilters,
+  categoryLabel,
+  collectStoreOptions,
+  DEFAULT_PRODUCT_FILTERS,
+} from './productFilters';
+import type {
+  ComposeMode,
+  HavenMoodboard,
+  HavenProduct,
+  MoodboardCard,
+  PlacementPin,
+  ProductCatalogFilters,
+  StylePersonality,
+  StudioView,
+} from './types';
 import { roomSetGenerateCopy } from './types';
 
 function hasProductImage(p: HavenProduct): boolean {
@@ -21,8 +38,10 @@ export const HavenAdminStudio: React.FC<{
   allProducts: HavenProduct[];
   pins: PlacementPin[];
   busy: boolean;
-  composeMode: 'base' | 'furnish';
-  onComposeModeChange: (mode: 'base' | 'furnish') => void;
+  composeMode: ComposeMode;
+  onComposeModeChange: (mode: ComposeMode) => void;
+  studioView: StudioView;
+  onStudioViewChange: (view: StudioView) => void;
   onPinsChange: (pins: PlacementPin[]) => void;
   onProductsChange: (ids: string[]) => void;
   onGenerate: () => void;
@@ -34,6 +53,21 @@ export const HavenAdminStudio: React.FC<{
   genStatus?: string | null;
   genProgress?: number | null;
   genMessage?: string | null;
+  /** Moodboard session */
+  moodboard: HavenMoodboard | null;
+  moodboardLibrary: MoodboardCard[];
+  moodboardBusy?: boolean;
+  studioDraftId: string;
+  /** Set once Generate creates the room set (for link badges). */
+  linkedRoomSetId?: string | null;
+  onMoodboardChange: (board: HavenMoodboard) => void;
+  onMoodboardSave: () => void;
+  onMoodboardSelect: (id: string) => void;
+  onMoodboardCreate: () => void;
+  onMoodboardDelete: (id: string) => void;
+  onMoodboardLink: () => void;
+  onMoodboardUnlink: () => void;
+  onMoodboardUpload: (files: FileList) => void;
 }> = ({
   style,
   label,
@@ -43,6 +77,8 @@ export const HavenAdminStudio: React.FC<{
   busy,
   composeMode,
   onComposeModeChange,
+  studioView,
+  onStudioViewChange,
   onPinsChange,
   onProductsChange,
   onGenerate,
@@ -53,16 +89,34 @@ export const HavenAdminStudio: React.FC<{
   genStatus = null,
   genProgress = null,
   genMessage = null,
+  moodboard,
+  moodboardLibrary,
+  moodboardBusy = false,
+  studioDraftId,
+  linkedRoomSetId = null,
+  onMoodboardChange,
+  onMoodboardSave,
+  onMoodboardSelect,
+  onMoodboardCreate,
+  onMoodboardDelete,
+  onMoodboardLink,
+  onMoodboardUnlink,
+  onMoodboardUpload,
 }) => {
   const stageRef = useRef<HTMLDivElement>(null);
   const draggingId = useRef<string | null>(null);
   const [armedId, setArmedId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerFilters, setPickerFilters] =
+    useState<ProductCatalogFilters>(DEFAULT_PRODUCT_FILTERS);
   const [hoverPinId, setHoverPinId] = useState<string | null>(null);
   const [tipVisible, setTipVisible] = useState(false);
   const [tipFading, setTipFading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const baseInputRef = useRef<HTMLInputElement>(null);
+  const composeShellRef = useRef<HTMLDivElement>(null);
+  const moodboardShellRef = useRef<HTMLDivElement>(null);
+  const studioHeadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -72,6 +126,21 @@ export const HavenAdminStudio: React.FC<{
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    const replay = (el: HTMLElement | null) => {
+      if (!el) return;
+      el.classList.remove('hv-enter-cascade');
+      void el.offsetWidth;
+      el.classList.add('hv-enter-cascade');
+    };
+    if (studioView === 'moodboard') {
+      replay(moodboardShellRef.current);
+      return;
+    }
+    replay(studioHeadRef.current);
+    replay(composeShellRef.current);
+  }, [studioView]);
 
   useEffect(() => {
     if (!baseImageUrl) return;
@@ -97,6 +166,20 @@ export const HavenAdminStudio: React.FC<{
     products.forEach((p) => map.set(p.id, p));
     return map;
   }, [allProducts, products]);
+
+  const pickerStoreOptions = useMemo(
+    () => collectStoreOptions(allProducts),
+    [allProducts],
+  );
+
+  const filteredPickerProducts = useMemo(
+    () =>
+      applyProductFilters(
+        allProducts.filter((p) => hasProductImage(p)),
+        pickerFilters,
+      ),
+    [allProducts, pickerFilters],
+  );
 
   const pinByProduct = useMemo(() => {
     const map = new Map<string, PlacementPin>();
@@ -194,31 +277,35 @@ export const HavenAdminStudio: React.FC<{
 
   return (
     <div className="hv-admin__studio" ref={rootRef}>
-      <div className="hv-admin__studio-head">
+      {studioView === 'compose' ? (
+      <div className="hv-admin__studio-head" ref={studioHeadRef}>
         <div>
-          <p className="hv-admin__chips-kicker">Design myself</p>
           <h3 className="hv-admin__studio-title">{label || 'Untitled look'}</h3>
         </div>
         <div className="hv-admin__studio-toolbar">
-          <div className="hv-admin__seg" role="tablist" aria-label="Compose mode">
+          <div className="hv-admin__seg" role="group" aria-label="Compose mode">
             <button
               type="button"
-              role="tab"
-              aria-selected={composeMode === 'base'}
+              aria-pressed={composeMode === 'base'}
               className={`hv-admin__seg-btn${composeMode === 'base' ? ' is-active' : ''}`}
               disabled={locked}
-              onClick={() => onComposeModeChange('base')}
+              onClick={() => {
+                onStudioViewChange('compose');
+                onComposeModeChange('base');
+              }}
               title="Only catalog products"
             >
               Base
             </button>
             <button
               type="button"
-              role="tab"
-              aria-selected={composeMode === 'furnish'}
+              aria-pressed={composeMode === 'furnish'}
               className={`hv-admin__seg-btn${composeMode === 'furnish' ? ' is-active' : ''}`}
               disabled={locked}
-              onClick={() => onComposeModeChange('furnish')}
+              onClick={() => {
+                onStudioViewChange('compose');
+                onComposeModeChange('furnish');
+              }}
               title="Allow invented filler furniture (not shoppable)"
             >
               Furnish
@@ -236,8 +323,53 @@ export const HavenAdminStudio: React.FC<{
           </button>
         </div>
       </div>
+      ) : null}
 
-      <div className="hv-admin__studio-grid">
+      <div
+        ref={moodboardShellRef}
+        className="hv-admin__studio-moodboard"
+        hidden={studioView !== 'moodboard'}
+        aria-hidden={studioView !== 'moodboard'}
+      >
+        {moodboard ? (
+          <HavenMoodboardEditor
+            board={moodboard}
+            library={moodboardLibrary}
+            busy={moodboardBusy || locked}
+            linkedRoomSetId={linkedRoomSetId}
+            pendingStudioDraftId={studioDraftId}
+            poolProducts={products}
+            catalogProducts={allProducts}
+            onChange={onMoodboardChange}
+            onSave={onMoodboardSave}
+            onSelectBoard={onMoodboardSelect}
+            onCreateBoard={onMoodboardCreate}
+            onDeleteBoard={onMoodboardDelete}
+            onLink={onMoodboardLink}
+            onUnlink={onMoodboardUnlink}
+            onUploadImages={onMoodboardUpload}
+          />
+        ) : (
+          <div className="hv-admin__studio-empty">
+            <p>No moodboard open yet.</p>
+            <button
+              type="button"
+              className="hv-admin__btn hv-admin__btn--primary"
+              disabled={moodboardBusy || locked}
+              onClick={onMoodboardCreate}
+            >
+              Create moodboard
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div
+        ref={composeShellRef}
+        className="hv-admin__studio-grid"
+        hidden={studioView !== 'compose'}
+        aria-hidden={studioView !== 'compose'}
+      >
         <div className="hv-admin__studio-stage-wrap">
           {!baseImageUrl ? (
             <div className="hv-admin__studio-empty">
@@ -405,23 +537,33 @@ export const HavenAdminStudio: React.FC<{
         </aside>
       </div>
 
-      {pickerOpen && (
+      {studioView === 'compose' && pickerOpen && (
         <div className="hv-admin__studio-picker" role="dialog" aria-label="Add products">
           <div className="hv-admin__studio-picker-card">
             <div className="hv-admin__studio-rail-head">
               <p className="hv-admin__label">Catalog · {products.length}/18 selected</p>
-              <button
-                type="button"
-                className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
-                onClick={() => setPickerOpen(false)}
-              >
-                Done
-              </button>
+              <div className="hv-admin__studio-rail-tools">
+                <HavenProductFilterMenu
+                  value={pickerFilters}
+                  onChange={setPickerFilters}
+                  storeOptions={pickerStoreOptions}
+                  disabled={locked}
+                  align="end"
+                />
+                <button
+                  type="button"
+                  className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
+                  onClick={() => setPickerOpen(false)}
+                >
+                  Done
+                </button>
+              </div>
             </div>
             <div className="hv-admin__tiles hv-admin__tiles--picker">
-              {allProducts
-                .filter((p) => hasProductImage(p))
-                .map((p) => {
+              {filteredPickerProducts.length === 0 ? (
+                <p className="hv-admin__empty">No products match these filters.</p>
+              ) : null}
+              {filteredPickerProducts.map((p) => {
                   const selected = products.some((x) => x.id === p.id);
                   return (
                     <button
@@ -432,7 +574,14 @@ export const HavenAdminStudio: React.FC<{
                       onClick={() => togglePickerProduct(p.id)}
                     >
                       <img src={p.imageUrl} alt="" />
-                      <span>{p.name}</span>
+                      <span className="hv-admin__studio-pick-copy">
+                        <span className="hv-admin__studio-pick-name">{p.name}</span>
+                        {p.category ? (
+                          <span className="hv-admin__studio-pick-meta">
+                            {categoryLabel(p.category)}
+                          </span>
+                        ) : null}
+                      </span>
                     </button>
                   );
                 })}

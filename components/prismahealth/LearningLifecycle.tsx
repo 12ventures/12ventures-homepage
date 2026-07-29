@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import PrismaDashboardLayout from './PrismaDashboardLayout';
 import { GlassCard } from '../ui/GlassCard';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import { 
   FileText, 
   Globe, 
@@ -29,6 +30,8 @@ const LearningLifecycle: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isPlayingVideo, setIsPlayingVideo] = useState(false);
   const [isViewingImage, setIsViewingImage] = useState(false);
+  const closeImageViewer = useCallback(() => setIsViewingImage(false), []);
+  const imageViewerBackdrop = useBackdropDismiss(closeImageViewer, isViewingImage);
   const [hasInteracted, setHasInteracted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -319,14 +322,22 @@ const LearningLifecycle: React.FC = () => {
 
           {/* Image Preview Modal Overlay */}
           {isViewingImage && (
-            <div className="absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300 p-8 backdrop-blur-md" onClick={(e) => { e.stopPropagation(); setIsViewingImage(false); }}>
+            <div
+              className="absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300 p-8 backdrop-blur-md"
+              onMouseDown={imageViewerBackdrop.onMouseDown}
+              onClick={imageViewerBackdrop.onClick}
+            >
                <button 
                  onClick={(e) => { e.stopPropagation(); setIsViewingImage(false); }}
                  className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors bg-white/10 p-2 rounded-full backdrop-blur-md"
                >
                  <X size={24} />
                </button>
-               <div className="relative h-full w-full max-w-2xl flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+               <div
+                 className="relative h-full w-full max-w-2xl flex items-center justify-center"
+                 onClick={(e) => e.stopPropagation()}
+                 onMouseDown={(e) => e.stopPropagation()}
+               >
                   <img 
                     src="https://games.dreambox.gg/snapskill/other/comic-demo-3.png" 
                     alt="Tip Sheet Full View" 

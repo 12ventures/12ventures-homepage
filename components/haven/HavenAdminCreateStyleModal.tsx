@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import { havenAdminClient } from './api/havenAdminClient';
 import type { StylePersonality } from './types';
 
@@ -44,6 +45,8 @@ const HavenAdminCreateStyleModal: React.FC<HavenAdminCreateStyleModalProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, canClose, onClose]);
 
+  const backdropDismiss = useBackdropDismiss(onClose, open && canClose);
+
   if (!open) return null;
 
   const submitFile = async (file: File | null) => {
@@ -72,15 +75,15 @@ const HavenAdminCreateStyleModal: React.FC<HavenAdminCreateStyleModalProps> = ({
     <div
       className="hv-admin__modal-backdrop"
       role="presentation"
-      onClick={() => {
-        if (canClose) onClose();
-      }}
+      onMouseDown={backdropDismiss.onMouseDown}
+      onClick={backdropDismiss.onClick}
     >
       <div
         className="hv-admin__modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         {phase === 'form' && (

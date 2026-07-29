@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import MilestoneList from './MilestoneList';
 import type { DashboardSection, Initiative } from './data/initiatives';
 import { resolveSectionAccent } from './data/initiatives';
@@ -25,6 +26,8 @@ const InitiativeModal: React.FC<InitiativeModalProps> = ({ initiative, sections,
     bg: accentBase.bg,
   };
 
+  const backdropDismiss = useBackdropDismiss(onClose);
+
   // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -38,7 +41,8 @@ const InitiativeModal: React.FC<InitiativeModalProps> = ({ initiative, sections,
       <div
         className="absolute inset-0"
         style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)' }}
-        onClick={onClose}
+        onMouseDown={backdropDismiss.onMouseDown}
+        onClick={backdropDismiss.onClick}
       />
 
       {/* Modal */}

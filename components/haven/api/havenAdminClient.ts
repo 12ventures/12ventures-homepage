@@ -1,20 +1,29 @@
 import type {
   HavenHotspot,
+  HavenMoodboard,
+  HavenMoodboardPalette,
   HavenProduct,
+  MoodboardItem,
+  MoodboardPage,
   RoomSet,
   RoomSetDetail,
   RoomSetGenerateJob,
   StylePersonality,
 } from '../types';
+import type { TrendRun, TrendRunStart, TrendSearchRequest } from '../trendTypes';
 import { getHavenApiBase } from './havenClient';
 import {
   itemsOf,
   mapHotspot,
+  mapMoodboard,
+  mapMoodboardPage,
   mapProduct,
   mapRoomSet,
   mapRoomSetDetail,
   mapRoomSetGenerateJob,
   mapStyle,
+  mapTrendRun,
+  mapTrendRunStart,
 } from './mappers';
 
 type ApiEnvelope<T> = {
@@ -181,13 +190,14 @@ export const havenAdminClient = {
 
   async createProduct(input: {
     name: string;
-    merchant?: string;
+    merchant?: string | null;
     price?: number | null;
     imageUrl?: string;
     affiliateUrl?: string;
     category?: string;
     active?: boolean;
     externalSku?: string | null;
+    dimensions?: string | null;
     source?: string | null;
   }): Promise<HavenProduct> {
     const data = await adminFetch<Record<string, unknown>>('/admin/products', {
@@ -195,13 +205,18 @@ export const havenAdminClient = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: input.name,
-        merchant: input.merchant ?? '',
+        merchant: input.merchant?.trim() ? input.merchant.trim() : null,
         price: input.price ?? null,
         imageUrl: input.imageUrl ?? '',
         affiliateUrl: input.affiliateUrl ?? '',
         category: input.category ?? 'other',
         active: input.active ?? true,
-        ...(input.externalSku != null ? { externalSku: input.externalSku } : {}),
+        ...(input.externalSku != null && String(input.externalSku).trim()
+          ? { externalSku: String(input.externalSku).trim() }
+          : {}),
+        ...(input.dimensions != null && String(input.dimensions).trim()
+          ? { dimensions: String(input.dimensions).trim() }
+          : {}),
         ...(input.source != null ? { source: input.source } : {}),
       }),
     });
@@ -216,10 +231,14 @@ export const havenAdminClient = {
       imageUrl: string;
       affiliateUrl: string;
       category: string;
+      dimensions: string;
       active: boolean;
       source?: string;
       externalSku?: string | null;
     };
+    filledFields: string[];
+    missingFields: string[];
+    extractSource: string;
     matched: boolean;
     matchConfidence: string;
     sourceUrl: string;
@@ -232,10 +251,13 @@ export const havenAdminClient = {
     });
     const previewRaw = (data.preview ?? {}) as Record<string, unknown>;
     const notes = data.notes;
+    const filled = data.filledFields ?? data.filled_fields;
+    const missing = data.missingFields ?? data.missing_fields;
+    const merchantRaw = previewRaw.merchant;
     return {
       preview: {
         name: String(previewRaw.name ?? ''),
-        merchant: String(previewRaw.merchant ?? ''),
+        merchant: merchantRaw != null ? String(merchantRaw) : '',
         price:
           previewRaw.price == null || previewRaw.price === ''
             ? null
@@ -243,6 +265,7 @@ export const havenAdminClient = {
         imageUrl: String(previewRaw.imageUrl ?? previewRaw.image_url ?? ''),
         affiliateUrl: String(previewRaw.affiliateUrl ?? previewRaw.affiliate_url ?? url),
         category: String(previewRaw.category ?? 'other'),
+        dimensions: String(previewRaw.dimensions ?? ''),
         active: previewRaw.active !== false,
         source: previewRaw.source != null ? String(previewRaw.source) : undefined,
         externalSku:
@@ -252,6 +275,11 @@ export const havenAdminClient = {
               ? String(previewRaw.external_sku)
               : null,
       },
+      filledFields: Array.isArray(filled) ? filled.map(String) : [],
+      missingFields: Array.isArray(missing) ? missing.map(String) : [],
+      extractSource: String(
+        data.extractSource ?? data.extract_source ?? 'manual',
+      ),
       matched: Boolean(data.matched),
       matchConfidence: String(data.matchConfidence ?? data.match_confidence ?? 'none'),
       sourceUrl: String(data.sourceUrl ?? data.source_url ?? url),
@@ -398,6 +426,8 @@ export const havenAdminClient = {
     placementPins?: { productId: string; x: number; y: number }[];
     enabled?: boolean;
     featured?: boolean;
+    /** Client UUID — backend claims moodboards with matching pendingStudioDraftId. */
+    studioDraftId?: string | null;
   }): Promise<CreateRoomSetResult> {
     const data = await adminFetch<Record<string, unknown>>('/admin/room-sets/studio', {
       method: 'POST',
@@ -411,11 +441,12 @@ export const havenAdminClient = {
         baseSource: input.baseSource ?? 'style_cache',
         baseImageUrl: input.baseImageUrl ?? null,
         uploadId: input.uploadId ?? null,
-        composeMode: input.composeMode ?? 'base',
+        composeMode: input.composeMode ?? 'furnish',
         placementPins: input.placementPins ?? [],
         aspectRatio: '16:9',
         enabled: input.enabled ?? true,
         featured: input.featured ?? false,
+        studioDraftId: input.studioDraftId ?? null,
       }),
     });
     return unwrapCreateResult(data);
@@ -520,4 +551,194 @@ export const havenAdminClient = {
       method: 'DELETE',
     });
   },
+
+  async listMoodboards(opts?: {
+    styleId?: string | null;
+    roomSetId?: string | null;
+    pendingStudioDraftId?: string | null;
+    limit?: number;
+    cursor?: string | null;
+  }): Promise<MoodboardPage> {
+    const qs = new URLSearchParams({
+      limit: String(opts?.limit ?? 24),
+    });
+    if (opts?.styleId) qs.set('styleId', opts.styleId);
+    if (opts?.roomSetId) qs.set('roomSetId', opts.roomSetId);
+    if (opts?.pendingStudioDraftId) qs.set('pendingStudioDraftId', opts.pendingStudioDraftId);
+    if (opts?.cursor) qs.set('cursor', opts.cursor);
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/moodboards?${qs}`,
+    );
+    return mapMoodboardPage(data);
+  },
+
+  async getMoodboard(id: string): Promise<HavenMoodboard> {
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/moodboards/${encodeURIComponent(id)}`,
+    );
+    const row =
+      data.moodboard && typeof data.moodboard === 'object'
+        ? (data.moodboard as Record<string, unknown>)
+        : data;
+    const board = mapMoodboard(row);
+    if (!board.id) throw new HavenAdminError('Moodboard not found', 404);
+    return board;
+  },
+
+  async createMoodboard(input: {
+    name: string;
+    styleId?: string | null;
+    roomSetId?: string | null;
+    pendingStudioDraftId?: string | null;
+    boardAspectRatio?: string;
+    palette?: HavenMoodboardPalette | null;
+    palettePosition?: { x: number; y: number } | null;
+    items?: MoodboardItem[];
+  }): Promise<HavenMoodboard> {
+    const data = await adminFetch<Record<string, unknown>>('/admin/moodboards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: input.name,
+        styleId: input.styleId ?? null,
+        roomSetId: input.roomSetId ?? null,
+        pendingStudioDraftId: input.pendingStudioDraftId ?? null,
+        boardAspectRatio: input.boardAspectRatio ?? '4:3',
+        palette: input.palette ?? null,
+        palettePosition: input.palettePosition ?? null,
+        items: input.items ?? [],
+      }),
+    });
+    const row =
+      data.moodboard && typeof data.moodboard === 'object'
+        ? (data.moodboard as Record<string, unknown>)
+        : data;
+    return mapMoodboard(row);
+  },
+
+  async patchMoodboard(
+    id: string,
+    input: {
+      name?: string;
+      styleId?: string | null;
+      boardAspectRatio?: string;
+      palette?: HavenMoodboardPalette;
+      palettePosition?: { x: number; y: number };
+      items?: MoodboardItem[];
+    },
+  ): Promise<HavenMoodboard> {
+    const body: Record<string, unknown> = {};
+    if (input.name != null) body.name = input.name;
+    if (input.styleId !== undefined) body.styleId = input.styleId;
+    if (input.boardAspectRatio != null) body.boardAspectRatio = input.boardAspectRatio;
+    if (input.palette != null) body.palette = input.palette;
+    if (input.palettePosition != null) body.palettePosition = input.palettePosition;
+    if (input.items != null) body.items = input.items;
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/moodboards/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+    const row =
+      data.moodboard && typeof data.moodboard === 'object'
+        ? (data.moodboard as Record<string, unknown>)
+        : data;
+    return mapMoodboard(row);
+  },
+
+  async deleteMoodboard(id: string): Promise<void> {
+    await adminFetch<unknown>(`/admin/moodboards/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async linkMoodboard(
+    id: string,
+    link: { roomSetId: string } | { pendingStudioDraftId: string },
+  ): Promise<HavenMoodboard> {
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/moodboards/${encodeURIComponent(id)}/link`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(link),
+      },
+    );
+    const row =
+      data.moodboard && typeof data.moodboard === 'object'
+        ? (data.moodboard as Record<string, unknown>)
+        : data;
+    return mapMoodboard(row);
+  },
+
+  async unlinkMoodboard(id: string): Promise<HavenMoodboard> {
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/moodboards/${encodeURIComponent(id)}/unlink`,
+      { method: 'POST' },
+    );
+    const row =
+      data.moodboard && typeof data.moodboard === 'object'
+        ? (data.moodboard as Record<string, unknown>)
+        : data;
+    return mapMoodboard(row);
+  },
+
+  async listRoomSetMoodboards(roomSetId: string): Promise<MoodboardPage> {
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/room-sets/${encodeURIComponent(roomSetId)}/moodboards`,
+    );
+    return mapMoodboardPage(data);
+  },
+
+  async startTrendSearch(body: TrendSearchRequest = {}): Promise<TrendRunStart> {
+    const data = await adminFetch<Record<string, unknown>>('/admin/trends/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        region: body.region ?? 'US',
+        maxTrends: body.maxTrends ?? 5,
+        maxCandidatesPerTrend: body.maxCandidatesPerTrend ?? 4,
+        includeExternalCandidates: body.includeExternalCandidates ?? true,
+        includeCatalogMatches: body.includeCatalogMatches ?? true,
+        trigger: body.trigger ?? 'manual',
+      }),
+    });
+    return mapTrendRunStart(data);
+  },
+
+  async getTrendRun(runId: string): Promise<TrendRun> {
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/trends/runs/${encodeURIComponent(runId)}`,
+    );
+    return mapTrendRun(data);
+  },
+
+  async listTrendRuns(opts?: {
+    limit?: number;
+    status?: TrendRun['status'] | TrendRun['status'][];
+  }): Promise<TrendRun[]> {
+    const params = new URLSearchParams();
+    params.set('limit', String(opts?.limit ?? 30));
+    if (opts?.status) {
+      const statuses = Array.isArray(opts.status) ? opts.status : [opts.status];
+      statuses.forEach((s) => params.append('status', s));
+    }
+    const q = params.toString();
+    const data = await adminFetch<unknown>(`/admin/trends/runs?${q}`);
+    return itemsOf<Record<string, unknown>>(data)
+      .map(mapTrendRun)
+      .filter((r) => r.id);
+  },
 };
+
+class HavenAdminError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'HavenAdminError';
+    this.status = status;
+  }
+}

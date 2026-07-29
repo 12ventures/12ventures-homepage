@@ -48,8 +48,46 @@ export interface HavenProduct {
   imageUrl: string;
   affiliateUrl: string;
   category: HavenProductCategory;
+  /** Prefer for store filters — usually the URL host (e.g. wayfair.com). */
+  storeKey?: string | null;
   /** Merchant SKU when present (admin / Wayfair subtitle) */
   externalSku?: string;
+  createdAt?: string;
+}
+
+/** Catalog list filters for GET /products (and client-side admin lists). */
+export type ProductCatalogSort = 'name' | 'newest' | 'store';
+
+export interface ProductCatalogFilters {
+  category: HavenProductCategory | null;
+  /** storeKey value for ?store= */
+  store: string | null;
+  sort: ProductCatalogSort;
+}
+
+export interface ProductStoreOption {
+  storeKey: string;
+  /** merchant when known, otherwise storeKey */
+  label: string;
+}
+
+/** Storefront PDP — card fields plus catalog metadata. */
+export interface HavenProductDetail extends HavenProduct {
+  dimensions?: string | null;
+  featured?: boolean;
+  featuredSort?: number;
+  active?: boolean;
+  source?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Cursor page for catalog / related grids. */
+export interface HavenProductPage {
+  items: HavenProduct[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  limit: number;
 }
 
 export interface HavenHotspot {
@@ -83,7 +121,173 @@ export interface PlacementPin {
 
 export type ComposeMode = 'base' | 'furnish';
 
+/** Studio UI surface — compose modes vs moodboard canvas. */
+export type StudioView = 'compose' | 'moodboard';
+
 export type StudioBaseSource = 'style_cache' | 'upload_id' | 'url';
+
+/** Moodboard palette slot roles (fixed 5-slot board). */
+export type MoodboardPaletteRole = 'main' | 'contrast' | 'neutral';
+
+export type MoodboardPaletteSlot = {
+  role: MoodboardPaletteRole;
+  hex: string | null;
+};
+
+export type MoodboardItemLink =
+  | { type: 'product'; productId: string }
+  | { type: 'url'; url: string };
+
+export type MoodboardTextWeight = 'regular' | 'medium' | 'semibold' | 'bold';
+export type MoodboardTextAlign = 'left' | 'center' | 'right';
+
+type MoodboardItemLayout = {
+  id: string;
+  /** Top-left x as % of board width (0–100). */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  zIndex: number;
+  rotationDeg?: number;
+};
+
+export type MoodboardImageItem = MoodboardItemLayout & {
+  kind: 'image';
+  imageUrl: string;
+  uploadId?: string | null;
+  link?: MoodboardItemLink | null;
+  /** Client-only: true while the file is still uploading. */
+  uploading?: boolean;
+};
+
+export type MoodboardTextItem = MoodboardItemLayout & {
+  kind: 'text';
+  /** Max 2000 chars; empty allowed for draft boxes. */
+  text: string;
+  /** Percent of board height (default 4). */
+  fontSize: number;
+  fontWeight: MoodboardTextWeight;
+  textAlign: MoodboardTextAlign;
+  color: string;
+  backgroundColor: string | null;
+};
+
+export type MoodboardItem = MoodboardImageItem | MoodboardTextItem;
+
+export const MOODBOARD_TEXT_MAX_CHARS = 2000;
+
+export function isMoodboardImageItem(item: MoodboardItem): item is MoodboardImageItem {
+  return item.kind === 'image';
+}
+
+export function isMoodboardTextItem(item: MoodboardItem): item is MoodboardTextItem {
+  return item.kind === 'text';
+}
+
+/** First image item URL — cover thumbs ignore text items. */
+export function moodboardCoverImageUrl(items: MoodboardItem[]): string | null {
+  const first = items.find(isMoodboardImageItem);
+  return first?.imageUrl?.trim() || null;
+}
+
+/** Strip client-only fields before sending items to the API. */
+export function serializeMoodboardItems(items: MoodboardItem[]): MoodboardItem[] {
+  return items.map((it) => {
+    if (it.kind !== 'image') return it;
+    const { uploading: _uploading, ...rest } = it;
+    return rest;
+  });
+}
+
+export function createMoodboardTextItem(
+  partial?: Partial<MoodboardTextItem> & { id?: string },
+): MoodboardTextItem {
+  return {
+    id: partial?.id ?? `mbi_${crypto.randomUUID()}`,
+    kind: 'text',
+    text: partial?.text ?? '',
+    fontSize: partial?.fontSize ?? 4,
+    fontWeight: partial?.fontWeight ?? 'medium',
+    textAlign: partial?.textAlign ?? 'left',
+    color: partial?.color ?? '#1a1a1a',
+    backgroundColor: partial?.backgroundColor ?? null,
+    x: partial?.x ?? 10,
+    y: partial?.y ?? 70,
+    w: partial?.w ?? 40,
+    h: partial?.h ?? 12,
+    zIndex: partial?.zIndex ?? 0,
+    rotationDeg: partial?.rotationDeg ?? 0,
+  };
+}
+
+export type HavenMoodboardPalette = [
+  MoodboardPaletteSlot,
+  MoodboardPaletteSlot,
+  MoodboardPaletteSlot,
+  MoodboardPaletteSlot,
+  MoodboardPaletteSlot,
+];
+
+export type HavenMoodboard = {
+  id: string;
+  name: string;
+  styleId?: string | null;
+  roomSetId?: string | null;
+  pendingStudioDraftId?: string | null;
+  palette: HavenMoodboardPalette;
+  /** Top-left of the on-board palette chip, % of board (0–100). */
+  palettePosition?: { x: number; y: number };
+  items: MoodboardItem[];
+  boardAspectRatio?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const DEFAULT_PALETTE_POSITION = { x: 4, y: 78 };
+
+export type MoodboardCard = {
+  id: string;
+  name: string;
+  styleId?: string | null;
+  roomSetId?: string | null;
+  pendingStudioDraftId?: string | null;
+  coverImageUrl?: string | null;
+  palettePreview: string[];
+  itemCount: number;
+  updatedAt: string;
+};
+
+export type MoodboardPage = {
+  items: MoodboardCard[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+export const EMPTY_MOODBOARD_PALETTE: HavenMoodboardPalette = [
+  { role: 'main', hex: null },
+  { role: 'main', hex: null },
+  { role: 'contrast', hex: null },
+  { role: 'neutral', hex: null },
+  { role: 'neutral', hex: null },
+];
+
+export function createEmptyMoodboard(partial?: Partial<HavenMoodboard>): HavenMoodboard {
+  const now = new Date().toISOString();
+  return {
+    id: partial?.id ?? '',
+    name: partial?.name ?? 'Untitled moodboard',
+    styleId: partial?.styleId ?? null,
+    roomSetId: partial?.roomSetId ?? null,
+    pendingStudioDraftId: partial?.pendingStudioDraftId ?? null,
+    palette: partial?.palette ?? [...EMPTY_MOODBOARD_PALETTE] as HavenMoodboardPalette,
+    palettePosition: partial?.palettePosition ?? { ...DEFAULT_PALETTE_POSITION },
+    items: partial?.items ?? [],
+    boardAspectRatio: partial?.boardAspectRatio ?? '4:3',
+    createdAt: partial?.createdAt ?? now,
+    updatedAt: partial?.updatedAt ?? now,
+  };
+}
 
 /** Curated shoppable look (default free path). */
 export interface RoomSet {
@@ -106,6 +310,19 @@ export interface RoomSet {
   generateMessage?: string | null;
   generateError?: string | null;
   generateJobId?: string | null;
+}
+
+/** Lean storefront carousel card for a featured look. */
+export interface RoomSetCard {
+  id: string;
+  styleId: StyleId;
+  label: string;
+  blurb?: string;
+  imageUrl: string;
+  productCount: number;
+  tags: string[];
+  featured?: boolean;
+  aspectRatio?: string | null;
 }
 
 export interface RoomSetGenerateJob {

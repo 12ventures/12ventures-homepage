@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, X } from 'lucide-react';
+import { useBackdropDismiss } from '../hooks/useBackdropDismiss';
 import { openCalendarBooking } from '../utils/calendar';
 
 export interface ValueProp {
@@ -76,13 +77,16 @@ const BookDemoModal: React.FC<BookDemoModalProps> = ({
   };
   const inputFocusStyle = 'focus:ring-1 focus:ring-blue-400/50';
 
+  const backdropDismiss = useBackdropDismiss(onClose);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Frosted backdrop */}
       <div
         className="absolute inset-0"
         style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}
-        onClick={onClose}
+        onMouseDown={backdropDismiss.onMouseDown}
+        onClick={backdropDismiss.onClick}
       />
 
       {/* Liquid glass modal */}

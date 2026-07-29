@@ -27,6 +27,9 @@ import MeridaWellness from './components/MeridaWellness';
 import SarhProductionDashboard from './components/sarh/SarhProductionDashboard';
 import HavenApp from './components/haven/HavenApp';
 import HavenAdmin from './components/haven/HavenAdmin';
+import HavenStore from './components/haven/HavenStore';
+import HavenProductPage from './components/haven/HavenProductPage';
+import HavenRoomSetPage from './components/haven/HavenRoomSetPage';
 
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
@@ -215,6 +218,30 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
                 <HavenAdmin />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/haven/store"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <HavenStore />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/haven/store/look/:roomSetId"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <HavenRoomSetPage />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/haven/store/product/:productId"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <HavenProductPage />
               </BrandLayout>
             }
           />
