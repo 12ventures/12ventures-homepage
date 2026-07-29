@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { havenAdminClient } from './api/havenAdminClient';
 import type { HavenProduct, HavenProductCategory } from './types';
 
@@ -12,61 +12,66 @@ const CATEGORIES: HavenProductCategory[] = [
   'other',
 ];
 
-type AddMode = 'manual' | 'url';
+/** Optional — can stay blank on import. */
+const OPTIONAL_FIELDS = new Set([
+  'price',
+  'merchant',
+  'dimensions',
+  'externalSku',
+]);
 
 export const HavenAdminAddProduct: React.FC<{
   busy: string | null;
   onBusy: (key: string | null) => void;
   onError: (msg: string | null) => void;
   onCreated: (product: HavenProduct) => void;
-}> = ({ busy, onBusy, onError, onCreated }) => {
+  /** Prefill product URL (e.g. from trends candidate). */
+  initialUrl?: string;
+}> = ({ busy, onBusy, onError, onCreated, initialUrl = '' }) => {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<AddMode>('url');
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(initialUrl);
+  const autofilledRef = useRef(false);
   const [name, setName] = useState('');
   const [merchant, setMerchant] = useState('');
   const [price, setPrice] = useState('');
   const [affiliateUrl, setAffiliateUrl] = useState('');
   const [category, setCategory] = useState<HavenProductCategory>('other');
   const [imageUrl, setImageUrl] = useState('');
+  const [dimensions, setDimensions] = useState('');
+  const [externalSku, setExternalSku] = useState('');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [previewNotes, setPreviewNotes] = useState<string[]>([]);
-  const [matchNote, setMatchNote] = useState<string | null>(null);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+
+  const missingSet = useMemo(() => new Set(missingFields), [missingFields]);
+
+  const fieldClass = (key: string) =>
+    missingSet.has(key) ? 'hv-admin__field hv-admin__field--missing' : 'hv-admin__field';
+
+  const fieldHint = (key: string) => {
+    if (!missingSet.has(key)) return null;
+    return (
+      <span className="hv-admin__field-hint">
+        {OPTIONAL_FIELDS.has(key) ? 'optional' : 'needed'}
+      </span>
+    );
+  };
 
   const resetForm = () => {
+    setUrl('');
     setName('');
     setMerchant('');
     setPrice('');
     setAffiliateUrl('');
     setCategory('other');
     setImageUrl('');
+    setDimensions('');
+    setExternalSku('');
     setPendingFile(null);
-    setPreviewNotes([]);
-    setMatchNote(null);
+    setMissingFields([]);
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const applyPreview = (preview: {
-    name: string;
-    merchant: string;
-    price: number | null;
-    imageUrl: string;
-    affiliateUrl: string;
-    category: string;
-  }) => {
-    setName(preview.name);
-    setMerchant(preview.merchant);
-    setPrice(preview.price != null && Number.isFinite(preview.price) ? String(preview.price) : '');
-    setAffiliateUrl(preview.affiliateUrl);
-    setImageUrl(preview.imageUrl);
-    setCategory(
-      (CATEGORIES.includes(preview.category as HavenProductCategory)
-        ? preview.category
-        : 'other') as HavenProductCategory,
-    );
-  };
-
-  const onFetchUrl = () => {
+  const onAutofillFromUrl = () => {
     const trimmed = url.trim();
     if (!trimmed) {
       onError('Paste a product URL first.');
@@ -77,13 +82,24 @@ export const HavenAdminAddProduct: React.FC<{
       onError(null);
       try {
         const result = await havenAdminClient.previewProductFromUrl(trimmed);
-        applyPreview(result.preview);
-        setPreviewNotes(result.notes);
-        setMatchNote(
-          result.matched
-            ? `Matched (${result.matchConfidence}) — review and save.`
-            : 'Couldn’t auto-fill everything — complete the fields below.',
+        const { preview } = result;
+        setName(preview.name);
+        setMerchant(preview.merchant);
+        setPrice(
+          preview.price != null && Number.isFinite(preview.price)
+            ? String(preview.price)
+            : '',
         );
+        setAffiliateUrl(preview.affiliateUrl || trimmed);
+        setImageUrl(preview.imageUrl);
+        setDimensions(preview.dimensions);
+        setExternalSku(preview.externalSku?.trim() ? preview.externalSku : '');
+        setCategory(
+          (CATEGORIES.includes(preview.category as HavenProductCategory)
+            ? preview.category
+            : 'other') as HavenProductCategory,
+        );
+        setMissingFields(result.missingFields);
       } catch (err) {
         onError(err instanceof Error ? err.message : 'Could not read that URL.');
       } finally {
@@ -92,7 +108,44 @@ export const HavenAdminAddProduct: React.FC<{
     })();
   };
 
-  const onSave = () => {
+  useEffect(() => {
+    if (!initialUrl.trim() || autofilledRef.current) return;
+    autofilledRef.current = true;
+    setUrl(initialUrl.trim());
+    setAffiliateUrl(initialUrl.trim());
+    // Kick off preview fill once when opened from trends.
+    void (async () => {
+      onBusy('product-url');
+      onError(null);
+      try {
+        const result = await havenAdminClient.previewProductFromUrl(initialUrl.trim());
+        const { preview } = result;
+        setName(preview.name);
+        setMerchant(preview.merchant);
+        setPrice(
+          preview.price != null && Number.isFinite(preview.price)
+            ? String(preview.price)
+            : '',
+        );
+        setAffiliateUrl(preview.affiliateUrl || initialUrl.trim());
+        setImageUrl(preview.imageUrl);
+        setDimensions(preview.dimensions);
+        setExternalSku(preview.externalSku?.trim() ? preview.externalSku : '');
+        setCategory(
+          (CATEGORIES.includes(preview.category as HavenProductCategory)
+            ? preview.category
+            : 'other') as HavenProductCategory,
+        );
+        setMissingFields(result.missingFields);
+      } catch (err) {
+        onError(err instanceof Error ? err.message : 'Could not read that URL.');
+      } finally {
+        onBusy(null);
+      }
+    })();
+  }, [initialUrl, onBusy, onError]);
+
+  const onImport = () => {
     const trimmedName = name.trim();
     const link = affiliateUrl.trim();
     if (!trimmedName) {
@@ -112,14 +165,17 @@ export const HavenAdminAddProduct: React.FC<{
       onBusy('product-create');
       onError(null);
       try {
+        // Import uses POST /admin/products only — never call from-url again.
         let product = await havenAdminClient.createProduct({
           name: trimmedName,
-          merchant: merchant.trim() || 'Unknown',
+          merchant: merchant.trim() || null,
           price: price.trim() ? Number(price) : null,
           imageUrl: imageUrl.trim(),
           affiliateUrl: link,
           category,
           active: true,
+          externalSku: externalSku.trim() || null,
+          dimensions: dimensions.trim() || null,
         });
 
         if (pendingFile) {
@@ -134,9 +190,8 @@ export const HavenAdminAddProduct: React.FC<{
 
         onCreated(product);
         resetForm();
-        setUrl('');
       } catch (err) {
-        onError(err instanceof Error ? err.message : 'Could not create product.');
+        onError(err instanceof Error ? err.message : 'Could not import product.');
       } finally {
         onBusy(null);
       }
@@ -147,65 +202,41 @@ export const HavenAdminAddProduct: React.FC<{
 
   return (
     <div className="hv-admin__add-product">
-      <div className="hv-admin__seg" role="tablist" aria-label="Add product method">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'url'}
-          className={`hv-admin__seg-btn${mode === 'url' ? ' is-active' : ''}`}
-          disabled={disabled}
-          onClick={() => setMode('url')}
-        >
-          Paste URL
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === 'manual'}
-          className={`hv-admin__seg-btn${mode === 'manual' ? ' is-active' : ''}`}
-          disabled={disabled}
-          onClick={() => setMode('manual')}
-        >
-          Manual
-        </button>
+      <div className="hv-admin__add-product-url">
+        <label className="hv-admin__field">
+          <span className="hv-admin__label">URL</span>
+          <div className="hv-admin__inline-row">
+            <input
+              className="hv-admin__input"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://…"
+              disabled={disabled}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onAutofillFromUrl();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="hv-admin__btn hv-admin__btn--ghost hv-admin__add-product-fill"
+              disabled={disabled || !url.trim()}
+              onClick={onAutofillFromUrl}
+            >
+              {busy === 'product-url' ? 'Filling…' : 'Fill From Product URL'}
+            </button>
+          </div>
+        </label>
       </div>
 
-      {mode === 'url' && (
-        <div className="hv-admin__add-product-url">
-          <label className="hv-admin__field">
-            <span className="hv-admin__label">Product page URL</span>
-            <div className="hv-admin__inline-row">
-              <input
-                className="hv-admin__input"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://www.wayfair.com/…"
-                disabled={disabled}
-              />
-              <button
-                type="button"
-                className="hv-admin__btn hv-admin__btn--ghost"
-                disabled={disabled || !url.trim()}
-                onClick={onFetchUrl}
-              >
-                {busy === 'product-url' ? 'Reading…' : 'Fetch'}
-              </button>
-            </div>
-          </label>
-          {matchNote && <p className="hv-admin__panel-meta">{matchNote}</p>}
-          {previewNotes.length > 0 && (
-            <ul className="hv-admin__notes-list">
-              {previewNotes.map((n) => (
-                <li key={n}>{n}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
       <div className="hv-admin__form hv-admin__add-product-form">
-        <label className="hv-admin__field">
-          <span className="hv-admin__label">Name</span>
+        <label className={`${fieldClass('name')} hv-admin__field--grow`}>
+          <span className="hv-admin__label">
+            Name
+            {fieldHint('name')}
+          </span>
           <input
             className="hv-admin__input"
             value={name}
@@ -213,18 +244,26 @@ export const HavenAdminAddProduct: React.FC<{
             disabled={disabled}
           />
         </label>
+
         <div className="hv-admin__inline-row">
-          <label className="hv-admin__field hv-admin__field--grow">
-            <span className="hv-admin__label">Merchant</span>
+          <label className={`${fieldClass('merchant')} hv-admin__field--grow`}>
+            <span className="hv-admin__label">
+              Merchant
+              {fieldHint('merchant')}
+            </span>
             <input
               className="hv-admin__input"
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
+              placeholder="optional"
               disabled={disabled}
             />
           </label>
-          <label className="hv-admin__field hv-admin__field--max">
-            <span className="hv-admin__label">Price</span>
+          <label className={`${fieldClass('price')} hv-admin__field--max`}>
+            <span className="hv-admin__label">
+              Price
+              {fieldHint('price')}
+            </span>
             <input
               className="hv-admin__input"
               type="number"
@@ -232,12 +271,17 @@ export const HavenAdminAddProduct: React.FC<{
               step={1}
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              placeholder="—"
               disabled={disabled}
             />
           </label>
         </div>
-        <label className="hv-admin__field">
-          <span className="hv-admin__label">Affiliate / product link</span>
+
+        <label className={fieldClass('affiliateUrl')}>
+          <span className="hv-admin__label">
+            Affiliate / product link
+            {fieldHint('affiliateUrl')}
+          </span>
           <input
             className="hv-admin__input"
             value={affiliateUrl}
@@ -245,29 +289,66 @@ export const HavenAdminAddProduct: React.FC<{
             disabled={disabled}
           />
         </label>
-        <label className="hv-admin__field">
-          <span className="hv-admin__label">Category</span>
-          <select
-            className="hv-admin__select"
-            value={category}
-            onChange={(e) => setCategory(e.target.value as HavenProductCategory)}
+
+        <div className="hv-admin__inline-row">
+          <label className={`${fieldClass('category')} hv-admin__field--grow`}>
+            <span className="hv-admin__label">
+              Category
+              {fieldHint('category')}
+            </span>
+            <select
+              className="hv-admin__select"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as HavenProductCategory)}
+              disabled={disabled}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={`${fieldClass('externalSku')} hv-admin__field--grow`}>
+            <span className="hv-admin__label">
+              SKU
+              {fieldHint('externalSku')}
+            </span>
+            <input
+              className="hv-admin__input"
+              value={externalSku}
+              onChange={(e) => setExternalSku(e.target.value)}
+              placeholder="optional"
+              disabled={disabled}
+            />
+          </label>
+        </div>
+
+        <label className={fieldClass('dimensions')}>
+          <span className="hv-admin__label">
+            Dimensions
+            {fieldHint('dimensions')}
+          </span>
+          <input
+            className="hv-admin__input"
+            value={dimensions}
+            onChange={(e) => setDimensions(e.target.value)}
+            placeholder="optional"
             disabled={disabled}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          />
         </label>
+
         <div className="hv-admin__inline-row hv-admin__add-product-media">
-          <label className="hv-admin__field hv-admin__field--grow">
-            <span className="hv-admin__label">Image URL</span>
+          <label className={`${fieldClass('imageUrl')} hv-admin__field--grow`}>
+            <span className="hv-admin__label">
+              Image URL
+              {fieldHint('imageUrl')}
+            </span>
             <input
               className="hv-admin__input"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="optional if you upload a file"
+              placeholder="or upload"
               disabled={disabled}
             />
           </label>
@@ -283,6 +364,7 @@ export const HavenAdminAddProduct: React.FC<{
             />
           </div>
         </div>
+
         {(imageUrl || pendingFile) && (
           <div className="hv-admin__add-product-preview">
             <img
@@ -291,13 +373,14 @@ export const HavenAdminAddProduct: React.FC<{
             />
           </div>
         )}
+
         <button
           type="button"
           className="hv-admin__btn hv-admin__btn--primary"
           disabled={disabled}
-          onClick={onSave}
+          onClick={onImport}
         >
-          {busy === 'product-create' ? 'Saving…' : 'Save product'}
+          {busy === 'product-create' ? 'Importing…' : 'Import product'}
         </button>
       </div>
     </div>

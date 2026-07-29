@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiCheckCircle, FiLoader, FiAlertCircle, FiX, FiActivity } from 'react-icons/fi';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import { poseidonService, type MaintenanceStatus } from '../../services/poseidonService';
 import './MaintenanceModal.css';
 
@@ -106,7 +107,6 @@ const MaintenanceModal: React.FC<Props> = ({
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [animateBars, setAnimateBars] = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
   const hasLoadedRef = useRef(false);
 
   const load = useCallback(async (isPoll = false) => {
@@ -151,9 +151,7 @@ const MaintenanceModal: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === overlayRef.current) onClose();
-  };
+  const backdropDismiss = useBackdropDismiss(onClose);
 
   const displayMetrics = useMemo(() => {
     if (!data) return null;
@@ -184,8 +182,19 @@ const MaintenanceModal: React.FC<Props> = ({
   );
 
   return createPortal(
-    <div className="mm-overlay" ref={overlayRef} onClick={handleOverlayClick}>
-      <div className="mm-panel" role="dialog" aria-modal="true" aria-labelledby="mm-title">
+    <div
+      className="mm-overlay"
+      onMouseDown={backdropDismiss.onMouseDown}
+      onClick={backdropDismiss.onClick}
+    >
+      <div
+        className="mm-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mm-title"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mm-header">
           <div className="mm-header-text">
             <div className="mm-header-title-row">

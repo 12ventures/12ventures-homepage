@@ -12,6 +12,7 @@ import type {
   StylePersonality,
 } from './types';
 import { cssAspectToNumber, resolveStageAspect } from './types';
+import { formatHavenPrice, HavenProductCard } from './HavenProductCard';
 import './haven.css';
 
 const PAGE_TITLE = 'Haven · Shop the room';
@@ -26,13 +27,6 @@ const GEN_STATUS_LINES = (styleLabel: string): string[] => [
 
 const GEN_ALMOST_LINE = 'One last pass…';
 
-function formatPrice(n: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -553,6 +547,9 @@ const HavenApp: React.FC = () => {
             </p>
           </div>
           <div className="hv-topbar__actions">
+            <Link to="/haven/store" className="hv-btn hv-btn--ghost hv-btn--start-over">
+              Store
+            </Link>
             <Link to="/haven/admin" className="hv-btn hv-btn--ghost hv-btn--start-over">
               Admin
             </Link>
@@ -747,7 +744,7 @@ const HavenApp: React.FC = () => {
                         <button
                           type="button"
                           className="hv-hotspot"
-                          aria-label={`${product.name}, ${formatPrice(product.price)}`}
+                          aria-label={`${product.name}, ${formatHavenPrice(product.price)}`}
                           aria-expanded={open}
                           aria-controls={`hv-hotspot-card-${h.id}`}
                           onFocus={() => openHotspot(h.id)}
@@ -763,38 +760,15 @@ const HavenApp: React.FC = () => {
                             else openHotspot(h.id);
                           }}
                         />
-                        <div
+                        <HavenProductCard
                           id={`hv-hotspot-card-${h.id}`}
-                          className={`hv-hotspot-card hv-product hv-hotspot-card--${placement}`}
+                          product={product}
+                          className={`hv-hotspot-card hv-hotspot-card--${placement}`}
                           role="dialog"
                           aria-label={product.name}
                           aria-hidden={!open}
-                        >
-                          <img
-                            className="hv-product__img"
-                            src={product.imageUrl}
-                            alt=""
-                          />
-                          <span className="hv-product__price">
-                            {formatPrice(product.price)}
-                          </span>
-                          <div className="hv-product__body">
-                            <span className="hv-product__merchant">
-                              {product.merchant}
-                            </span>
-                            <p className="hv-product__name">{product.name}</p>
-                            <a
-                              className="hv-product__buy"
-                              href={product.affiliateUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              tabIndex={open ? 0 : -1}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              Buy
-                            </a>
-                          </div>
-                        </div>
+                          buyTabIndex={open ? 0 : -1}
+                        />
                       </div>
                     );
                   })}
@@ -904,33 +878,13 @@ const HavenApp: React.FC = () => {
               <h2 className="hv-section__title">Shop this look</h2>
               <div className="hv-products">
                 {job.products.map((product, i) => (
-                  <article
+                  <HavenProductCard
                     key={product.id}
-                    className="hv-product hv-reveal"
+                    product={product}
+                    className="hv-reveal"
+                    titleAs="h3"
                     style={{ animationDelay: `${0.08 + i * 0.07}s` }}
-                  >
-                    <img
-                      className="hv-product__img"
-                      src={product.imageUrl}
-                      alt=""
-                      loading="lazy"
-                    />
-                    <span className="hv-product__price">
-                      {formatPrice(product.price)}
-                    </span>
-                    <div className="hv-product__body">
-                      <span className="hv-product__merchant">{product.merchant}</span>
-                      <h3 className="hv-product__name">{product.name}</h3>
-                      <a
-                        className="hv-product__buy"
-                        href={product.affiliateUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Buy
-                      </a>
-                    </div>
-                  </article>
+                  />
                 ))}
               </div>
             </section>

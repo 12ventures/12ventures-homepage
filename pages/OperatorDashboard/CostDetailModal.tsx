@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import { poseidonService, type CostDetail, type DashboardFilter } from '../../services/poseidonService';
 import './CostDetailModal.css';
 
@@ -21,7 +22,6 @@ const CostDetailModal: React.FC<Props> = ({ filter, periodLabel, includeTestCall
   const [detail, setDetail] = useState<CostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -33,10 +33,7 @@ const CostDetailModal: React.FC<Props> = ({ filter, periodLabel, includeTestCall
       .finally(() => setLoading(false));
   }, [filter, includeTestCalls]);
 
-  // Close on overlay click
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === overlayRef.current) onClose();
-  };
+  const backdropDismiss = useBackdropDismiss(onClose);
 
   // Close on Escape
   useEffect(() => {
@@ -49,8 +46,19 @@ const CostDetailModal: React.FC<Props> = ({ filter, periodLabel, includeTestCall
   const totalCost = detail?.total_cost ?? 0;
 
   return createPortal(
-    <div className="cdm-overlay" ref={overlayRef} onClick={handleOverlayClick}>
-      <div className="cdm-panel" role="dialog" aria-modal="true" aria-label="Cost Detail">
+    <div
+      className="cdm-overlay"
+      onMouseDown={backdropDismiss.onMouseDown}
+      onClick={backdropDismiss.onClick}
+    >
+      <div
+        className="cdm-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Cost Detail"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="cdm-header">
           <div className="cdm-header-text">

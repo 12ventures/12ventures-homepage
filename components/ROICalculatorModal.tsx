@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calculator, ArrowRight, DollarSign, RefreshCw, AlertCircle, ArrowLeft, Users, TrendingUp, Plane, Clock, GraduationCap, ClipboardCheck } from 'lucide-react';
+import { useBackdropDismiss } from '../hooks/useBackdropDismiss';
 import Button from './ui/Button';
 
 interface ROICalculatorModalProps {
@@ -8,6 +9,7 @@ interface ROICalculatorModalProps {
 }
 
 const ROICalculatorModal: React.FC<ROICalculatorModalProps> = ({ isOpen, onClose }) => {
+  const backdropDismiss = useBackdropDismiss(onClose, isOpen);
   // View State
   const [currentView, setCurrentView] = useState<'input' | 'results'>('input');
 
@@ -117,7 +119,11 @@ const ROICalculatorModal: React.FC<ROICalculatorModalProps> = ({ isOpen, onClose
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+      <div
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        onMouseDown={backdropDismiss.onMouseDown}
+        onClick={backdropDismiss.onClick}
+      />
 
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         <div className="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-white/50">

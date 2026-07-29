@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, ExternalLink } from 'lucide-react';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import AnimatedMetricValue from './AnimatedMetricValue';
 import type { ROIBreakdown } from './data/snapSkillRoi';
 import { formatRoiAmount } from './data/snapSkillRoi';
@@ -17,6 +18,8 @@ const ACCENT = {
 };
 
 const ROIBreakdownModal: React.FC<ROIBreakdownModalProps> = ({ breakdown, onClose }) => {
+  const backdropDismiss = useBackdropDismiss(onClose);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -30,7 +33,8 @@ const ROIBreakdownModal: React.FC<ROIBreakdownModalProps> = ({ breakdown, onClos
       <div
         className="absolute inset-0"
         style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)' }}
-        onClick={onClose}
+        onMouseDown={backdropDismiss.onMouseDown}
+        onClick={backdropDismiss.onClick}
       />
 
       <div

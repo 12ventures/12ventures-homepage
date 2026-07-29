@@ -1,6 +1,7 @@
-import React, { useEffect, useId, useMemo, useState, memo } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { FiInfo, FiX } from 'react-icons/fi';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import type { CallHistoryItem } from '../../services/poseidonService';
 import {
   summarizeCallHistoryStatuses,
@@ -109,6 +110,9 @@ const CallHistoryStatusBreakdown: React.FC<Props> = ({ calls, periodLabel }) => 
     [summary],
   );
 
+  const close = useCallback(() => setOpen(false), []);
+  const backdropDismiss = useBackdropDismiss(close, open);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -152,13 +156,16 @@ const CallHistoryStatusBreakdown: React.FC<Props> = ({ calls, periodLabel }) => 
               type="button"
               className="od-history-status-modal__overlay"
               aria-label="Close status breakdown"
-              onClick={() => setOpen(false)}
+              onMouseDown={backdropDismiss.onMouseDown}
+              onClick={backdropDismiss.onClick}
             />
             <div
               className="od-history-status-modal__panel"
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="od-history-status-modal__header">
                 <div>
