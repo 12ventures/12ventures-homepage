@@ -1,4 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  FaGlobe,
+  FaInstagram,
+  FaRedditAlien,
+  FaSearch,
+  FaTiktok,
+} from 'react-icons/fa';
 import { havenAdminClient } from './api/havenAdminClient';
 import type {
   TrendBundle,
@@ -48,6 +55,37 @@ function sourceLabel(id: string): string {
   if (id === 'reddit') return 'Reddit';
   if (id === 'gemini_search') return 'Web search';
   return id.replace(/_/g, ' ');
+}
+
+function TrendSourceIcon({
+  platform,
+  label,
+}: {
+  platform?: string | null;
+  label?: string | null;
+}) {
+  const key = `${platform ?? ''} ${label ?? ''}`.toLowerCase();
+  const size = 13;
+  if (key.includes('tiktok')) return <FaTiktok size={size} aria-hidden="true" />;
+  if (key.includes('instagram') || key.includes('insta')) {
+    return <FaInstagram size={size} aria-hidden="true" />;
+  }
+  if (key.includes('reddit')) return <FaRedditAlien size={size} aria-hidden="true" />;
+  if (
+    key.includes('web') ||
+    key.includes('www') ||
+    key.includes('http') ||
+    key.includes('globe') ||
+    key.includes('gemini')
+  ) {
+    return key.includes('gemini') || key.includes('search') ? (
+      <FaSearch size={size} aria-hidden="true" />
+    ) : (
+      <FaGlobe size={size} aria-hidden="true" />
+    );
+  }
+  if (key.includes('search')) return <FaSearch size={size} aria-hidden="true" />;
+  return <FaGlobe size={size} aria-hidden="true" />;
 }
 
 function persistRunId(runId: string | null) {
@@ -251,17 +289,31 @@ function TrendResultCard({
       ) : null}
       {trend.sources.length ? (
         <ul className="hv-admin__trend-sources">
-          {trend.sources.map((s, i) => (
-            <li key={`${s.platform}-${i}`}>
-              {s.url ? (
-                <a href={s.url} target="_blank" rel="noreferrer">
-                  {s.label || s.platform}
-                </a>
-              ) : (
-                <span>{s.label || s.platform}</span>
-              )}
-            </li>
-          ))}
+          {trend.sources.map((s, i) => {
+            const text = s.label || s.platform || 'Source';
+            const inner = (
+              <>
+                <TrendSourceIcon platform={s.platform} label={s.label} />
+                <span>{text}</span>
+              </>
+            );
+            return (
+              <li key={`${s.platform}-${i}`}>
+                {s.url ? (
+                  <a
+                    className="hv-admin__trend-source-link"
+                    href={s.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <span className="hv-admin__trend-source-link">{inner}</span>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : null}
       {candidates.length === 0 ? (
@@ -311,11 +363,14 @@ function SourceChips({ sources }: { sources: TrendSourceChip[] }) {
           className={`hv-admin__trend-source-chip hv-admin__trend-source-chip--${s.status}`}
           title={s.detail || undefined}
         >
-          {sourceLabel(s.id)}
-          {s.itemCount > 0 ? ` · ${s.itemCount}` : ''}
-          {s.status === 'error' ? ' · error' : ''}
-          {s.status === 'empty' ? ' · empty' : ''}
-          {s.status === 'skipped' ? ' · skipped' : ''}
+          <TrendSourceIcon platform={s.id} label={sourceLabel(s.id)} />
+          <span>
+            {sourceLabel(s.id)}
+            {s.itemCount > 0 ? ` · ${s.itemCount}` : ''}
+            {s.status === 'error' ? ' · error' : ''}
+            {s.status === 'empty' ? ' · empty' : ''}
+            {s.status === 'skipped' ? ' · skipped' : ''}
+          </span>
         </span>
       ))}
     </div>

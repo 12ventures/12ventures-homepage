@@ -2772,12 +2772,19 @@
 }
 
 .hv-admin__trend-source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--hv-mist);
   color: var(--hv-ink-soft);
+}
+
+.hv-admin__trend-source-chip svg {
+  flex-shrink: 0;
 }
 
 .hv-admin__trend-source-chip--ok {
@@ -3125,10 +3132,21 @@
   font-size: 0.8rem;
 }
 
-.hv-admin__trend-sources a {
+.hv-admin__trend-source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--hv-ink-soft);
+}
+
+a.hv-admin__trend-source-link {
   color: var(--hv-sage);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.hv-admin__trend-source-link svg {
+  flex-shrink: 0;
 }
 
 .hv-admin__trend-candidates {
