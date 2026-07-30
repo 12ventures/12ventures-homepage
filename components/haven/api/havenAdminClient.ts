@@ -3,6 +3,7 @@ import type {
   HavenMoodboard,
   HavenMoodboardPalette,
   HavenProduct,
+  HavenProductDetail,
   MoodboardItem,
   MoodboardPage,
   RoomSet,
@@ -12,12 +13,14 @@ import type {
 } from '../types';
 import type { TrendRun, TrendRunStart, TrendSearchRequest } from '../trendTypes';
 import { getHavenApiBase } from './havenClient';
+import { formatDimensions } from '../productInputNormalize';
 import {
   itemsOf,
   mapHotspot,
   mapMoodboard,
   mapMoodboardPage,
   mapProduct,
+  mapProductDetail,
   mapRoomSet,
   mapRoomSetDetail,
   mapRoomSetGenerateJob,
@@ -197,9 +200,32 @@ export const havenAdminClient = {
     category?: string;
     active?: boolean;
     externalSku?: string | null;
-    dimensions?: string | null;
+    /**
+     * Prefer structured { width, depth, height, unit? } (string values).
+     * Else plain string — backend stores as { raw }. Empty → omit.
+     */
+    dimensions?:
+      | {
+          width?: string;
+          depth?: string;
+          height?: string;
+          unit?: string;
+        }
+      | string
+      | null;
     source?: string | null;
   }): Promise<HavenProduct> {
+    const dims = input.dimensions;
+    const includeDims =
+      typeof dims === 'string'
+        ? dims.trim().length > 0
+        : dims != null &&
+          Object.keys(dims).length > 0 &&
+          (dims.width != null ||
+            dims.depth != null ||
+            dims.height != null ||
+            Boolean(dims.unit));
+
     const data = await adminFetch<Record<string, unknown>>('/admin/products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -214,13 +240,99 @@ export const havenAdminClient = {
         ...(input.externalSku != null && String(input.externalSku).trim()
           ? { externalSku: String(input.externalSku).trim() }
           : {}),
-        ...(input.dimensions != null && String(input.dimensions).trim()
-          ? { dimensions: String(input.dimensions).trim() }
+        ...(includeDims
+          ? {
+              dimensions:
+                typeof dims === 'string' ? dims.trim() : dims,
+            }
           : {}),
         ...(input.source != null ? { source: input.source } : {}),
       }),
     });
     return mapProduct(data);
+  },
+
+  async getProduct(id: string): Promise<HavenProductDetail> {
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/products/${encodeURIComponent(id)}`,
+    );
+    const product = mapProductDetail(data);
+    if (!product.id) throw new Error('Product not found');
+    return product;
+  },
+
+  async patchProduct(
+    id: string,
+    input: {
+      name?: string;
+      merchant?: string | null;
+      price?: number | null;
+      imageUrl?: string;
+      affiliateUrl?: string;
+      category?: string;
+      active?: boolean;
+      externalSku?: string | null;
+      dimensions?:
+        | {
+            width?: string;
+            depth?: string;
+            height?: string;
+            unit?: string;
+          }
+        | string
+        | null;
+      source?: string | null;
+    },
+  ): Promise<HavenProduct> {
+    const body: Record<string, unknown> = {};
+    if (input.name != null) body.name = input.name;
+    if (input.merchant !== undefined) {
+      body.merchant = input.merchant?.trim() ? input.merchant.trim() : null;
+    }
+    if (input.price !== undefined) body.price = input.price;
+    if (input.imageUrl != null) body.imageUrl = input.imageUrl;
+    if (input.affiliateUrl != null) body.affiliateUrl = input.affiliateUrl;
+    if (input.category != null) body.category = input.category;
+    if (input.active != null) body.active = input.active;
+    if (input.externalSku !== undefined) {
+      body.externalSku = input.externalSku?.trim()
+        ? String(input.externalSku).trim()
+        : null;
+    }
+    if (input.source !== undefined) body.source = input.source;
+    if (input.dimensions !== undefined) {
+      const dims = input.dimensions;
+      if (dims == null || dims === '') {
+        body.dimensions = null;
+      } else if (typeof dims === 'string') {
+        body.dimensions = dims.trim() || null;
+      } else if (
+        dims.width != null ||
+        dims.depth != null ||
+        dims.height != null ||
+        Boolean(dims.unit)
+      ) {
+        body.dimensions = dims;
+      } else {
+        body.dimensions = null;
+      }
+    }
+
+    const data = await adminFetch<Record<string, unknown>>(
+      `/admin/products/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    );
+    return mapProduct(data);
+  },
+
+  async deleteProduct(id: string): Promise<void> {
+    await adminFetch<unknown>(`/admin/products/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
   },
 
   async previewProductFromUrl(url: string): Promise<{
@@ -265,7 +377,7 @@ export const havenAdminClient = {
         imageUrl: String(previewRaw.imageUrl ?? previewRaw.image_url ?? ''),
         affiliateUrl: String(previewRaw.affiliateUrl ?? previewRaw.affiliate_url ?? url),
         category: String(previewRaw.category ?? 'other'),
-        dimensions: String(previewRaw.dimensions ?? ''),
+        dimensions: formatDimensions(previewRaw.dimensions),
         active: previewRaw.active !== false,
         source: previewRaw.source != null ? String(previewRaw.source) : undefined,
         externalSku:

@@ -2,10 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { HavenApiError } from './api/havenClient';
 import { havenStoreClient } from './api/havenStoreClient';
+import { applyHavenShareMeta, HavenShareButton } from './HavenShareButton';
+import { havenSharePageUrl } from './havenShareUrl';
 import { formatPrice, HavenStoreProductCard } from './HavenStoreProductCard';
 import { HavenProductSkeleton, HavenSkeletonGrid } from './HavenSkeleton';
 import type { HavenProduct, HavenProductDetail } from './types';
 import './haven-store.css';
+
+const PRODUCT_SHARE_TEXT = 'Check out what I just found on Haven!';
 
 const HavenProductPage: React.FC = () => {
   const { productId = '' } = useParams<{ productId: string }>();
@@ -20,8 +24,16 @@ const HavenProductPage: React.FC = () => {
   const loadingMoreRef = useRef(false);
 
   useEffect(() => {
-    document.title = product?.name ? `Haven · ${product.name}` : 'Haven · Product';
-  }, [product?.name]);
+    if (!product) {
+      document.title = 'Haven · Product';
+      return;
+    }
+    applyHavenShareMeta({
+      title: `Haven · ${product.name}`,
+      description: PRODUCT_SHARE_TEXT,
+      imageUrl: product.imageUrl,
+    });
+  }, [product]);
 
   useEffect(() => {
     if (!productId) {
@@ -149,6 +161,14 @@ const HavenProductPage: React.FC = () => {
                   <span className="hv-store__pdp-empty" aria-hidden="true" />
                 )}
                 <div className="hv-store__pdp-veil" aria-hidden="true" />
+                <div className="hv-store__media-share">
+                  <HavenShareButton
+                    variant="onMedia"
+                    text={PRODUCT_SHARE_TEXT}
+                    title={product.name}
+                    url={havenSharePageUrl('product', product.id)}
+                  />
+                </div>
                 <div className="hv-store__pdp-layout">
                   <div className="hv-store__pdp-main">
                     <p className="hv-store__pdp-merchant">{product.merchant || 'Haven'}</p>

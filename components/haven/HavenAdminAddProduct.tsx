@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { havenToastError, havenToastHint } from './adminFeedback';
 import { havenAdminClient } from './api/havenAdminClient';
-import type { HavenProduct, HavenProductCategory } from './types';
+import {
+  formatDimensions,
+  normalizePrice,
+  normalizeText,
+  normalizeUrl,
+  resolveDimensionsForApi,
+} from './productInputNormalize';
+import type { HavenProduct, HavenProductCategory, HavenProductDetail } from './types';
 
 const CATEGORIES: HavenProductCategory[] = [
   'sofa',
@@ -20,14 +29,70 @@ const OPTIONAL_FIELDS = new Set([
   'externalSku',
 ]);
 
+function applyProductToForm(
+  product: Pick<
+    HavenProductDetail,
+    | 'name'
+    | 'merchant'
+    | 'price'
+    | 'affiliateUrl'
+    | 'imageUrl'
+    | 'category'
+    | 'dimensions'
+    | 'externalSku'
+  >,
+  setters: {
+    setName: (v: string) => void;
+    setMerchant: (v: string) => void;
+    setPrice: (v: string) => void;
+    setAffiliateUrl: (v: string) => void;
+    setImageUrl: (v: string) => void;
+    setDimensions: (v: string) => void;
+    setExternalSku: (v: string) => void;
+    setCategory: (v: HavenProductCategory) => void;
+  },
+) {
+  setters.setName(normalizeText(product.name));
+  setters.setMerchant(normalizeText(product.merchant));
+  setters.setPrice(
+    product.price != null && Number.isFinite(product.price)
+      ? String(product.price)
+      : '',
+  );
+  setters.setAffiliateUrl(normalizeUrl(product.affiliateUrl));
+  setters.setImageUrl(normalizeUrl(product.imageUrl));
+  setters.setDimensions(formatDimensions(product.dimensions ?? ''));
+  setters.setExternalSku(
+    product.externalSku?.trim() ? normalizeText(product.externalSku) : '',
+  );
+  setters.setCategory(
+    (CATEGORIES.includes(product.category as HavenProductCategory)
+      ? product.category
+      : 'other') as HavenProductCategory,
+  );
+}
+
 export const HavenAdminAddProduct: React.FC<{
   busy: string | null;
   onBusy: (key: string | null) => void;
-  onError: (msg: string | null) => void;
-  onCreated: (product: HavenProduct) => void;
+  onCreated?: (product: HavenProduct) => void;
+  onUpdated?: (product: HavenProduct) => void;
+  /** Opens parent confirmation before delete. */
+  onRequestDelete?: () => void;
   /** Prefill product URL (e.g. from trends candidate). */
   initialUrl?: string;
-}> = ({ busy, onBusy, onError, onCreated, initialUrl = '' }) => {
+  /** When set, form edits this product instead of creating. */
+  editProduct?: HavenProduct | null;
+}> = ({
+  busy,
+  onBusy,
+  onCreated,
+  onUpdated,
+  onRequestDelete,
+  initialUrl = '',
+  editProduct = null,
+}) => {
+  const isEdit = Boolean(editProduct?.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState(initialUrl);
   const autofilledRef = useRef(false);
@@ -41,6 +106,21 @@ export const HavenAdminAddProduct: React.FC<{
   const [externalSku, setExternalSku] = useState('');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const setters = useMemo(
+    () => ({
+      setName,
+      setMerchant,
+      setPrice,
+      setAffiliateUrl,
+      setImageUrl,
+      setDimensions,
+      setExternalSku,
+      setCategory,
+    }),
+    [],
+  );
 
   const missingSet = useMemo(() => new Set(missingFields), [missingFields]);
 
@@ -71,37 +151,63 @@ export const HavenAdminAddProduct: React.FC<{
     if (fileRef.current) fileRef.current.value = '';
   };
 
+  // Hydrate edit form from list card, then enrich from admin detail if available.
+  useEffect(() => {
+    if (!editProduct?.id) return;
+    const seed = editProduct;
+    applyProductToForm(seed, setters);
+    setUrl(normalizeUrl(seed.affiliateUrl));
+    setPendingFile(null);
+    setMissingFields([]);
+    let cancelled = false;
+    setLoadingDetail(true);
+    void havenAdminClient
+      .getProduct(seed.id)
+      .then((detail) => {
+        if (cancelled) return;
+        applyProductToForm(detail, setters);
+        setUrl(normalizeUrl(detail.affiliateUrl));
+      })
+      .catch(() => {
+        /* list fields are enough to edit */
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDetail(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Only re-hydrate when opening a different product.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed captured for this id
+  }, [editProduct?.id, setters]);
+
   const onAutofillFromUrl = () => {
     const trimmed = url.trim();
     if (!trimmed) {
-      onError('Paste a product URL first.');
+      havenToastHint('Paste a product URL first.');
       return;
     }
     void (async () => {
       onBusy('product-url');
-      onError(null);
       try {
         const result = await havenAdminClient.previewProductFromUrl(trimmed);
         const { preview } = result;
-        setName(preview.name);
-        setMerchant(preview.merchant);
-        setPrice(
-          preview.price != null && Number.isFinite(preview.price)
-            ? String(preview.price)
-            : '',
-        );
-        setAffiliateUrl(preview.affiliateUrl || trimmed);
-        setImageUrl(preview.imageUrl);
-        setDimensions(preview.dimensions);
-        setExternalSku(preview.externalSku?.trim() ? preview.externalSku : '');
-        setCategory(
-          (CATEGORIES.includes(preview.category as HavenProductCategory)
-            ? preview.category
-            : 'other') as HavenProductCategory,
+        applyProductToForm(
+          {
+            name: preview.name,
+            merchant: preview.merchant,
+            price: preview.price ?? 0,
+            affiliateUrl: preview.affiliateUrl || trimmed,
+            imageUrl: preview.imageUrl,
+            category: preview.category as HavenProductCategory,
+            dimensions: preview.dimensions,
+            externalSku: preview.externalSku,
+          },
+          setters,
         );
         setMissingFields(result.missingFields);
       } catch (err) {
-        onError(err instanceof Error ? err.message : 'Could not read that URL.');
+        havenToastError('product-url-preview', err);
       } finally {
         onBusy(null);
       }
@@ -109,96 +215,123 @@ export const HavenAdminAddProduct: React.FC<{
   };
 
   useEffect(() => {
-    if (!initialUrl.trim() || autofilledRef.current) return;
+    if (isEdit || !initialUrl.trim() || autofilledRef.current) return;
     autofilledRef.current = true;
     setUrl(initialUrl.trim());
     setAffiliateUrl(initialUrl.trim());
-    // Kick off preview fill once when opened from trends.
     void (async () => {
       onBusy('product-url');
-      onError(null);
       try {
         const result = await havenAdminClient.previewProductFromUrl(initialUrl.trim());
         const { preview } = result;
-        setName(preview.name);
-        setMerchant(preview.merchant);
-        setPrice(
-          preview.price != null && Number.isFinite(preview.price)
-            ? String(preview.price)
-            : '',
-        );
-        setAffiliateUrl(preview.affiliateUrl || initialUrl.trim());
-        setImageUrl(preview.imageUrl);
-        setDimensions(preview.dimensions);
-        setExternalSku(preview.externalSku?.trim() ? preview.externalSku : '');
-        setCategory(
-          (CATEGORIES.includes(preview.category as HavenProductCategory)
-            ? preview.category
-            : 'other') as HavenProductCategory,
+        applyProductToForm(
+          {
+            name: preview.name,
+            merchant: preview.merchant,
+            price: preview.price ?? 0,
+            affiliateUrl: preview.affiliateUrl || initialUrl.trim(),
+            imageUrl: preview.imageUrl,
+            category: preview.category as HavenProductCategory,
+            dimensions: preview.dimensions,
+            externalSku: preview.externalSku,
+          },
+          setters,
         );
         setMissingFields(result.missingFields);
       } catch (err) {
-        onError(err instanceof Error ? err.message : 'Could not read that URL.');
+        havenToastError('product-url-preview-initial', err);
       } finally {
         onBusy(null);
       }
     })();
-  }, [initialUrl, onBusy, onError]);
+  }, [initialUrl, onBusy, isEdit, setters]);
 
-  const onImport = () => {
-    const trimmedName = name.trim();
-    const link = affiliateUrl.trim();
+  const onSave = () => {
+    const trimmedName = normalizeText(name);
+    const link = normalizeUrl(affiliateUrl);
     if (!trimmedName) {
-      onError('Name is required.');
+      havenToastHint('Add a product name to continue.');
       return;
     }
     if (!link) {
-      onError('Product link is required.');
+      havenToastHint('Add a product link to continue.');
       return;
     }
-    if (!pendingFile && !imageUrl.trim()) {
-      onError('Add a product photo (upload or image URL).');
+    if (!pendingFile && !normalizeUrl(imageUrl)) {
+      havenToastHint('Add a product photo to continue.');
       return;
     }
 
     void (async () => {
-      onBusy('product-create');
-      onError(null);
+      onBusy(isEdit ? 'product-save' : 'product-create');
       try {
-        // Import uses POST /admin/products only — never call from-url again.
-        let product = await havenAdminClient.createProduct({
-          name: trimmedName,
-          merchant: merchant.trim() || null,
-          price: price.trim() ? Number(price) : null,
-          imageUrl: imageUrl.trim(),
-          affiliateUrl: link,
-          category,
-          active: true,
-          externalSku: externalSku.trim() || null,
-          dimensions: dimensions.trim() || null,
-        });
+        const dims = resolveDimensionsForApi(dimensions);
+        let product: HavenProduct;
 
-        if (pendingFile) {
-          product = await havenAdminClient.uploadProductImage(product.id, pendingFile);
-        } else if (imageUrl.trim() && !product.imageUrl) {
-          product = await havenAdminClient.setProductImageUrl(product.id, imageUrl.trim());
+        if (isEdit && editProduct) {
+          product = await havenAdminClient.patchProduct(editProduct.id, {
+            name: trimmedName,
+            merchant: normalizeText(merchant) || null,
+            price: normalizePrice(price),
+            imageUrl: normalizeUrl(imageUrl),
+            affiliateUrl: link,
+            category,
+            externalSku: normalizeText(externalSku) || null,
+            dimensions: dims,
+          });
+          if (pendingFile) {
+            product = await havenAdminClient.uploadProductImage(product.id, pendingFile);
+          } else if (
+            normalizeUrl(imageUrl) &&
+            normalizeUrl(imageUrl) !== normalizeUrl(editProduct.imageUrl)
+          ) {
+            product = await havenAdminClient.setProductImageUrl(
+              product.id,
+              normalizeUrl(imageUrl),
+            );
+          }
+          onUpdated?.(product);
+          toast.success('Product updated');
+        } else {
+          product = await havenAdminClient.createProduct({
+            name: trimmedName,
+            merchant: normalizeText(merchant) || null,
+            price: normalizePrice(price),
+            imageUrl: normalizeUrl(imageUrl),
+            affiliateUrl: link,
+            category,
+            active: true,
+            externalSku: normalizeText(externalSku) || null,
+            dimensions: dims,
+          });
+
+          if (pendingFile) {
+            product = await havenAdminClient.uploadProductImage(product.id, pendingFile);
+          } else if (imageUrl.trim() && !product.imageUrl) {
+            product = await havenAdminClient.setProductImageUrl(
+              product.id,
+              imageUrl.trim(),
+            );
+          }
+
+          if (!product.imageUrl?.trim()) {
+            throw new Error('Product saved but still needs a photo.');
+          }
+
+          resetForm();
+          onCreated?.(product);
+          toast.success('Product added');
         }
-
-        if (!product.imageUrl?.trim()) {
-          throw new Error('Product saved but still needs a photo.');
-        }
-
-        onCreated(product);
-        resetForm();
       } catch (err) {
-        onError(err instanceof Error ? err.message : 'Could not import product.');
+        havenToastError(isEdit ? 'product-save' : 'product-create', err);
       } finally {
         onBusy(null);
       }
     })();
   };
 
-  const disabled = busy != null;
+  const disabled = busy != null || loadingDetail;
+  const saving = busy === 'product-create' || busy === 'product-save';
 
   return (
     <div className="hv-admin__add-product">
@@ -266,12 +399,15 @@ export const HavenAdminAddProduct: React.FC<{
             </span>
             <input
               className="hv-admin__input"
-              type="number"
-              min={0}
-              step={1}
+              type="text"
+              inputMode="decimal"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="—"
+              onBlur={() => {
+                const n = normalizePrice(price);
+                setPrice(n != null ? String(n) : normalizeText(price));
+              }}
+              placeholder="$129 or 129"
               disabled={disabled}
             />
           </label>
@@ -286,6 +422,7 @@ export const HavenAdminAddProduct: React.FC<{
             className="hv-admin__input"
             value={affiliateUrl}
             onChange={(e) => setAffiliateUrl(e.target.value)}
+            onBlur={() => setAffiliateUrl(normalizeUrl(affiliateUrl))}
             disabled={disabled}
           />
         </label>
@@ -333,7 +470,11 @@ export const HavenAdminAddProduct: React.FC<{
             className="hv-admin__input"
             value={dimensions}
             onChange={(e) => setDimensions(e.target.value)}
-            placeholder="optional"
+            onBlur={() => {
+              const pretty = formatDimensions(dimensions);
+              if (pretty) setDimensions(pretty);
+            }}
+            placeholder='e.g. 27.5" w x 25.5" d x 36" h'
             disabled={disabled}
           />
         </label>
@@ -374,14 +515,33 @@ export const HavenAdminAddProduct: React.FC<{
           </div>
         )}
 
-        <button
-          type="button"
-          className="hv-admin__btn hv-admin__btn--primary"
-          disabled={disabled}
-          onClick={onImport}
-        >
-          {busy === 'product-create' ? 'Importing…' : 'Import product'}
-        </button>
+        <div className="hv-admin__modal-actions hv-admin__add-product-actions">
+          {isEdit && onRequestDelete ? (
+            <button
+              type="button"
+              className="hv-admin__btn hv-admin__btn--danger hv-admin__add-product-remove"
+              disabled={disabled}
+              onClick={onRequestDelete}
+            >
+              Remove product
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="hv-admin__btn hv-admin__btn--primary"
+            disabled={disabled}
+            onClick={onSave}
+            aria-busy={saving}
+          >
+            {saving
+              ? isEdit
+                ? 'Saving…'
+                : 'Importing…'
+              : isEdit
+                ? 'Save changes'
+                : 'Import product'}
+          </button>
+        </div>
       </div>
     </div>
   );

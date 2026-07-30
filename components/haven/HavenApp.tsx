@@ -550,9 +550,6 @@ const HavenApp: React.FC = () => {
             <Link to="/haven/store" className="hv-btn hv-btn--ghost hv-btn--start-over">
               Store
             </Link>
-            <Link to="/haven/admin" className="hv-btn hv-btn--ghost hv-btn--start-over">
-              Admin
-            </Link>
             {inStyleFlow && (
               <button
                 type="button"

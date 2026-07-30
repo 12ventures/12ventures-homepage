@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { HavenApiError } from './api/havenClient';
 import { havenStoreClient } from './api/havenStoreClient';
 import { formatHavenPrice, HavenProductCard } from './HavenProductCard';
+import { applyHavenShareMeta, HavenShareButton } from './HavenShareButton';
+import { havenSharePageUrl } from './havenShareUrl';
 import { HavenLookSkeleton } from './HavenSkeleton';
 import {
   cssAspectToNumber,
@@ -12,6 +14,8 @@ import {
 } from './types';
 import './haven-store.css';
 import './haven-product.css';
+
+const LOOK_SHARE_TEXT = 'Check out my room design on Haven!';
 
 const HavenRoomSetPage: React.FC = () => {
   const { roomSetId = '' } = useParams<{ roomSetId: string }>();
@@ -23,8 +27,16 @@ const HavenRoomSetPage: React.FC = () => {
   const hotspotLeaveTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    document.title = look?.label ? `Haven · ${look.label}` : 'Haven · Look';
-  }, [look?.label]);
+    if (!look) {
+      document.title = 'Haven · Look';
+      return;
+    }
+    applyHavenShareMeta({
+      title: `Haven · ${look.label}`,
+      description: look.blurb?.trim() || LOOK_SHARE_TEXT,
+      imageUrl: look.imageUrl,
+    });
+  }, [look]);
 
   useEffect(() => {
     if (!roomSetId) {
@@ -149,6 +161,14 @@ const HavenRoomSetPage: React.FC = () => {
                   <div className="hv-store__look-empty">No image</div>
                 )}
                 <div className="hv-store__look-veil" aria-hidden="true" />
+                <div className="hv-store__media-share">
+                  <HavenShareButton
+                    variant="onMedia"
+                    text={LOOK_SHARE_TEXT}
+                    title={look.label}
+                    url={havenSharePageUrl('look', look.id)}
+                  />
+                </div>
                 <div className="hv-store__look-copy">
                   <p className="hv-store__hero-kicker">Look</p>
                   <h1 className="hv-store__look-title">{look.label}</h1>

@@ -159,9 +159,6 @@ const HavenStore: React.FC = () => {
             <Link to="/haven" className="hv-store__btn hv-store__btn--ghost">
               Room studio
             </Link>
-            <Link to="/haven/admin" className="hv-store__btn hv-store__btn--ghost">
-              Admin
-            </Link>
           </div>
         </header>
 

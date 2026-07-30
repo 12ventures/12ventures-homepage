@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Toaster, toast } from 'sonner';
 import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
-import { havenAdminClient, type ProductImportResult } from './api/havenAdminClient';
+import {
+  havenLogError,
+  havenToastError,
+  havenToastHint,
+} from './adminFeedback';
+import { havenAdminClient } from './api/havenAdminClient';
 import { stylePickerThumb } from './api/mappers';
 import { HavenAdminAddProduct } from './HavenAdminAddProduct';
 import HavenAdminCreateStyleModal from './HavenAdminCreateStyleModal';
@@ -370,11 +376,9 @@ const HavenAdmin: React.FC = () => {
   const draggingPinId = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const [queriesText, setQueriesText] = useState(DEFAULT_QUERIES);
   const [maxPerQuery, setMaxPerQuery] = useState(5);
-  const [importResult, setImportResult] = useState<ProductImportResult | null>(null);
 
   const [roomStyleId, setRoomStyleId] = useState('');
   const [roomLabel, setRoomLabel] = useState('');
@@ -398,7 +402,12 @@ const HavenAdmin: React.FC = () => {
   const [moodboard, setMoodboard] = useState<HavenMoodboard | null>(null);
   const [moodboardLibrary, setMoodboardLibrary] = useState<MoodboardCard[]>([]);
   const [moodboardsPanelOpen, setMoodboardsPanelOpen] = useState(false);
-  const [productsModal, setProductsModal] = useState<null | 'scrape' | 'add'>(null);
+  const [productsModal, setProductsModal] = useState<
+    null | 'scrape' | 'add' | 'edit'
+  >(null);
+  const [editingProduct, setEditingProduct] = useState<HavenProduct | null>(null);
+  const [deleteConfirmProduct, setDeleteConfirmProduct] =
+    useState<HavenProduct | null>(null);
   const [addProductInitialUrl, setAddProductInitialUrl] = useState('');
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
   const [catalogFilters, setCatalogFilters] =
@@ -423,12 +432,12 @@ const HavenAdmin: React.FC = () => {
   }, [products, editing]);
 
   const productStoreOptions = useMemo(() => collectStoreOptions(products), [products]);
-  const visibleMoodboardCount = useMemo(
+  const visibleMoodboardCards = useMemo(
     () =>
-      moodboardLibrary.filter((c) => c.itemCount > 0 || c.id === moodboard?.id)
-        .length,
+      moodboardLibrary.filter((c) => c.itemCount > 0 || c.id === moodboard?.id),
     [moodboardLibrary, moodboard?.id],
   );
+  const visibleMoodboardCount = visibleMoodboardCards.length;
 
   const filteredCatalogProducts = useMemo(
     () => applyProductFilters(products, catalogFilters),
@@ -462,7 +471,6 @@ const HavenAdmin: React.FC = () => {
   );
 
   const refresh = useCallback(async () => {
-    setError(null);
     const [styleList, productList] = await Promise.all([
       havenAdminClient.listStyles(),
       havenAdminClient.listProducts().catch(() => [] as HavenProduct[]),
@@ -480,6 +488,17 @@ const HavenAdmin: React.FC = () => {
     });
   }, []);
 
+  const focusProductInCatalog = useCallback((productId: string) => {
+    setHighlightProductId(productId);
+    window.requestAnimationFrame(() => {
+      const el = document.querySelector(
+        `[data-product-id="${CSS.escape(productId)}"]`,
+      );
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    window.setTimeout(() => setHighlightProductId(null), 2400);
+  }, []);
+
   const selectStyle = (id: string, list: StylePersonality[] = styles) => {
     setRoomStyleId(id);
     setSelectedProductIds([]);
@@ -487,7 +506,6 @@ const HavenAdmin: React.FC = () => {
     const style = list.find((s) => s.id === id);
     setStudioBaseUrl(style?.baseRoomImageUrl || null);
     setRoomLabel(style?.label ? `${style.label} Set` : '');
-    setError(null);
   };
 
   const onStyleCreated = (style: StylePersonality) => {
@@ -575,9 +593,7 @@ const HavenAdmin: React.FC = () => {
           }
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Could not load admin data.');
-        }
+        if (!cancelled) havenToastError('load-admin', err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -657,11 +673,10 @@ const HavenAdmin: React.FC = () => {
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key);
-    setError(null);
     try {
       await fn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Request failed.');
+      havenToastError(key, err);
     } finally {
       setBusy(null);
     }
@@ -737,22 +752,21 @@ const HavenAdmin: React.FC = () => {
 
   const openStudio = () => {
     if (!roomStyleId) {
-      setError('Pick a style first.');
+      havenToastHint('Pick a style first.');
       return;
     }
     if (!selectedProductIds.length) {
-      setError('Select at least one product with an image.');
+      havenToastHint('Select at least one product with an image.');
       return;
     }
     if (selectedMissingImages.length) {
-      setError(`Add images for: ${selectedMissingImages.map((p) => p.name).join(', ')}`);
+      havenToastHint('Add photos for the selected products that are missing images.');
       return;
     }
     if (selectedProductIds.length > 18) {
-      setError('Studio supports up to 18 products.');
+      havenToastHint('You can place up to 18 products in the studio.');
       return;
     }
-    setError(null);
     // Prefer an already-chosen custom upload; otherwise the style’s cached empty room.
     if (!studioUploadId) {
       setStudioBaseUrl(selectedStyle?.baseRoomImageUrl || null);
@@ -883,23 +897,17 @@ const HavenAdmin: React.FC = () => {
       }
     });
 
-  const openStandaloneMoodboards = () => {
-    setMoodboardsPanelOpen(true);
-    if (moodboard) return;
-    const first = moodboardLibrary.find((c) => c.itemCount > 0) ?? moodboardLibrary[0];
-    if (first) void onMoodboardSelect(first.id);
-  };
-
   const onMoodboardSave = () =>
-    void run('moodboard', async () => {
+    void run('moodboard-save', async () => {
       if (!moodboard) return;
-      if (moodboard.id.startsWith('local_')) {
-        try {
+      try {
+        if (moodboard.id.startsWith('local_')) {
           const created = await havenAdminClient.createMoodboard({
             name: moodboard.name,
             styleId: moodboard.styleId,
             roomSetId: moodboard.roomSetId,
-            pendingStudioDraftId: moodboard.pendingStudioDraftId ?? (studioOpen ? studioDraftId : null),
+            pendingStudioDraftId:
+              moodboard.pendingStudioDraftId ?? (studioOpen ? studioDraftId : null),
             boardAspectRatio: moodboard.boardAspectRatio,
             palette: moodboard.palette,
             palettePosition: moodboard.palettePosition,
@@ -910,34 +918,24 @@ const HavenAdmin: React.FC = () => {
             cardFromBoard(created),
             ...prev.filter((c) => c.id !== moodboard.id && c.id !== created.id),
           ]);
-        } catch {
-          setMoodboardLibrary((prev) => {
-            const card = cardFromBoard(moodboard);
-            if (prev.some((c) => c.id === moodboard.id)) {
-              return prev.map((c) => (c.id === moodboard.id ? card : c));
-            }
-            return [card, ...prev];
+        } else {
+          const saved = await havenAdminClient.patchMoodboard(moodboard.id, {
+            name: moodboard.name,
+            styleId: moodboard.styleId,
+            boardAspectRatio: moodboard.boardAspectRatio,
+            palette: moodboard.palette,
+            palettePosition: moodboard.palettePosition,
+            items: serializeMoodboardItems(moodboard.items),
           });
+          setMoodboard(saved);
+          setMoodboardLibrary((prev) =>
+            prev.map((c) => (c.id === saved.id ? cardFromBoard(saved) : c)),
+          );
         }
-        return;
-      }
-      try {
-        const saved = await havenAdminClient.patchMoodboard(moodboard.id, {
-          name: moodboard.name,
-          styleId: moodboard.styleId,
-          boardAspectRatio: moodboard.boardAspectRatio,
-          palette: moodboard.palette,
-          palettePosition: moodboard.palettePosition,
-          items: serializeMoodboardItems(moodboard.items),
-        });
-        setMoodboard(saved);
-        setMoodboardLibrary((prev) =>
-          prev.map((c) => (c.id === saved.id ? cardFromBoard(saved) : c)),
-        );
-      } catch {
-        setMoodboardLibrary((prev) =>
-          prev.map((c) => (c.id === moodboard.id ? cardFromBoard(moodboard) : c)),
-        );
+        toast.success('Save complete');
+      } catch (err) {
+        havenToastError('moodboard-save', err);
+        throw err;
       }
     });
 
@@ -1032,7 +1030,7 @@ const HavenAdmin: React.FC = () => {
         uploadId: uploaded.uploadId ?? null,
       };
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Image upload failed.');
+      havenToastError('moodboard-upload', err);
       throw err;
     }
   };
@@ -1213,12 +1211,11 @@ const HavenAdmin: React.FC = () => {
     if (!pinEditMode) return;
     const alreadyMoved = movedProductIds.includes(hotspot.productId);
     if (!alreadyMoved && movedProductIds.length >= 3) {
-      setError('Move furniture allows up to 3 items per request. Cancel or submit these first.');
+      havenToastHint('You can move up to 3 items at a time. Submit or cancel these first.');
       return;
     }
     e.preventDefault();
     e.stopPropagation();
-    setError(null);
     draggingPinId.current = hotspot.id;
     setDraggingHotspotId(hotspot.id);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -1271,7 +1268,6 @@ const HavenAdmin: React.FC = () => {
     setMovedProductIds([]);
     setPinEditMode(true);
     setReadyBannerId(null);
-    setError(null);
   };
 
   const cancelPinEdit = () => {
@@ -1281,7 +1277,6 @@ const HavenAdmin: React.FC = () => {
     setDraggingHotspotId(null);
     setPinEditMode(false);
     draggingPinId.current = null;
-    setError(null);
   };
 
   /** Recompose furniture via rearrange API (1–3 moved pins). */
@@ -1404,6 +1399,7 @@ const HavenAdmin: React.FC = () => {
     if (busy == null) {
       setProductsModal(null);
       setAddProductInitialUrl('');
+      setEditingProduct(null);
     }
   }, [busy]);
   const scrapeBackdrop = useBackdropDismiss(
@@ -1412,11 +1408,30 @@ const HavenAdmin: React.FC = () => {
   );
   const addProductBackdrop = useBackdropDismiss(
     closeAddProductModal,
-    productsModal === 'add',
+    productsModal === 'add' || productsModal === 'edit',
   );
+  const deleteConfirmBackdrop = useBackdropDismiss(
+    () => {
+      if (busy !== 'product-delete') setDeleteConfirmProduct(null);
+    },
+    deleteConfirmProduct != null,
+  );
+
+  const moodboardBusy =
+    busy === 'moodboard' || busy === 'moodboard-save';
+  const moodboardSaving = busy === 'moodboard-save';
 
   return (
     <div className="hv-admin">
+      <Toaster
+        position="bottom-right"
+        closeButton
+        offset={20}
+        toastOptions={{
+          className: 'hv-toast',
+          duration: 3200,
+        }}
+      />
       <div className="hv-admin__shell">
         <header className="hv-admin__top">
           <div>
@@ -1448,12 +1463,6 @@ const HavenAdmin: React.FC = () => {
             </Link>
           </div>
         </header>
-
-        {error && (
-          <p className="hv-admin__msg hv-admin__msg--error" role="alert">
-            {error}
-          </p>
-        )}
 
         {loading ? (
           <HavenAdminSkeleton />
@@ -1561,7 +1570,8 @@ const HavenAdmin: React.FC = () => {
                   moodboardLibrary={moodboardLibrary.filter(
                     (c) => c.id === moodboard?.id || c.itemCount > 0,
                   )}
-                  moodboardBusy={busy === 'moodboard'}
+                  moodboardBusy={moodboardBusy}
+                  moodboardSaving={moodboardSaving}
                   studioDraftId={studioDraftId}
                   linkedRoomSetId={studioJobId}
                   onMoodboardChange={setMoodboard}
@@ -2232,7 +2242,7 @@ const HavenAdmin: React.FC = () => {
                                 onClick={onSaveHotspots}
                                 title="Only updates shoppable pin markers on the current image"
                               >
-                                {busy === 'hotspots' ? 'Saving…' : 'Save markers only'}
+                                {busy === 'hotspots' ? 'Saving…' : 'Save markers'}
                               </button>
                               <button
                                 type="button"
@@ -2244,14 +2254,26 @@ const HavenAdmin: React.FC = () => {
                               </button>
                             </>
                           ) : (
-                            <button
-                              type="button"
-                              className="hv-admin__btn hv-admin__btn--ghost"
-                              disabled={busy != null || editorHotspots.length === 0}
-                              onClick={startPinEdit}
-                            >
-                              Move furniture
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="hv-admin__btn hv-admin__btn--ghost"
+                                disabled={busy != null || editorHotspots.length === 0}
+                                onClick={startPinEdit}
+                                title="Drag pins to fix shoppable marker positions on this image"
+                              >
+                                Adjust marker placements
+                              </button>
+                              <button
+                                type="button"
+                                className="hv-admin__btn hv-admin__btn--ghost"
+                                disabled={busy != null || editorHotspots.length === 0}
+                                onClick={startPinEdit}
+                                title="Drag items, then recompose the room with AI"
+                              >
+                                Move furniture
+                              </button>
+                            </>
                           )}
                           {!pinEditMode && (
                             <button
@@ -2304,23 +2326,19 @@ const HavenAdmin: React.FC = () => {
                   </p>
                 </div>
                 <div className="hv-admin__panel-tools">
+                  {moodboardsPanelOpen && (studioOpen || !moodboard) ? (
+                    <button
+                      type="button"
+                      className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
+                      disabled={busy != null}
+                      onClick={() => setMoodboardsPanelOpen(false)}
+                    >
+                      Close
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
-                    disabled={busy != null}
-                    onClick={() => {
-                      if (moodboardsPanelOpen) {
-                        setMoodboardsPanelOpen(false);
-                        return;
-                      }
-                      openStandaloneMoodboards();
-                    }}
-                  >
-                    {moodboardsPanelOpen ? 'Hide' : 'Browse'}
-                  </button>
-                  <button
-                    type="button"
-                    className="hv-admin__btn hv-admin__btn--primary hv-admin__btn--compact"
+                    className="hv-admin__btn hv-admin__btn--moodboard hv-admin__btn--compact"
                     disabled={busy != null}
                     onClick={() => {
                       if (studioOpen) {
@@ -2330,7 +2348,9 @@ const HavenAdmin: React.FC = () => {
                       onMoodboardCreate();
                     }}
                   >
-                    <MoodboardIcon />
+                    <span className="hv-admin__btn-icon" aria-hidden="true">
+                      <MoodboardIcon />
+                    </span>
                     New moodboard
                   </button>
                 </div>
@@ -2345,16 +2365,16 @@ const HavenAdmin: React.FC = () => {
                 ) : moodboard ? (
                   <HavenMoodboardEditor
                     board={moodboard}
-                    library={moodboardLibrary.filter(
-                      (c) => c.id === moodboard.id || c.itemCount > 0,
-                    )}
-                    busy={busy === 'moodboard'}
+                    library={visibleMoodboardCards}
+                    busy={moodboardBusy}
+                    saving={moodboardSaving}
                     linkedRoomSetId={null}
                     pendingStudioDraftId={null}
                     poolProducts={[]}
                     catalogProducts={products}
                     onChange={setMoodboard}
                     onSave={onMoodboardSave}
+                    onCancel={() => setMoodboardsPanelOpen(false)}
                     onSelectBoard={onMoodboardSelect}
                     onCreateBoard={onMoodboardCreate}
                     onDeleteBoard={onMoodboardDelete}
@@ -2367,10 +2387,41 @@ const HavenAdmin: React.FC = () => {
                     product ideas — no room set required.
                   </p>
                 )
+              ) : visibleMoodboardCards.length > 0 ? (
+                <ul className="hv-mb__lib-list hv-admin__moodboard-list">
+                  {visibleMoodboardCards.map((card) => (
+                    <li key={card.id}>
+                      <button
+                        type="button"
+                        className="hv-mb__lib-item"
+                        disabled={busy != null}
+                        onClick={() => {
+                          void onMoodboardSelect(card.id);
+                          setMoodboardsPanelOpen(true);
+                        }}
+                      >
+                        <span className="hv-mb__lib-thumb">
+                          {card.coverImageUrl ? (
+                            <img src={card.coverImageUrl} alt="" />
+                          ) : (
+                            <span className="hv-mb__lib-thumb-empty" />
+                          )}
+                        </span>
+                        <span className="hv-mb__lib-copy">
+                          <span className="hv-mb__lib-name">{card.name}</span>
+                          <span className="hv-mb__lib-meta">
+                            {card.itemCount} item
+                            {card.itemCount === 1 ? '' : 's'}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <p className="hv-admin__empty" style={{ marginTop: 12 }}>
-                  Standalone boards you can build anytime, then link while designing a
-                  room set.
+                  No moodboards yet. Create one to collect references, palettes, and
+                  product ideas — no room set required.
                 </p>
               )}
             </section>
@@ -2378,24 +2429,21 @@ const HavenAdmin: React.FC = () => {
             <HavenAdminTrends
               busy={busy}
               onBusy={setBusy}
-              onError={setError}
+              onError={(msg) => {
+                if (!msg) return;
+                havenToastError('trends', msg);
+              }}
               onImportUrl={(url) => {
                 setAddProductInitialUrl(url);
                 setProductsModal('add');
               }}
-              onViewProduct={(productId) => {
-                setHighlightProductId(productId);
-                window.requestAnimationFrame(() => {
-                  const el = document.querySelector(
-                    `[data-product-id="${CSS.escape(productId)}"]`,
-                  );
-                  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                });
-                window.setTimeout(() => setHighlightProductId(null), 2400);
-              }}
+              onViewProduct={focusProductInCatalog}
               onImportQueries={(queries) => {
                 void run('import', async () => {
-                  if (!queries.length) throw new Error('No import queries on this trend.');
+                  if (!queries.length) {
+                    havenToastHint('No search terms available for this trend.');
+                    return;
+                  }
                   setQueriesText(queries.join(', '));
                   const result = await havenAdminClient.importProducts({
                     queries,
@@ -2403,8 +2451,18 @@ const HavenAdmin: React.FC = () => {
                     page: 1,
                     fetch_details_when_no_image: true,
                   });
-                  setImportResult(result);
+                  if (result.errors?.length) {
+                    havenLogError('trends-import', result.errors);
+                  }
                   await refresh();
+                  const added = (result.created ?? 0) + (result.updated ?? 0);
+                  if (added > 0) {
+                    toast.success(
+                      added === 1 ? 'Product added' : `${added} products added`,
+                    );
+                  } else {
+                    havenToastHint('No new products were found this time.');
+                  }
                 });
               }}
             />
@@ -2425,19 +2483,19 @@ const HavenAdmin: React.FC = () => {
                 <div className="hv-admin__panel-tools">
                   <button
                     type="button"
-                    className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
-                    disabled={busy != null}
-                    onClick={() => setProductsModal('scrape')}
-                  >
-                    Scrape
-                  </button>
-                  <button
-                    type="button"
                     className="hv-admin__btn hv-admin__btn--primary hv-admin__btn--compact"
                     disabled={busy != null}
                     onClick={() => setProductsModal('add')}
                   >
                     Add product
+                  </button>
+                  <button
+                    type="button"
+                    className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
+                    disabled={busy != null}
+                    onClick={() => setProductsModal('scrape')}
+                  >
+                    Scrape
                   </button>
                   <HavenProductFilterMenu
                     value={catalogFilters}
@@ -2460,26 +2518,21 @@ const HavenAdmin: React.FC = () => {
               ) : (
                 <div className="hv-admin__tiles">
                   {filteredCatalogProducts.map((p) => {
-                    const hasImage = hasProductImage(p);
                     const uploading = busy === `img-${p.id}`;
                     return (
                       <ProductTile
                         key={p.id}
                         product={p}
                         selected={highlightProductId === p.id}
-                        disabled={busy != null && !hasImage}
+                        disabled={busy != null}
                         busyLabel={uploading ? 'Uploading…' : null}
-                        hoverLabel={hasImage ? '' : 'Add image'}
+                        hoverLabel="Edit"
                         ariaLabel={
-                          uploading
-                            ? `Uploading image for ${p.name}`
-                            : hasImage
-                              ? p.name
-                              : `Add image for ${p.name}`
+                          uploading ? `Uploading image for ${p.name}` : `Edit ${p.name}`
                         }
                         onActivate={() => {
-                          if (hasImage) return;
-                          openImagePicker(p.id);
+                          setEditingProduct(p);
+                          setProductsModal('edit');
                         }}
                       />
                     );
@@ -2543,11 +2596,6 @@ const HavenAdmin: React.FC = () => {
                   />
                 </label>
               </div>
-              {importResult?.errors?.length ? (
-                <p className="hv-admin__msg hv-admin__msg--error">
-                  {importResult.errors.slice(0, 3).join(' · ')}
-                </p>
-              ) : null}
             </div>
             <div className="hv-admin__modal-actions">
               <button
@@ -2568,16 +2616,29 @@ const HavenAdmin: React.FC = () => {
                       .split(/\n|,/)
                       .map((q) => q.trim())
                       .filter(Boolean);
-                    if (!queries.length) throw new Error('Add at least one search query.');
+                    if (!queries.length) {
+                      havenToastHint('Add at least one search term to continue.');
+                      return;
+                    }
                     const result = await havenAdminClient.importProducts({
                       queries,
                       max_per_query: maxPerQuery,
                       page: 1,
                       fetch_details_when_no_image: true,
                     });
-                    setImportResult(result);
+                    if (result.errors?.length) {
+                      havenLogError('scrape-import', result.errors);
+                    }
                     await refresh();
                     setProductsModal(null);
+                    const added = (result.created ?? 0) + (result.updated ?? 0);
+                    if (added > 0) {
+                      toast.success(
+                        added === 1 ? 'Product added' : `${added} products added`,
+                      );
+                    } else {
+                      havenToastHint('No new products were found this time.');
+                    }
                   });
                 }}
               >
@@ -2588,7 +2649,7 @@ const HavenAdmin: React.FC = () => {
         </div>
       ) : null}
 
-      {productsModal === 'add' ? (
+      {productsModal === 'add' || productsModal === 'edit' ? (
         <div
           className="hv-admin__modal-backdrop"
           role="presentation"
@@ -2605,26 +2666,29 @@ const HavenAdmin: React.FC = () => {
           >
             <div className="hv-admin__modal-head">
               <h2 id="products-add-title" className="hv-admin__modal-title">
-                Add product
+                {productsModal === 'edit' ? 'Edit product' : 'Add product'}
               </h2>
               <button
                 type="button"
                 className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
                 disabled={busy != null}
-                onClick={() => {
-                  setProductsModal(null);
-                  setAddProductInitialUrl('');
-                }}
+                onClick={closeAddProductModal}
               >
                 Close
               </button>
             </div>
             <HavenAdminAddProduct
-              key={addProductInitialUrl || 'add-product'}
+              key={
+                productsModal === 'edit'
+                  ? `edit-${editingProduct?.id ?? 'product'}`
+                  : addProductInitialUrl || 'add-product'
+              }
               busy={busy}
               onBusy={setBusy}
-              onError={setError}
-              initialUrl={addProductInitialUrl}
+              initialUrl={
+                productsModal === 'add' ? addProductInitialUrl : undefined
+              }
+              editProduct={productsModal === 'edit' ? editingProduct : null}
               onCreated={(product) => {
                 setProducts((prev) => {
                   if (prev.some((p) => p.id === product.id)) {
@@ -2632,8 +2696,83 @@ const HavenAdmin: React.FC = () => {
                   }
                   return [product, ...prev];
                 });
+                closeAddProductModal();
+                focusProductInCatalog(product.id);
               }}
+              onUpdated={(product) => {
+                setProducts((prev) =>
+                  prev.map((p) => (p.id === product.id ? product : p)),
+                );
+                setSelectedProductIds((prev) =>
+                  prev.includes(product.id) ? [...prev] : prev,
+                );
+                closeAddProductModal();
+                focusProductInCatalog(product.id);
+              }}
+              onRequestDelete={
+                productsModal === 'edit' && editingProduct
+                  ? () => setDeleteConfirmProduct(editingProduct)
+                  : undefined
+              }
             />
+          </div>
+        </div>
+      ) : null}
+
+      {deleteConfirmProduct ? (
+        <div
+          className="hv-admin__modal-backdrop"
+          role="presentation"
+          onMouseDown={deleteConfirmBackdrop.onMouseDown}
+          onClick={deleteConfirmBackdrop.onClick}
+        >
+          <div
+            className="hv-admin__modal hv-admin__modal--confirm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-delete-title"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="product-delete-title" className="hv-admin__modal-title">
+              Remove this product?
+            </h2>
+            <p className="hv-admin__modal-copy">
+              “{deleteConfirmProduct.name}” will be removed from the catalog. This
+              can’t be undone.
+            </p>
+            <div className="hv-admin__modal-actions">
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--ghost"
+                disabled={busy === 'product-delete'}
+                onClick={() => setDeleteConfirmProduct(null)}
+              >
+                Keep product
+              </button>
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--danger"
+                disabled={busy === 'product-delete'}
+                onClick={() => {
+                  const target = deleteConfirmProduct;
+                  void run('product-delete', async () => {
+                    await havenAdminClient.deleteProduct(target.id);
+                    setProducts((prev) => prev.filter((p) => p.id !== target.id));
+                    setSelectedProductIds((prev) =>
+                      prev.filter((id) => id !== target.id),
+                    );
+                    setDeleteConfirmProduct(null);
+                    if (editingProduct?.id === target.id) {
+                      closeAddProductModal();
+                    }
+                    toast.success('Product removed');
+                  });
+                }}
+              >
+                {busy === 'product-delete' ? 'Removing…' : 'Remove'}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

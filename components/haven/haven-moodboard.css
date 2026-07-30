@@ -34,6 +34,27 @@
   container-name: hv-mb-board;
 }
 
+.hv-mb__board.is-file-drag {
+  box-shadow:
+    0 18px 40px rgba(28, 25, 23, 0.1),
+    inset 0 0 0 2px var(--hv-sage, #5f6f52);
+}
+
+.hv-mb__drop-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: rgba(255, 252, 248, 0.72);
+  color: var(--hv-sage, #5f6f52);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
 .hv-mb__board-title {
   position: absolute;
   top: 14px;
@@ -205,11 +226,32 @@
 .hv-mb__rail {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   max-height: min(70vh, 720px);
+}
+
+.hv-mb__rail-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   padding-right: 2px;
+}
+
+.hv-mb__rail-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(28, 25, 23, 0.08);
 }
 
 .hv-mb__rail-head {
