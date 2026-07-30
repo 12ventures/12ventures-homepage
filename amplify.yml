@@ -1,8 +1,6 @@
-# Haven share OG: do not enable Amplify reverse-proxy for /haven/store/*
-# until the API always returns HTML for those paths (no browser 302).
-# Until then, the SPA shares API share URLs (VITE_HAVEN_SHARE_ORIGIN / derived).
-# Optional later: hosting/amplify-custom-rules.json → Amplify Console →
-# Hosting → Rewrites and redirects (share rules above the SPA fallback).
+# Haven share OG: after API returns SPA-shaped 200 HTML (no same-path 302),
+# paste hosting/amplify-custom-rules.json into Amplify → Rewrites and redirects.
+# Details: hosting/SHARE_OG.md
 version: 1
 frontend:
   phases:
