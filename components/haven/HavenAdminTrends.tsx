@@ -955,7 +955,7 @@ export const HavenAdminTrends: React.FC<{
             </h2>
             <p className="hv-admin__modal-copy">
               Scan the latest trends on the web for trending styles, then match them to
-              catalog and external product candidates. This usually takes about a minute.
+              catalog and external product candidates.
             </p>
             <div className="hv-admin__modal-actions">
               <button
