@@ -28,6 +28,36 @@
   box-sizing: border-box;
 }
 
+/* Sonner toasts — portal-mounted; keep styles global and Haven-aligned */
+.hv-toast[data-sonner-toast] {
+  font-family: 'Figtree', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1c1917;
+  background: #fffcf8;
+  border: 1px solid rgba(28, 25, 23, 0.1);
+  border-radius: 12px;
+  box-shadow:
+    0 12px 28px rgba(28, 25, 23, 0.12),
+    0 2px 6px rgba(28, 25, 23, 0.06);
+}
+
+.hv-toast[data-sonner-toast][data-type='success'] {
+  border-color: rgba(95, 111, 82, 0.35);
+}
+
+.hv-toast[data-sonner-toast][data-type='error'] {
+  border-color: rgba(185, 28, 28, 0.28);
+}
+
+.hv-toast[data-sonner-toast] [data-icon] {
+  color: #5f6f52;
+}
+
+.hv-toast[data-sonner-toast][data-type='error'] [data-icon] {
+  color: #b91c1c;
+}
+
 /* Minimal trackless scrollbars — sage/ink on light, soft paper on dark surfaces */
 .hv-admin {
   scrollbar-width: thin;
@@ -1842,6 +1872,24 @@
   object-fit: cover;
 }
 
+.hv-admin__add-product-actions {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.hv-admin__add-product-remove {
+  margin-right: auto;
+}
+
+.hv-admin__add-product-actions {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.hv-admin__add-product-remove {
+  margin-right: auto;
+}
+
 .hv-admin__field--missing .hv-admin__input,
 .hv-admin__field--missing .hv-admin__select {
   border-color: rgba(180, 120, 60, 0.55);
@@ -2569,6 +2617,15 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.hv-admin__moodboard-list {
+  margin-top: 12px;
+  max-height: min(36vh, 340px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
 }
 .hv-admin__panel--trends {
   min-width: 0;

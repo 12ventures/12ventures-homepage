@@ -21,6 +21,7 @@ import type {
   RoomSetDetail,
   StylePersonality,
 } from '../types';
+import { formatDimensions } from '../productInputNormalize';
 import { EMPTY_MOODBOARD_PALETTE } from '../types';
 import type {
   StepStatus,
@@ -124,9 +125,10 @@ export function mapProductDetail(p: Record<string, unknown>): HavenProductDetail
   const source = p.source;
   const createdAt = p.createdAt ?? p.created_at;
   const updatedAt = p.updatedAt ?? p.updated_at;
+  const dimensionsLabel = formatDimensions(dims);
   return {
     ...base,
-    dimensions: dims != null && String(dims) ? String(dims) : null,
+    dimensions: dimensionsLabel || null,
     featured: Boolean(p.featured),
     featuredSort:
       featuredSort != null && featuredSort !== '' ? Number(featuredSort) : undefined,

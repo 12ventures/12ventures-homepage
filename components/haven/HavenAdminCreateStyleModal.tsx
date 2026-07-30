@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
+import { havenToastError } from './adminFeedback';
 import { havenAdminClient } from './api/havenAdminClient';
 import type { StylePersonality } from './types';
 
@@ -22,7 +23,6 @@ const HavenAdminCreateStyleModal: React.FC<HavenAdminCreateStyleModalProps> = ({
   const fileRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>('form');
   const [label, setLabel] = useState(DEFAULT_LABEL);
-  const [error, setError] = useState<string | null>(null);
   const [readyStyle, setReadyStyle] = useState<StylePersonality | null>(null);
 
   const nameReady = label.trim().length > 0;
@@ -32,7 +32,6 @@ const HavenAdminCreateStyleModal: React.FC<HavenAdminCreateStyleModalProps> = ({
     if (!open) return;
     setPhase('form');
     setLabel(DEFAULT_LABEL);
-    setError(null);
     setReadyStyle(null);
   }, [open]);
 
@@ -51,7 +50,6 @@ const HavenAdminCreateStyleModal: React.FC<HavenAdminCreateStyleModalProps> = ({
 
   const submitFile = async (file: File | null) => {
     if (!file || !nameReady) return;
-    setError(null);
     setPhase('creating');
     try {
       const { style } = await havenAdminClient.createStyleFromRoom({
@@ -63,7 +61,7 @@ const HavenAdminCreateStyleModal: React.FC<HavenAdminCreateStyleModalProps> = ({
       onCreated(style);
     } catch (err) {
       setPhase('form');
-      setError(err instanceof Error ? err.message : 'Could not create style from photo.');
+      havenToastError('create-style', err);
     } finally {
       if (fileRef.current) fileRef.current.value = '';
     }
@@ -108,11 +106,6 @@ const HavenAdminCreateStyleModal: React.FC<HavenAdminCreateStyleModalProps> = ({
             </label>
             {!nameReady && (
               <p className="hv-admin__panel-meta">Add a name to continue.</p>
-            )}
-            {error && (
-              <p className="hv-admin__msg hv-admin__msg--error" role="alert">
-                {error}
-              </p>
             )}
             <div className="hv-admin__modal-actions">
               <button type="button" className="hv-admin__btn" onClick={onClose}>

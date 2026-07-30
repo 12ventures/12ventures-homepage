@@ -202,6 +202,10 @@ export type HavenMoodboardEditorProps = {
   catalogProducts?: HavenProduct[];
   onChange: (board: HavenMoodboard) => void;
   onSave?: () => void;
+  /** True while a save request is in flight. */
+  saving?: boolean;
+  /** Dismiss the editor without saving (e.g. close standalone panel). */
+  onCancel?: () => void;
   onSelectBoard?: (id: string) => void;
   onCreateBoard?: () => void;
   onDeleteBoard?: (id: string) => void;
@@ -239,6 +243,8 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
   catalogProducts = [],
   onChange,
   onSave,
+  saving = false,
+  onCancel,
   onSelectBoard,
   onCreateBoard,
   onDeleteBoard,
@@ -253,6 +259,8 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
   const colorPickerDraftRef = useRef<string | null>(null);
   const colorPickerIndexRef = useRef<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedId;
   /** Inline text editing on the board (double-click). */
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const inlineTextRef = useRef<HTMLTextAreaElement>(null);
@@ -263,8 +271,12 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     null,
   );
   const [photoColors, setPhotoColors] = useState<string[]>([]);
+  /** Keep last good swatches per item — CDN re-extract often fails (CORS). */
+  const photoColorCacheRef = useRef<Map<string, string[]>>(new Map());
   const [extraPoolIds, setExtraPoolIds] = useState<string[]>([]);
   const [sessionUploads, setSessionUploads] = useState<SessionPoolImage[]>([]);
+  const [fileDragOver, setFileDragOver] = useState(false);
+  const fileDragDepthRef = useRef(0);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [catalogPickIds, setCatalogPickIds] = useState<string[]>([]);
   const [catalogFilters, setCatalogFilters] =
@@ -301,8 +313,26 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
       setPhotoColors([]);
       return;
     }
-    void extractPhotoColors(selected.imageUrl).then(setPhotoColors);
-  }, [selected]);
+    const itemId = selected.id;
+    const imageUrl = selected.imageUrl;
+    const cached = photoColorCacheRef.current.get(itemId);
+    if (cached?.length) setPhotoColors(cached);
+
+    let cancelled = false;
+    void extractPhotoColors(imageUrl).then((colors) => {
+      if (cancelled) return;
+      if (colors.length) {
+        photoColorCacheRef.current.set(itemId, colors);
+        setPhotoColors(colors);
+        return;
+      }
+      // Failed extract (common after blob→CDN) — keep prior swatches if any.
+      if (!cached?.length) setPhotoColors([]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.id, selected?.kind === 'image' ? selected.imageUrl : null]);
 
   useEffect(() => {
     if (!editingTextId) return;
@@ -333,7 +363,61 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     setSessionUploads([]);
     setCatalogOpen(false);
     setCatalogPickIds([]);
+    photoColorCacheRef.current.clear();
+    setPhotoColors([]);
   }, [board.id]);
+
+  // When the first image lands on an empty palette, fill swatches from that image.
+  const imageCountRef = useRef(
+    board.items.filter((i) => isMoodboardImageItem(i)).length,
+  );
+  const autofillBoardIdRef = useRef(board.id);
+  useEffect(() => {
+    const images = board.items.filter(isMoodboardImageItem);
+    const count = images.length;
+
+    if (autofillBoardIdRef.current !== board.id) {
+      autofillBoardIdRef.current = board.id;
+      imageCountRef.current = count;
+      return;
+    }
+
+    const wasEmpty = imageCountRef.current === 0;
+    imageCountRef.current = count;
+    if (!wasEmpty || count === 0) return;
+    if (!boardStateRef.current.palette.every((s) => !s.hex)) return;
+
+    const imageUrl = images[0]?.imageUrl?.trim();
+    if (!imageUrl) return;
+
+    let cancelled = false;
+    const firstId = images[0]?.id;
+    void extractPhotoColors(imageUrl, boardStateRef.current.palette.length).then(
+      (colors) => {
+        if (cancelled || !colors.length) return;
+        if (firstId) {
+          photoColorCacheRef.current.set(firstId, colors);
+          if (selectedIdRef.current === firstId) setPhotoColors(colors);
+        }
+        const current = boardStateRef.current;
+        if (!current.palette.every((s) => !s.hex)) return;
+        if (!current.items.some(isMoodboardImageItem)) return;
+        const next = {
+          ...current,
+          palette: current.palette.map((slot, i) => ({
+            ...slot,
+            hex: colors[i] ?? null,
+          })) as HavenMoodboard['palette'],
+          updatedAt: new Date().toISOString(),
+        };
+        boardStateRef.current = next;
+        onChange(next);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [board.id, board.items, onChange]);
 
   const updateItems = useCallback(
     (items: MoodboardItem[]) => {
@@ -624,11 +708,13 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     setSelectedId(item.id);
   };
 
-  const uploadFilesToPool = (files: FileList | null) => {
+  const uploadFilesToPool = (files: FileList | File[] | null) => {
     if (!files?.length || !uploadImageFile || busy) return;
     const current = boardStateRef.current;
     const room = Math.max(0, MAX_ITEMS - current.items.length);
-    const list = Array.from(files).slice(0, Math.max(room, 0));
+    const list = Array.from(files)
+      .filter((f) => f.type.startsWith('image/'))
+      .slice(0, Math.max(room, 0));
     if (!list.length) return;
 
     const maxZ = Math.max(0, ...current.items.map((i) => i.zIndex));
@@ -679,7 +765,17 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     };
     boardStateRef.current = withBoardItems;
     onChange(withBoardItems);
-    setSelectedId(placeholders[placeholders.length - 1]?.id ?? null);
+    const selectId = placeholders[placeholders.length - 1]?.id ?? null;
+    setSelectedId(selectId);
+
+    // Sample colors from local blobs before they are revoked after CDN upload.
+    for (const entry of placeholders) {
+      void extractPhotoColors(entry.blobUrl).then((colors) => {
+        if (!colors.length) return;
+        photoColorCacheRef.current.set(entry.id, colors);
+        if (selectedIdRef.current === entry.id) setPhotoColors(colors);
+      });
+    }
 
     void (async () => {
       for (const entry of placeholders) {
@@ -913,11 +1009,40 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
       <div className="hv-mb__stage-wrap">
         <div
           ref={boardRef}
-          className="hv-mb__board"
+          className={`hv-mb__board${fileDragOver ? ' is-file-drag' : ''}`}
           style={{ aspectRatio: aspectCss }}
           onPointerDown={() => {
             setSelectedId(null);
             setEditingTextId(null);
+          }}
+          onDragEnter={(e) => {
+            if (!uploadImageFile || busy) return;
+            if (![...e.dataTransfer.types].includes('Files')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            fileDragDepthRef.current += 1;
+            setFileDragOver(true);
+          }}
+          onDragOver={(e) => {
+            if (!uploadImageFile || busy) return;
+            if (![...e.dataTransfer.types].includes('Files')) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+          }}
+          onDragLeave={(e) => {
+            if (!uploadImageFile || busy) return;
+            e.preventDefault();
+            e.stopPropagation();
+            fileDragDepthRef.current = Math.max(0, fileDragDepthRef.current - 1);
+            if (fileDragDepthRef.current === 0) setFileDragOver(false);
+          }}
+          onDrop={(e) => {
+            if (!uploadImageFile || busy) return;
+            e.preventDefault();
+            e.stopPropagation();
+            fileDragDepthRef.current = 0;
+            setFileDragOver(false);
+            uploadFilesToPool(e.dataTransfer.files);
           }}
         >
           <div className="hv-mb__board-title" aria-hidden="true">
@@ -1022,6 +1147,12 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
               </div>
             );
           })}
+          {fileDragOver ? (
+            <div className="hv-mb__drop-veil" aria-hidden="true">
+              Drop to upload
+            </div>
+          ) : null}
+
           {board.items.length === 0 ? (
             <div className="hv-mb__empty">
               <p>Add images or text to build this moodboard</p>
@@ -1154,6 +1285,18 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
         : null}
 
       <aside className="hv-mb__rail">
+        <div className="hv-mb__rail-body">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hv-admin__file-input"
+          onChange={(e) => {
+            uploadFilesToPool(e.target.files);
+            e.target.value = '';
+          }}
+        />
         <label className="hv-admin__field">
           <span className="hv-admin__label">Board name</span>
           <input
@@ -1249,45 +1392,31 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
                   disabled={busy}
                   onClick={openCatalogModal}
                 >
-                Browse catalog
+                  Browse catalog
                 </button>
               ) : null}
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--ghost"
+                disabled={busy || board.items.length >= MAX_ITEMS}
+                onClick={addTextBox}
+              >
+                Add text
+              </button>
             </div>
           </div>
-        ) : null}
-
-        <div className="hv-mb__rail-actions">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hv-admin__file-input"
-            onChange={(e) => {
-              uploadFilesToPool(e.target.files);
-              e.target.value = '';
-            }}
-          />
-          <button
-            type="button"
-            className="hv-admin__btn hv-admin__btn--ghost"
-            disabled={busy || board.items.length >= MAX_ITEMS}
-            onClick={addTextBox}
-          >
-            Add text
-          </button>
-          {onSave ? (
+        ) : (
+          <div className="hv-mb__rail-actions">
             <button
               type="button"
-              className="hv-admin__btn hv-admin__btn--primary"
-              disabled={busy || hasUploadingItems}
-              onClick={onSave}
-              title={hasUploadingItems ? 'Wait for uploads to finish' : undefined}
+              className="hv-admin__btn hv-admin__btn--ghost"
+              disabled={busy || board.items.length >= MAX_ITEMS}
+              onClick={addTextBox}
             >
-              Save board
+              Add text
             </button>
-          ) : null}
-        </div>
+          </div>
+        )}
 
         {selected ? (
           <div className="hv-mb__item-tools">
@@ -1464,6 +1593,40 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
             })}
           </ul>
         </div>
+        </div>
+
+        {onSave || onCancel ? (
+          <div className="hv-mb__rail-footer">
+            {onCancel ? (
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--ghost"
+                disabled={busy}
+                onClick={onCancel}
+              >
+                Close
+              </button>
+            ) : null}
+            {onSave ? (
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--primary"
+                disabled={busy || hasUploadingItems || saving}
+                onClick={onSave}
+                aria-busy={saving}
+                title={
+                  hasUploadingItems
+                    ? 'Wait for uploads to finish'
+                    : saving
+                      ? 'Saving moodboard…'
+                      : undefined
+                }
+              >
+                {saving ? 'Saving…' : 'Save board'}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </aside>
 
       {catalogOpen ? (

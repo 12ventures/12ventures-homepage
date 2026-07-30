@@ -57,6 +57,7 @@ export const HavenAdminStudio: React.FC<{
   moodboard: HavenMoodboard | null;
   moodboardLibrary: MoodboardCard[];
   moodboardBusy?: boolean;
+  moodboardSaving?: boolean;
   studioDraftId: string;
   /** Set once Generate creates the room set (for link badges). */
   linkedRoomSetId?: string | null;
@@ -94,6 +95,7 @@ export const HavenAdminStudio: React.FC<{
   moodboard,
   moodboardLibrary,
   moodboardBusy = false,
+  moodboardSaving = false,
   studioDraftId,
   linkedRoomSetId = null,
   onMoodboardChange,
@@ -338,6 +340,7 @@ export const HavenAdminStudio: React.FC<{
             board={moodboard}
             library={moodboardLibrary}
             busy={moodboardBusy || locked}
+            saving={moodboardSaving}
             linkedRoomSetId={linkedRoomSetId}
             pendingStudioDraftId={studioDraftId}
             poolProducts={products}
