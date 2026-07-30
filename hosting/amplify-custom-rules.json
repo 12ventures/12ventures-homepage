@@ -1,13 +1,13 @@
 [
   {
     "source": "/haven/store/product/<*>",
-    "target": "https://REPLACE_WITH_API_HOST/haven/store/product/<*>",
+    "target": "https://api-staging.snapskill.io/haven/store/product/<*>",
     "status": "200",
     "condition": null
   },
   {
     "source": "/haven/store/look/<*>",
-    "target": "https://REPLACE_WITH_API_HOST/haven/store/look/<*>",
+    "target": "https://api-staging.snapskill.io/haven/store/look/<*>",
     "status": "200",
     "condition": null
   },
