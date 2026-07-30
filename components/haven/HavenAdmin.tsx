@@ -7,6 +7,7 @@ import { HavenAdminAddProduct } from './HavenAdminAddProduct';
 import HavenAdminCreateStyleModal from './HavenAdminCreateStyleModal';
 import { HavenAdminStudio } from './HavenAdminStudio';
 import { HavenAdminTrends } from './HavenAdminTrends';
+import { HavenMoodboardEditor } from './HavenMoodboard';
 import { HavenProductFilterMenu } from './HavenProductFilterMenu';
 import {
   applyProductFilters,
@@ -396,6 +397,7 @@ const HavenAdmin: React.FC = () => {
   const [studioDraftId, setStudioDraftId] = useState<string>(() => crypto.randomUUID());
   const [moodboard, setMoodboard] = useState<HavenMoodboard | null>(null);
   const [moodboardLibrary, setMoodboardLibrary] = useState<MoodboardCard[]>([]);
+  const [moodboardsPanelOpen, setMoodboardsPanelOpen] = useState(false);
   const [productsModal, setProductsModal] = useState<null | 'scrape' | 'add'>(null);
   const [addProductInitialUrl, setAddProductInitialUrl] = useState('');
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
@@ -421,6 +423,12 @@ const HavenAdmin: React.FC = () => {
   }, [products, editing]);
 
   const productStoreOptions = useMemo(() => collectStoreOptions(products), [products]);
+  const visibleMoodboardCount = useMemo(
+    () =>
+      moodboardLibrary.filter((c) => c.itemCount > 0 || c.id === moodboard?.id)
+        .length,
+    [moodboardLibrary, moodboard?.id],
+  );
 
   const filteredCatalogProducts = useMemo(
     () => applyProductFilters(products, catalogFilters),
@@ -819,6 +827,7 @@ const HavenAdmin: React.FC = () => {
       ...prev.filter((c) => c.id !== local.id),
     ]);
     if (studioOpen) setStudioView('moodboard');
+    else setMoodboardsPanelOpen(true);
   };
 
   /** Open moodboard view; reuse current draft or make one local board (no API). */
@@ -873,6 +882,13 @@ const HavenAdmin: React.FC = () => {
         }
       }
     });
+
+  const openStandaloneMoodboards = () => {
+    setMoodboardsPanelOpen(true);
+    if (moodboard) return;
+    const first = moodboardLibrary.find((c) => c.itemCount > 0) ?? moodboardLibrary[0];
+    if (first) void onMoodboardSelect(first.id);
+  };
 
   const onMoodboardSave = () =>
     void run('moodboard', async () => {
@@ -1005,93 +1021,20 @@ const HavenAdmin: React.FC = () => {
       }
     });
 
-  const onMoodboardUpload = (files: FileList) => {
-    if (!moodboard) return;
-    const list = Array.from(files).slice(0, Math.max(0, 24 - moodboard.items.length));
-    if (!list.length) return;
-
-    const pending = list.map((file, i) => {
-      const col = i % 3;
-      const row = Math.floor(i / 3);
+  const onMoodboardUploadFile = async (file: File) => {
+    try {
+      const uploaded = await havenAdminClient.uploadBaseImage(file);
+      if (!uploaded.originalImageUrl) {
+        throw new Error('Image upload failed.');
+      }
       return {
-        file,
-        blobUrl: URL.createObjectURL(file),
-        id: `item_${crypto.randomUUID()}`,
-        x: 8 + col * 30,
-        y: 18 + row * 28,
-        w: 26,
-        h: 26,
-        zIndex: moodboard.items.length + i,
+        imageUrl: uploaded.originalImageUrl,
+        uploadId: uploaded.uploadId ?? null,
       };
-    });
-
-    // Show items immediately with local preview + loading state.
-    const placeholders = pending.map(({ blobUrl, id, x, y, w, h, zIndex }) => ({
-      id,
-      kind: 'image' as const,
-      imageUrl: blobUrl,
-      uploadId: null as string | null,
-      uploading: true,
-      x,
-      y,
-      w,
-      h,
-      zIndex,
-      link: null,
-    }));
-
-    const withPlaceholders = {
-      ...moodboard,
-      items: [...moodboard.items, ...placeholders],
-      updatedAt: new Date().toISOString(),
-    };
-    setMoodboard(withPlaceholders);
-    setMoodboardLibrary((prev) =>
-      prev.map((c) => (c.id === withPlaceholders.id ? cardFromBoard(withPlaceholders) : c)),
-    );
-
-    void (async () => {
-      setError(null);
-      await Promise.all(
-        pending.map(async ({ file, blobUrl, id }) => {
-          let imageUrl = blobUrl;
-          let uploadId: string | null = null;
-          let ok = false;
-          try {
-            const uploaded = await havenAdminClient.uploadBaseImage(file);
-            if (uploaded.originalImageUrl) {
-              imageUrl = uploaded.originalImageUrl;
-              uploadId = uploaded.uploadId;
-              ok = true;
-            }
-          } catch (err) {
-            setError(err instanceof Error ? err.message : 'Image upload failed.');
-          }
-
-          setMoodboard((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              items: prev.items.map((it) =>
-                it.id === id && it.kind === 'image'
-                  ? {
-                      ...it,
-                      imageUrl,
-                      uploadId,
-                      uploading: false,
-                    }
-                  : it,
-              ),
-              updatedAt: new Date().toISOString(),
-            };
-          });
-
-          if (ok && blobUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(blobUrl);
-          }
-        }),
-      );
-    })();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Image upload failed.');
+      throw err;
+    }
   };
 
   const onStudioUploadBase = (file: File) => {
@@ -1628,7 +1571,7 @@ const HavenAdmin: React.FC = () => {
                   onMoodboardDelete={onMoodboardDelete}
                   onMoodboardLink={onMoodboardLink}
                   onMoodboardUnlink={onMoodboardUnlink}
-                  onMoodboardUpload={onMoodboardUpload}
+                  uploadMoodboardImageFile={onMoodboardUploadFile}
                 />
               ) : (
                 <>
@@ -2348,6 +2291,87 @@ const HavenAdmin: React.FC = () => {
                 </div>
               )}
                 </>
+              )}
+            </section>
+
+            <section className="hv-admin__panel hv-admin__panel--moodboards">
+              <div className="hv-admin__panel-head">
+                <div>
+                  <h2 className="hv-admin__panel-title">Moodboards</h2>
+                  <p className="hv-admin__panel-meta">
+                    {visibleMoodboardCount} board
+                    {visibleMoodboardCount === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <div className="hv-admin__panel-tools">
+                  <button
+                    type="button"
+                    className="hv-admin__btn hv-admin__btn--ghost hv-admin__btn--compact"
+                    disabled={busy != null}
+                    onClick={() => {
+                      if (moodboardsPanelOpen) {
+                        setMoodboardsPanelOpen(false);
+                        return;
+                      }
+                      openStandaloneMoodboards();
+                    }}
+                  >
+                    {moodboardsPanelOpen ? 'Hide' : 'Browse'}
+                  </button>
+                  <button
+                    type="button"
+                    className="hv-admin__btn hv-admin__btn--primary hv-admin__btn--compact"
+                    disabled={busy != null}
+                    onClick={() => {
+                      if (studioOpen) {
+                        ensureStudioMoodboard();
+                        return;
+                      }
+                      onMoodboardCreate();
+                    }}
+                  >
+                    <MoodboardIcon />
+                    New moodboard
+                  </button>
+                </div>
+              </div>
+
+              {moodboardsPanelOpen ? (
+                studioOpen ? (
+                  <p className="hv-admin__empty" style={{ marginTop: 12 }}>
+                    Moodboard is open in Room Set Designer. Finish or leave Design Myself
+                    to edit boards here on their own.
+                  </p>
+                ) : moodboard ? (
+                  <HavenMoodboardEditor
+                    board={moodboard}
+                    library={moodboardLibrary.filter(
+                      (c) => c.id === moodboard.id || c.itemCount > 0,
+                    )}
+                    busy={busy === 'moodboard'}
+                    linkedRoomSetId={null}
+                    pendingStudioDraftId={null}
+                    poolProducts={[]}
+                    catalogProducts={products}
+                    onChange={setMoodboard}
+                    onSave={onMoodboardSave}
+                    onSelectBoard={onMoodboardSelect}
+                    onCreateBoard={onMoodboardCreate}
+                    onDeleteBoard={onMoodboardDelete}
+                    onUnlink={onMoodboardUnlink}
+                    uploadImageFile={onMoodboardUploadFile}
+                  />
+                ) : (
+                  <p className="hv-admin__empty" style={{ marginTop: 12 }}>
+                    No moodboards yet. Create one to collect references, palettes, and
+                    product ideas — no room set required.
+                  </p>
+                )
+              ) : (
+                <p className="hv-admin__empty" style={{ marginTop: 12 }}>
+                  Standalone boards you can build anytime, then link while designing a
+                  room set.
+                </p>
               )}
             </section>
 

@@ -67,7 +67,9 @@ export const HavenAdminStudio: React.FC<{
   onMoodboardDelete: (id: string) => void;
   onMoodboardLink: () => void;
   onMoodboardUnlink: () => void;
-  onMoodboardUpload: (files: FileList) => void;
+  uploadMoodboardImageFile: (
+    file: File,
+  ) => Promise<{ imageUrl: string; uploadId: string | null }>;
 }> = ({
   style,
   label,
@@ -101,7 +103,7 @@ export const HavenAdminStudio: React.FC<{
   onMoodboardDelete,
   onMoodboardLink,
   onMoodboardUnlink,
-  onMoodboardUpload,
+  uploadMoodboardImageFile,
 }) => {
   const stageRef = useRef<HTMLDivElement>(null);
   const draggingId = useRef<string | null>(null);
@@ -347,7 +349,7 @@ export const HavenAdminStudio: React.FC<{
             onDeleteBoard={onMoodboardDelete}
             onLink={onMoodboardLink}
             onUnlink={onMoodboardUnlink}
-            onUploadImages={onMoodboardUpload}
+            uploadImageFile={uploadMoodboardImageFile}
           />
         ) : (
           <div className="hv-admin__studio-empty">
