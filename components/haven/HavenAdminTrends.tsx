@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   FaGlobe,
   FaInstagram,
@@ -6,6 +6,7 @@ import {
   FaSearch,
   FaTiktok,
 } from 'react-icons/fa';
+import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import { havenAdminClient } from './api/havenAdminClient';
 import type {
   TrendBundle,
@@ -392,10 +393,18 @@ export const HavenAdminTrends: React.FC<{
   const [stepsExpanded, setStepsExpanded] = useState(true);
   const [resultsExpanded, setResultsExpanded] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const pollStartedAt = useRef<number | null>(null);
   const pollTimer = useRef<number | null>(null);
   const selectedIdRef = useRef<string | null>(null);
   const readyLayoutAppliedRef = useRef<string | null>(null);
+  const confirmTitleId = useId();
+
+  const closeConfirm = useCallback(() => {
+    if (busy === 'trends-start') return;
+    setConfirmOpen(false);
+  }, [busy]);
+  const confirmBackdrop = useBackdropDismiss(closeConfirm, confirmOpen);
 
   const applyLayoutForRun = useCallback((run: TrendRun | null) => {
     setNotesExpanded(false);
@@ -569,6 +578,7 @@ export const HavenAdminTrends: React.FC<{
   }, []);
 
   const startSearch = () => {
+    setConfirmOpen(false);
     void (async () => {
       onBusy('trends-start');
       onError(null);
@@ -592,6 +602,11 @@ export const HavenAdminTrends: React.FC<{
         onBusy(null);
       }
     })();
+  };
+
+  const requestStartSearch = () => {
+    if (busy != null || booting) return;
+    setConfirmOpen(true);
   };
 
   const backToList = () => {
@@ -657,7 +672,7 @@ export const HavenAdminTrends: React.FC<{
             type="button"
             className="hv-admin__btn hv-admin__btn--primary hv-admin__btn--compact"
             disabled={busy != null || booting}
-            onClick={startSearch}
+            onClick={requestStartSearch}
           >
             {busy === 'trends-start' ? 'Starting…' : 'Search latest trends'}
           </button>
@@ -833,7 +848,7 @@ export const HavenAdminTrends: React.FC<{
                 type="button"
                 className="hv-admin__btn hv-admin__btn--primary hv-admin__btn--compact"
                 disabled={busy != null}
-                onClick={startSearch}
+                onClick={requestStartSearch}
               >
                 Retry search
               </button>
@@ -919,6 +934,50 @@ export const HavenAdminTrends: React.FC<{
         </div>
       )}
       </div>
+
+      {confirmOpen ? (
+        <div
+          className="hv-admin__modal-backdrop"
+          role="presentation"
+          onMouseDown={confirmBackdrop.onMouseDown}
+          onClick={confirmBackdrop.onClick}
+        >
+          <div
+            className="hv-admin__modal hv-admin__modal--confirm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={confirmTitleId}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id={confirmTitleId} className="hv-admin__modal-title">
+              Search latest trends?
+            </h2>
+            <p className="hv-admin__modal-copy">
+              Scan the latest trends on the web for trending styles, then match them to
+              catalog and external product candidates. This usually takes about a minute.
+            </p>
+            <div className="hv-admin__modal-actions">
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--ghost"
+                disabled={busy === 'trends-start'}
+                onClick={closeConfirm}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="hv-admin__btn hv-admin__btn--primary"
+                disabled={busy != null}
+                onClick={startSearch}
+              >
+                {busy === 'trends-start' ? 'Starting…' : 'Start search'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 };

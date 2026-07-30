@@ -2561,7 +2561,15 @@
   animation-delay: 100ms;
 }
 
-/* —— Trending styles —— */
+.hv-admin__panel--moodboards {
+  min-width: 0;
+}
+
+.hv-admin__panel--moodboards .hv-admin__panel-tools .hv-admin__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .hv-admin__panel--trends {
   min-width: 0;
   display: flex;

@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { HexColorPicker } from 'react-colorful';
 import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import { HavenProductFilterMenu } from './HavenProductFilterMenu';
 import {
@@ -28,6 +29,13 @@ import {
 } from './types';
 import './haven-moodboard.css';
 
+type PaletteColorPickerState = {
+  index: number;
+  draft: string;
+  left: number;
+  top: number;
+};
+
 const TEXT_WEIGHT_CSS: Record<MoodboardTextWeight, number> = {
   regular: 400,
   medium: 500,
@@ -43,6 +51,20 @@ type ResizeCorner = 'nw' | 'ne' | 'sw' | 'se';
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path
+        d="M2.5 3.5h9M5.5 3.5V2.5h3v1M4 3.5l.5 8h5l.5-8"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 function hitResizeCorner(
@@ -102,132 +124,6 @@ function applyCornerResize(
   y = clamp(y, 0, 100 - h);
   return { x, y, w, h };
 }
-
-function normalizeHex(raw: string, fallback: string): string {
-  const t = raw.trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(t)) return t.toLowerCase();
-  if (/^[0-9a-fA-F]{6}$/.test(t)) return `#${t.toLowerCase()}`;
-  return fallback;
-}
-
-/** Local-only color editor — portaled to body so it isn’t clipped by the board. */
-const PaletteColorPopover: React.FC<{
-  role: string;
-  initialHex: string;
-  busy?: boolean;
-  anchorRect: DOMRect;
-  onApply: (hex: string) => void;
-  onCancel: () => void;
-}> = ({ role, initialHex, busy = false, anchorRect, onApply, onCancel }) => {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [draft, setDraft] = useState(initialHex);
-  const [pos, setPos] = useState(() => ({
-    top: Math.round(anchorRect.bottom + 8),
-    left: Math.round(anchorRect.left),
-  }));
-
-  useLayoutEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const panel = el.getBoundingClientRect();
-    let top = anchorRect.bottom + 8;
-    let left = anchorRect.left + anchorRect.width / 2 - panel.width / 2;
-    if (top + panel.height > window.innerHeight - 12) {
-      top = anchorRect.top - panel.height - 8;
-    }
-    if (left + panel.width > window.innerWidth - 12) {
-      left = window.innerWidth - panel.width - 12;
-    }
-    left = Math.max(12, left);
-    top = Math.max(12, top);
-    setPos({ top: Math.round(top), left: Math.round(left) });
-  }, [anchorRect]);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
-    };
-    const onReposition = () => onCancel();
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('resize', onReposition);
-    window.addEventListener('scroll', onReposition, true);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('resize', onReposition);
-      window.removeEventListener('scroll', onReposition, true);
-    };
-  }, [onCancel]);
-
-  const canApply = /^#[0-9a-fA-F]{6}$/.test(draft);
-
-  const colorBackdrop = useBackdropDismiss(onCancel);
-
-  return createPortal(
-    <div className="hv-mb__color-layer" role="presentation">
-      <div
-        className="hv-mb__color-backdrop"
-        aria-hidden="true"
-        onMouseDown={colorBackdrop.onMouseDown}
-        onClick={colorBackdrop.onClick}
-      />
-      <div
-        ref={rootRef}
-        className="hv-mb__color-popover hv-mb__color-popover--portal"
-        role="dialog"
-        aria-label={`Pick ${role} color`}
-        style={{ top: pos.top, left: pos.left }}
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <label className="hv-admin__field hv-mb__color-field">
-          <span className="hv-admin__label">Color</span>
-          <input
-            type="color"
-            className="hv-mb__color-wheel"
-            value={canApply ? draft : initialHex}
-            disabled={busy}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-        </label>
-        <label className="hv-admin__field hv-mb__color-field">
-          <span className="hv-admin__label">Hex</span>
-          <input
-            className="hv-admin__input"
-            value={draft}
-            disabled={busy}
-            spellCheck={false}
-            onChange={(e) => {
-              const raw = e.target.value.trim();
-              if (/^#?[0-9a-fA-F]{0,6}$/.test(raw)) {
-                setDraft(raw.startsWith('#') ? raw : raw ? `#${raw}` : '#');
-              }
-            }}
-            onBlur={() => setDraft((d) => normalizeHex(d, initialHex))}
-          />
-        </label>
-        <div className="hv-mb__color-actions">
-          <button
-            type="button"
-            className="hv-admin__btn hv-admin__btn--ghost"
-            disabled={busy}
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="hv-admin__btn hv-admin__btn--primary"
-            disabled={busy || !canApply}
-            onClick={() => onApply(normalizeHex(draft, initialHex))}
-          >
-            Apply
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-};
 
 /** Sample dominant-ish colors from an image URL (client-side Photo colors). */
 export async function extractPhotoColors(
@@ -311,7 +207,26 @@ export type HavenMoodboardEditorProps = {
   onDeleteBoard?: (id: string) => void;
   onLink?: () => void;
   onUnlink?: () => void;
-  onUploadImages?: (files: FileList) => void;
+  /** Upload a local file → CDN URL for the session image pool (not the board). */
+  uploadImageFile?: (
+    file: File,
+  ) => Promise<{ imageUrl: string; uploadId: string | null }>;
+};
+
+type SessionPoolImage = {
+  id: string;
+  imageUrl: string;
+  uploadId: string | null;
+  name: string;
+  uploading?: boolean;
+};
+
+type PoolThumb = {
+  id: string;
+  imageUrl: string;
+  uploadId: string | null;
+  name: string;
+  uploading?: boolean;
 };
 
 export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
@@ -329,20 +244,27 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
   onDeleteBoard,
   onLink,
   onUnlink,
-  onUploadImages,
+  uploadImageFile,
 }) => {
   const boardRef = useRef<HTMLDivElement>(null);
+  const boardStateRef = useRef(board);
   const fileRef = useRef<HTMLInputElement>(null);
+  const colorPickerElRef = useRef<HTMLDivElement>(null);
+  const colorPickerDraftRef = useRef<string | null>(null);
+  const colorPickerIndexRef = useRef<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   /** Inline text editing on the board (double-click). */
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const inlineTextRef = useRef<HTMLTextAreaElement>(null);
-  /** Slot selected for Photo colors targeting / open editor. */
+  /** Slot selected for Photo colors targeting / last opened swatch. */
   const [paletteSlot, setPaletteSlot] = useState<number | null>(null);
-  const [paletteEditing, setPaletteEditing] = useState(false);
-  const [paletteAnchor, setPaletteAnchor] = useState<DOMRect | null>(null);
+  /** Custom picker popover — draft only until dismissed. */
+  const [colorPicker, setColorPicker] = useState<PaletteColorPickerState | null>(
+    null,
+  );
   const [photoColors, setPhotoColors] = useState<string[]>([]);
   const [extraPoolIds, setExtraPoolIds] = useState<string[]>([]);
+  const [sessionUploads, setSessionUploads] = useState<SessionPoolImage[]>([]);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [catalogPickIds, setCatalogPickIds] = useState<string[]>([]);
   const [catalogFilters, setCatalogFilters] =
@@ -400,9 +322,24 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [editingTextId]);
 
+  // Keep a mutable board snapshot for async upload updates without stale closures.
+  useEffect(() => {
+    boardStateRef.current = board;
+  }, [board]);
+
+  // Fresh image pool when switching boards / starting a new session.
+  useEffect(() => {
+    setExtraPoolIds([]);
+    setSessionUploads([]);
+    setCatalogOpen(false);
+    setCatalogPickIds([]);
+  }, [board.id]);
+
   const updateItems = useCallback(
     (items: MoodboardItem[]) => {
-      onChange({ ...board, items, updatedAt: new Date().toISOString() });
+      const next = { ...board, items, updatedAt: new Date().toISOString() };
+      boardStateRef.current = next;
+      onChange(next);
     },
     [board, onChange],
   );
@@ -486,8 +423,6 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
       origX: pos.x,
       origY: pos.y,
     };
-    setPaletteEditing(false);
-    setPaletteAnchor(null);
     window.addEventListener('pointermove', onPalettePointerMove);
     window.addEventListener('pointerup', endPaletteDrag);
   };
@@ -566,11 +501,15 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     );
   };
 
+  const removeItem = (id: string) => {
+    updateItems(board.items.filter((i) => i.id !== id));
+    if (selectedId === id) setSelectedId(null);
+    if (editingTextId === id) setEditingTextId(null);
+  };
+
   const removeSelected = () => {
     if (!selected) return;
-    updateItems(board.items.filter((i) => i.id !== selected.id));
-    setSelectedId(null);
-    setEditingTextId(null);
+    removeItem(selected.id);
   };
 
   const addTextBox = () => {
@@ -609,18 +548,42 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     patchTextItem(selected.id, patch);
   };
 
-  const imagePool = useMemo(() => {
-    const byId = new Map<string, HavenProduct>();
+  const imagePool = useMemo((): PoolThumb[] => {
+    const byId = new Map<string, PoolThumb>();
     for (const p of poolProducts) {
-      if (p.id && p.imageUrl?.trim()) byId.set(p.id, p);
+      if (p.id && p.imageUrl?.trim()) {
+        byId.set(`product:${p.id}`, {
+          id: `product:${p.id}`,
+          imageUrl: p.imageUrl,
+          uploadId: null,
+          name: p.name,
+        });
+      }
     }
     for (const id of extraPoolIds) {
-      if (byId.has(id)) continue;
+      const key = `product:${id}`;
+      if (byId.has(key)) continue;
       const p = catalogProducts.find((c) => c.id === id);
-      if (p?.imageUrl?.trim()) byId.set(p.id, p);
+      if (p?.imageUrl?.trim()) {
+        byId.set(key, {
+          id: key,
+          imageUrl: p.imageUrl,
+          uploadId: null,
+          name: p.name,
+        });
+      }
+    }
+    for (const u of sessionUploads) {
+      byId.set(u.id, {
+        id: u.id,
+        imageUrl: u.imageUrl,
+        uploadId: u.uploadId,
+        name: u.name,
+        uploading: u.uploading,
+      });
     }
     return [...byId.values()];
-  }, [poolProducts, extraPoolIds, catalogProducts]);
+  }, [poolProducts, extraPoolIds, catalogProducts, sessionUploads]);
 
   const catalogWithImages = useMemo(
     () => catalogProducts.filter((p) => Boolean(p.imageUrl?.trim())),
@@ -637,8 +600,10 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     [catalogWithImages, catalogFilters],
   );
 
-  const addProductImage = (product: HavenProduct) => {
-    if (busy || !product.imageUrl?.trim() || board.items.length >= MAX_ITEMS) return;
+  const addPoolImageToBoard = (thumb: PoolThumb) => {
+    if (busy || thumb.uploading || !thumb.imageUrl?.trim() || board.items.length >= MAX_ITEMS) {
+      return;
+    }
     const maxZ = Math.max(0, ...board.items.map((i) => i.zIndex));
     const n = board.items.filter((i) => i.kind === 'image').length;
     const col = n % 3;
@@ -646,8 +611,8 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     const item: MoodboardItem = {
       id: `item_${crypto.randomUUID()}`,
       kind: 'image',
-      imageUrl: product.imageUrl,
-      uploadId: null,
+      imageUrl: thumb.imageUrl,
+      uploadId: thumb.uploadId,
       x: clamp(8 + col * 30, 0, 72),
       y: clamp(14 + row * 26, 0, 72),
       w: 26,
@@ -659,14 +624,171 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     setSelectedId(item.id);
   };
 
+  const uploadFilesToPool = (files: FileList | null) => {
+    if (!files?.length || !uploadImageFile || busy) return;
+    const current = boardStateRef.current;
+    const room = Math.max(0, MAX_ITEMS - current.items.length);
+    const list = Array.from(files).slice(0, Math.max(room, 0));
+    if (!list.length) return;
+
+    const maxZ = Math.max(0, ...current.items.map((i) => i.zIndex));
+    const existingImages = current.items.filter((i) => i.kind === 'image').length;
+
+    const placeholders: (SessionPoolImage & {
+      file: File;
+      blobUrl: string;
+      boardItem: MoodboardItem;
+    })[] = list.map((file, i) => {
+      const blobUrl = URL.createObjectURL(file);
+      const id = `upload_${crypto.randomUUID()}`;
+      const col = (existingImages + i) % 3;
+      const row = Math.floor((existingImages + i) / 3);
+      return {
+        id,
+        imageUrl: blobUrl,
+        uploadId: null,
+        name: file.name.replace(/\.[^.]+$/, '') || 'Upload',
+        uploading: true,
+        file,
+        blobUrl,
+        boardItem: {
+          id,
+          kind: 'image' as const,
+          imageUrl: blobUrl,
+          uploadId: null,
+          uploading: true,
+          x: clamp(8 + col * 30, 0, 72),
+          y: clamp(14 + row * 26, 0, 72),
+          w: 26,
+          h: 26,
+          zIndex: maxZ + 1 + i,
+          link: null,
+        },
+      };
+    });
+
+    setSessionUploads((prev) => [
+      ...placeholders.map(({ file: _f, blobUrl: _b, boardItem: _i, ...rest }) => rest),
+      ...prev,
+    ]);
+
+    const withBoardItems = {
+      ...current,
+      items: [...current.items, ...placeholders.map((p) => p.boardItem)],
+      updatedAt: new Date().toISOString(),
+    };
+    boardStateRef.current = withBoardItems;
+    onChange(withBoardItems);
+    setSelectedId(placeholders[placeholders.length - 1]?.id ?? null);
+
+    void (async () => {
+      for (const entry of placeholders) {
+        try {
+          const uploaded = await uploadImageFile(entry.file);
+          setSessionUploads((prev) =>
+            prev.map((u) =>
+              u.id === entry.id
+                ? {
+                    ...u,
+                    imageUrl: uploaded.imageUrl,
+                    uploadId: uploaded.uploadId,
+                    uploading: false,
+                  }
+                : u,
+            ),
+          );
+          const latest = boardStateRef.current;
+          if (!latest.items.some((it) => it.id === entry.id)) continue;
+          const next = {
+            ...latest,
+            items: latest.items.map((it) =>
+              it.id === entry.id && it.kind === 'image'
+                ? {
+                    ...it,
+                    imageUrl: uploaded.imageUrl,
+                    uploadId: uploaded.uploadId,
+                    uploading: false,
+                  }
+                : it,
+            ),
+            updatedAt: new Date().toISOString(),
+          };
+          boardStateRef.current = next;
+          onChange(next);
+        } catch {
+          setSessionUploads((prev) => prev.filter((u) => u.id !== entry.id));
+          const latest = boardStateRef.current;
+          if (!latest.items.some((it) => it.id === entry.id)) continue;
+          const next = {
+            ...latest,
+            items: latest.items.filter((it) => it.id !== entry.id),
+            updatedAt: new Date().toISOString(),
+          };
+          boardStateRef.current = next;
+          onChange(next);
+        } finally {
+          if (entry.blobUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(entry.blobUrl);
+          }
+        }
+      }
+    })();
+  };
+
   const openCatalogModal = () => {
     setCatalogPickIds(extraPoolIds);
     setCatalogOpen(true);
   };
 
   const confirmCatalogPicks = () => {
+    const prevPool = new Set(extraPoolIds);
+    const toPlace = catalogPickIds.filter((id) => !prevPool.has(id));
     setExtraPoolIds(catalogPickIds);
     setCatalogOpen(false);
+
+    if (!toPlace.length || busy) return;
+
+    const current = boardStateRef.current;
+    let items = [...current.items];
+    let maxZ = Math.max(0, ...items.map((i) => i.zIndex));
+    let imageCount = items.filter((i) => i.kind === 'image').length;
+    let lastId: string | null = null;
+
+    for (const id of toPlace) {
+      if (items.length >= MAX_ITEMS) break;
+      const p = catalogProducts.find((c) => c.id === id);
+      if (!p?.imageUrl?.trim()) continue;
+      const col = imageCount % 3;
+      const row = Math.floor(imageCount / 3);
+      const itemId = `item_${crypto.randomUUID()}`;
+      items = [
+        ...items,
+        {
+          id: itemId,
+          kind: 'image' as const,
+          imageUrl: p.imageUrl,
+          uploadId: null,
+          x: clamp(8 + col * 30, 0, 72),
+          y: clamp(14 + row * 26, 0, 72),
+          w: 26,
+          h: 26,
+          zIndex: ++maxZ,
+          link: null,
+        },
+      ];
+      imageCount += 1;
+      lastId = itemId;
+    }
+
+    if (items.length === current.items.length) return;
+    const next = {
+      ...current,
+      items,
+      updatedAt: new Date().toISOString(),
+    };
+    boardStateRef.current = next;
+    onChange(next);
+    if (lastId) setSelectedId(lastId);
   };
 
   const toggleCatalogPick = (id: string) => {
@@ -682,16 +804,87 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     updatePalette(next);
   };
 
-  const cancelPaletteEditor = useCallback(() => {
-    setPaletteEditing(false);
-    setPaletteAnchor(null);
+  const applyPaletteHex = useCallback(
+    (index: number, hex: string) => {
+      const current = boardStateRef.current;
+      const next = {
+        ...current,
+        palette: current.palette.map((s, i) =>
+          i === index ? { ...s, hex } : s,
+        ) as HavenMoodboard['palette'],
+        updatedAt: new Date().toISOString(),
+      };
+      boardStateRef.current = next;
+      onChange(next);
+    },
+    [onChange],
+  );
+
+  const openSwatchColorPicker = (index: number, anchor: HTMLElement) => {
+    if (colorPickerIndexRef.current === index) {
+      discardColorPicker();
+      return;
+    }
+
+    const hex = boardStateRef.current.palette[index]?.hex ?? '#5f6f52';
+    const rect = anchor.getBoundingClientRect();
+    const width = 200;
+    const height = 230;
+    const left = Math.min(
+      Math.max(8, rect.left),
+      window.innerWidth - width - 8,
+    );
+    const top = Math.min(
+      rect.bottom + 6,
+      window.innerHeight - height - 8,
+    );
+    setPaletteSlot(index);
+    colorPickerIndexRef.current = index;
+    colorPickerDraftRef.current = hex;
+    setColorPicker({ index, draft: hex, left, top });
+  };
+
+  const setColorPickerDraft = (hex: string) => {
+    colorPickerDraftRef.current = hex;
+    setColorPicker((prev) => (prev ? { ...prev, draft: hex } : null));
+  };
+
+  const discardColorPicker = useCallback(() => {
+    colorPickerIndexRef.current = null;
+    colorPickerDraftRef.current = null;
+    setColorPicker(null);
   }, []);
 
-  const openPaletteEditor = (index: number, anchorEl: HTMLElement) => {
-    setPaletteSlot(index);
-    setPaletteEditing(true);
-    setPaletteAnchor(anchorEl.getBoundingClientRect());
-  };
+  const applyColorPicker = useCallback(() => {
+    const index = colorPickerIndexRef.current;
+    const hex = colorPickerDraftRef.current;
+    colorPickerIndexRef.current = null;
+    colorPickerDraftRef.current = null;
+    setColorPicker(null);
+    if (index == null || !hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+    applyPaletteHex(index, hex);
+  }, [applyPaletteHex]);
+
+  useEffect(() => {
+    if (!colorPicker) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (!target) return;
+      if (colorPickerElRef.current?.contains(target)) return;
+      // Let chip swatches open/switch without fighting the dismiss handler.
+      if (target.closest?.('.hv-mb__swatches--chip .hv-mb__swatch')) return;
+      discardColorPicker();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') discardColorPicker();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [colorPicker, discardColorPicker]);
 
   const applyPhotoColor = (hex: string) => {
     if (paletteSlot != null) {
@@ -711,9 +904,9 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
     [board.items],
   );
 
-  const hasUploadingItems = board.items.some(
-    (it) => it.kind === 'image' && it.uploading,
-  );
+  const hasUploadingItems =
+    board.items.some((it) => it.kind === 'image' && it.uploading) ||
+    sessionUploads.some((u) => Boolean(u.uploading));
 
   return (
     <div className="hv-mb">
@@ -810,7 +1003,22 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
                   <div className="hv-mb__upload-veil" aria-busy="true" aria-label="Uploading">
                     <span className="hv-mb__upload-spinner" />
                   </div>
-                ) : null}
+                ) : (
+                  <button
+                    type="button"
+                    className="hv-mb__item-trash"
+                    disabled={busy}
+                    aria-label="Remove from moodboard"
+                    title="Remove from moodboard"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeItem(item.id);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -821,13 +1029,13 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
                 <button
                   type="button"
                   className="hv-admin__btn hv-admin__btn--ghost"
-                  disabled={busy}
+                  disabled={busy || !uploadImageFile}
                   onClick={(e) => {
                     e.stopPropagation();
                     fileRef.current?.click();
                   }}
                 >
-                  Add images
+                  Upload
                 </button>
                 <button
                   type="button"
@@ -845,7 +1053,7 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
           ) : null}
 
           <div
-            className={`hv-mb__palette-chip${paletteEditing ? ' is-editing' : ''}`}
+            className="hv-mb__palette-chip"
             style={{ left: `${palettePos.x}%`, top: `${palettePos.y}%` }}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -862,45 +1070,88 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
               <span />
             </button>
             <div className="hv-mb__swatches hv-mb__swatches--chip">
-              {board.palette.map((slot: MoodboardPaletteSlot, i) => (
-                <button
-                  key={`${slot.role}-${i}`}
-                  type="button"
-                  className={`hv-mb__swatch${paletteSlot === i && paletteEditing ? ' is-active' : ''}`}
-                  style={slot.hex ? { background: slot.hex } : undefined}
-                  title={`${slot.role}${slot.hex ? ` · ${slot.hex}` : ''}`}
-                  disabled={busy}
-                  onClick={(e) => {
-                    if (paletteEditing && paletteSlot === i) {
-                      cancelPaletteEditor();
-                      return;
-                    }
-                    openPaletteEditor(i, e.currentTarget);
-                  }}
-                  aria-label={`Edit ${slot.role} color`}
-                >
-                  {!slot.hex ? <span>+</span> : null}
-                </button>
-              ))}
+              {board.palette.map((slot: MoodboardPaletteSlot, i) => {
+                const previewHex =
+                  colorPicker?.index === i ? colorPicker.draft : slot.hex;
+                return (
+                  <button
+                    key={`${slot.role}-${i}`}
+                    type="button"
+                    className={`hv-mb__swatch${paletteSlot === i ? ' is-active' : ''}`}
+                    style={previewHex ? { background: previewHex } : undefined}
+                    title={`${slot.role}${previewHex ? ` · ${previewHex}` : ''}`}
+                    disabled={busy}
+                    onClick={(e) => openSwatchColorPicker(i, e.currentTarget)}
+                    aria-label={`Edit ${slot.role} color`}
+                    aria-expanded={colorPicker?.index === i}
+                  >
+                    {!previewHex ? <span>+</span> : null}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
 
-      {paletteEditing && paletteSlot != null && paletteAnchor ? (
-        <PaletteColorPopover
-          key={paletteSlot}
-          role={board.palette[paletteSlot]?.role ?? 'color'}
-          initialHex={board.palette[paletteSlot]?.hex ?? '#5f6f52'}
-          busy={busy}
-          anchorRect={paletteAnchor}
-          onCancel={cancelPaletteEditor}
-          onApply={(hex) => {
-            setSlotHex(paletteSlot, hex);
-            cancelPaletteEditor();
-          }}
-        />
-      ) : null}
+      {colorPicker
+        ? createPortal(
+            <div
+              ref={colorPickerElRef}
+              className="hv-mb__color-popover"
+              style={{ left: colorPicker.left, top: colorPicker.top }}
+              role="dialog"
+              aria-label="Pick palette color"
+            >
+              <HexColorPicker
+                color={
+                  /^#[0-9a-fA-F]{6}$/.test(colorPicker.draft)
+                    ? colorPicker.draft
+                    : (colorPickerDraftRef.current ?? '#5f6f52')
+                }
+                onChange={setColorPickerDraft}
+              />
+              <div className="hv-mb__color-row">
+                <label className="hv-mb__color-hex">
+                  <span>Hex</span>
+                  <input
+                    type="text"
+                    value={colorPicker.draft}
+                    spellCheck={false}
+                    aria-label="Hex color"
+                    onChange={(e) => {
+                      const v = e.target.value.trim();
+                      setColorPicker((prev) =>
+                        prev ? { ...prev, draft: v } : null,
+                      );
+                      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+                        colorPickerDraftRef.current = v;
+                      }
+                    }}
+                    onBlur={() => {
+                      const valid = colorPickerDraftRef.current;
+                      if (valid) setColorPickerDraft(valid);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyColorPicker();
+                      }
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="hv-mb__color-apply"
+                  onClick={applyColorPicker}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <aside className="hv-mb__rail">
         <label className="hv-admin__field">
@@ -939,7 +1190,7 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
           </div>
         ) : null}
 
-        {(poolProducts.length > 0 || catalogWithImages.length > 0) ? (
+        {catalogWithImages.length > 0 || imagePool.length > 0 || uploadImageFile ? (
           <div className="hv-mb__pool">
             <div className="hv-mb__rail-head">
               <p className="hv-admin__label">Product images</p>
@@ -951,29 +1202,57 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
                   <button
                     key={p.id}
                     type="button"
-                    className="hv-mb__pool-thumb"
-                    disabled={busy || board.items.length >= MAX_ITEMS}
-                    title={`Add ${p.name}`}
-                    aria-label={`Add ${p.name} to moodboard`}
-                    onClick={() => addProductImage(p)}
+                    className={`hv-mb__pool-thumb${p.uploading ? ' is-uploading' : ''}`}
+                    disabled={busy || Boolean(p.uploading) || board.items.length >= MAX_ITEMS}
+                    title={
+                      p.uploading
+                        ? `Uploading ${p.name}…`
+                        : `Add ${p.name} to moodboard`
+                    }
+                    aria-label={
+                      p.uploading
+                        ? `Uploading ${p.name}`
+                        : `Add ${p.name} to moodboard`
+                    }
+                    onClick={() => addPoolImageToBoard(p)}
                   >
-                    <img src={p.imageUrl!} alt="" />
+                    <img src={p.imageUrl} alt="" />
+                    {p.uploading ? (
+                      <span className="hv-mb__pool-thumb-veil" aria-hidden="true">
+                        <span className="hv-mb__upload-spinner" />
+                      </span>
+                    ) : null}
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="hv-admin__panel-meta">No product images in the pool yet.</p>
+              <p className="hv-admin__panel-meta">
+                Pool is empty. Upload or browse the catalog, then click a thumb to
+                place images on the board.
+              </p>
             )}
-            {catalogWithImages.length > 0 ? (
-              <button
-                type="button"
-                className="hv-admin__btn hv-admin__btn--ghost"
-                disabled={busy}
-                onClick={openCatalogModal}
-              >
+            <div className="hv-mb__pool-actions">
+              {uploadImageFile ? (
+                <button
+                  type="button"
+                  className="hv-admin__btn hv-admin__btn--ghost"
+                  disabled={busy}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  Upload
+                </button>
+              ) : null}
+              {catalogWithImages.length > 0 ? (
+                <button
+                  type="button"
+                  className="hv-admin__btn hv-admin__btn--ghost"
+                  disabled={busy}
+                  onClick={openCatalogModal}
+                >
                 Browse catalog
-              </button>
-            ) : null}
+                </button>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -985,18 +1264,10 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
             multiple
             className="hv-admin__file-input"
             onChange={(e) => {
-              if (e.target.files?.length) onUploadImages?.(e.target.files);
+              uploadFilesToPool(e.target.files);
               e.target.value = '';
             }}
           />
-          <button
-            type="button"
-            className="hv-admin__btn hv-admin__btn--ghost"
-            disabled={busy || board.items.length >= MAX_ITEMS}
-            onClick={() => fileRef.current?.click()}
-          >
-            Add images
-          </button>
           <button
             type="button"
             className="hv-admin__btn hv-admin__btn--ghost"
@@ -1199,7 +1470,7 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
         <div
           className="hv-mb__catalog-modal"
           role="dialog"
-          aria-label="Add products to image pool"
+          aria-label="Add products"
           onMouseDown={catalogBackdrop.onMouseDown}
           onClick={catalogBackdrop.onClick}
         >
@@ -1210,7 +1481,7 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
           >
             <div className="hv-mb__rail-head">
               <p className="hv-admin__label">
-                Catalog · {catalogPickIds.length} selected for pool
+                Catalog · {catalogPickIds.length} selected
               </p>
               <div className="hv-admin__studio-rail-tools">
                 <HavenProductFilterMenu
@@ -1282,7 +1553,7 @@ export const HavenMoodboardEditor: React.FC<HavenMoodboardEditorProps> = ({
                 disabled={busy}
                 onClick={confirmCatalogPicks}
               >
-                Add to pool
+                Add
               </button>
             </div>
           </div>
