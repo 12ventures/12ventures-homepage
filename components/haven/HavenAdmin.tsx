@@ -37,6 +37,7 @@ import {
   createEmptyMoodboard,
   moodboardCoverImageUrl,
   serializeMoodboardItems,
+  isRoomSetGenerateTerminal,
   isRoomSetGenerating,
   resolveStageAspect,
   roomSetGenerateCopy,
@@ -465,10 +466,18 @@ const HavenAdmin: React.FC = () => {
 
   const anyGenerating = useMemo(
     () =>
-      roomSets.some((s) => isRoomSetGenerating(s.generateStatus)) ||
-      isRoomSetGenerating(editing?.generateStatus),
-    [roomSets, editing?.generateStatus],
+      roomSets.some(
+        (s) =>
+          isRoomSetGenerating(s.generateStatus) ||
+          (s.generateStatus === 'ready' && !s.imageUrl),
+      ) ||
+      isRoomSetGenerating(editing?.generateStatus) ||
+      (editing?.generateStatus === 'ready' && !editing.imageUrl),
+    [roomSets, editing?.generateStatus, editing?.imageUrl],
   );
+
+  /** Keep polling while a Design Myself job is open, even if status briefly looks idle. */
+  const shouldPollGenerates = Boolean(studioJobId) || anyGenerating;
 
   const refresh = useCallback(async () => {
     const [styleList, productList] = await Promise.all([
@@ -603,46 +612,68 @@ const HavenAdmin: React.FC = () => {
     };
   }, [refresh, refreshRoomSets]);
 
-  // Poll in-progress room-set generates (~2s).
+  const pollTargetIdRef = useRef<string | null>(null);
+  pollTargetIdRef.current = studioJobId || editing?.id || null;
+
+  // Poll in-progress room-set generates (~2s). Stay alive for studio jobs until terminal.
   useEffect(() => {
-    if (!anyGenerating) return;
+    if (!shouldPollGenerates) return;
     let cancelled = false;
-    const editingId = editing?.id;
+    let inFlight = false;
+    let seq = 0;
 
     const tick = async () => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      const mySeq = ++seq;
+      const targetId = pollTargetIdRef.current;
       try {
         const sets = await havenAdminClient.listRoomSets();
-        if (cancelled) return;
+        if (cancelled || mySeq !== seq) return;
         mergeRoomSets(sets);
 
-        if (editingId) {
-          const detail = await havenAdminClient.getRoomSet(editingId);
-          if (cancelled) return;
-          applyDetail(detail);
+        if (!targetId) return;
 
-          if (detail.generateJobId && isRoomSetGenerating(detail.generateStatus)) {
-            try {
-              const job = await havenAdminClient.getRoomSetJob(detail.generateJobId);
-              if (cancelled) return;
-              if (job.reusedBaseRoom) setReusedBaseRoom(true);
-              setEditing((prev) =>
-                prev && prev.id === editingId
-                  ? {
-                      ...prev,
-                      generateStatus: job.status || prev.generateStatus,
-                      generateProgress: job.progress ?? prev.generateProgress,
-                      generateMessage: job.message ?? prev.generateMessage,
-                      generateError: job.error ?? prev.generateError,
-                    }
-                  : prev,
-              );
-            } catch {
-              /* detail poll is enough */
+        let detail = await havenAdminClient.getRoomSet(targetId);
+        if (cancelled || mySeq !== seq) return;
+
+        const jobId = detail.generateJobId;
+        if (jobId && !isRoomSetGenerateTerminal(detail.generateStatus, detail.imageUrl)) {
+          try {
+            const job = await havenAdminClient.getRoomSetJob(jobId);
+            if (cancelled || mySeq !== seq) return;
+            if (job.reusedBaseRoom) setReusedBaseRoom(true);
+            const jobStatus = (job.status || detail.generateStatus || '').trim();
+            detail = {
+              ...detail,
+              generateStatus: jobStatus || detail.generateStatus,
+              generateProgress: job.progress ?? detail.generateProgress,
+              generateMessage: job.message ?? detail.generateMessage,
+              generateError: job.error ?? detail.generateError,
+            };
+            // Job may hit ready before the room-set detail has imageUrl — refetch.
+            if (jobStatus === 'ready' && !detail.imageUrl) {
+              const again = await havenAdminClient.getRoomSet(targetId);
+              if (cancelled || mySeq !== seq) return;
+              detail = {
+                ...again,
+                generateStatus: again.generateStatus ?? 'ready',
+                generateProgress: job.progress ?? again.generateProgress,
+                generateMessage: job.message ?? again.generateMessage,
+                generateError: job.error ?? again.generateError,
+                generateJobId: again.generateJobId ?? jobId,
+              };
             }
+          } catch {
+            /* detail poll is enough */
           }
         }
+
+        applyDetail(detail);
       } catch {
         /* keep last UI; next tick retries */
+      } finally {
+        inFlight = false;
       }
     };
 
@@ -652,7 +683,7 @@ const HavenAdmin: React.FC = () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [anyGenerating, editing?.id, applyDetail, mergeRoomSets]);
+  }, [shouldPollGenerates, applyDetail, mergeRoomSets]);
 
   useEffect(() => {
     document.title = 'Haven · Admin';
@@ -682,11 +713,43 @@ const HavenAdmin: React.FC = () => {
     }
   };
 
+  const clearEditorSession = (opts?: { keepStageLock?: boolean }) => {
+    setEditing(null);
+    setDraftHotspots([]);
+    setPinEditMode(false);
+    setMovedProductIds([]);
+    setDraggingHotspotId(null);
+    if (!opts?.keepStageLock) {
+      setStageLockSrc(null);
+    }
+    setStageRevealSrc(null);
+    setStageRevealing(false);
+    setReadyBannerId(null);
+    setReusedBaseRoom(false);
+    pinBaselineRef.current = [];
+    draggingPinId.current = null;
+  };
+
+  const scrollToEditorPanel = () => {
+    // Wait a tick so the pending/editor panel can mount before scrolling.
+    window.setTimeout(() => {
+      editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
   const openCreatedSet = async (
     roomSet: RoomSet,
     generateJob?: { jobId: string; status: string; progress?: number; message?: string; reusedBaseRoom?: boolean },
   ) => {
     setReusedBaseRoom(Boolean(generateJob?.reusedBaseRoom));
+    setPinEditMode(false);
+    setMovedProductIds([]);
+    setDraggingHotspotId(null);
+    setReadyBannerId(null);
+    setStageRevealSrc(null);
+    setStageRevealing(false);
+    pinBaselineRef.current = [];
+    draggingPinId.current = null;
     const sets = await havenAdminClient.listRoomSets();
     // New set occupies the first grid slot immediately (same place when ready).
     mergeRoomSets(sets, roomSet.id);
@@ -720,6 +783,8 @@ const HavenAdmin: React.FC = () => {
         .split(/,|\n/)
         .map((t) => t.trim())
         .filter(Boolean);
+      // Detach any open set so we don't keep showing / scrolling to the old editor.
+      clearEditorSession();
       const basePreview =
         selectedStyle?.baseRoomImageUrl || studioBaseUrl || null;
       if (basePreview) {
@@ -727,6 +792,7 @@ const HavenAdmin: React.FC = () => {
         setStageRevealSrc(null);
         setStageRevealing(false);
       }
+      scrollToEditorPanel();
       const { roomSet, generateJob } = await havenAdminClient.createRoomSet({
         styleId: roomStyleId,
         label,
@@ -745,9 +811,7 @@ const HavenAdmin: React.FC = () => {
       setSelectedProductIds([]);
       setCreateStep(0);
       await openCreatedSet(roomSet, generateJob);
-      window.requestAnimationFrame(() => {
-        editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+      scrollToEditorPanel();
     });
 
   const openStudio = () => {
@@ -1094,9 +1158,9 @@ const HavenAdmin: React.FC = () => {
     setRoomTags('');
     setSelectedProductIds([]);
     setCreateStep(0);
-    window.requestAnimationFrame(() => {
+    window.setTimeout(() => {
       editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    }, 50);
   }, [selectedStyle?.label]);
 
   useEffect(() => {
@@ -1120,23 +1184,32 @@ const HavenAdmin: React.FC = () => {
   }, [editing?.id, editing?.generateStatus, editing?.imageUrl]);
 
   const closeEditor = () => {
-    setEditing(null);
-    setDraftHotspots([]);
-    setPinEditMode(false);
-    setMovedProductIds([]);
-    setDraggingHotspotId(null);
-    setStageLockSrc(null);
-    setStageRevealSrc(null);
-    setStageRevealing(false);
-    setReadyBannerId(null);
-    setReusedBaseRoom(false);
+    clearEditorSession();
   };
+
+  /** Studio must stay open until the look is actually ready (or failed)—not merely
+   *  "not in the in-progress status set", which can flicker before imageUrl lands. */
+  const studioJobTerminal =
+    editing != null &&
+    studioJobId != null &&
+    editing.id === studioJobId &&
+    isRoomSetGenerateTerminal(editing.generateStatus, editing.imageUrl);
 
   useEffect(() => {
     if (!studioJobId || !editing || editing.id !== studioJobId) return;
-    if (isRoomSetGenerating(editing.generateStatus)) return;
+    if (!studioJobTerminal) return;
+    if (editing.generateStatus === 'ready' && editing.imageUrl) {
+      setReadyBannerId(editing.id);
+    }
     finishStudioJob();
-  }, [studioJobId, editing?.id, editing?.generateStatus, finishStudioJob]);
+  }, [
+    studioJobId,
+    editing?.id,
+    editing?.generateStatus,
+    editing?.imageUrl,
+    studioJobTerminal,
+    finishStudioJob,
+  ]);
 
   const onRegenerate = (id: string) =>
     void run(`regen-${id}`, async () => {
@@ -1328,8 +1401,10 @@ const HavenAdmin: React.FC = () => {
       (busy === 'studio' ||
         (studioJobId != null &&
           editing?.id === studioJobId &&
-          isRoomSetGenerating(editing.generateStatus))),
+          !studioJobTerminal)),
   );
+  /** Auto-generate in flight before the new set is opened in the editor. */
+  const pendingAutoCreate = busy === 'room' && !studioOpen && !editing;
   /** Follow-up gen (rearrange/regen) or manual create — keep detail view with locked image. */
   const editorInPlaceWorking = Boolean(
     editing &&
@@ -2069,6 +2144,49 @@ const HavenAdmin: React.FC = () => {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {pendingAutoCreate && (
+                <div className="hv-admin__editor" ref={editorAnchorRef}>
+                  <div className="hv-admin__panel-head">
+                    <h3 className="hv-admin__panel-title">Creating look</h3>
+                  </div>
+                  <div
+                    className="hv-admin__pin-stage hv-admin__pin-stage--working"
+                    style={{ aspectRatio: '16 / 9' }}
+                  >
+                    {stageLockSrc ? (
+                      <img
+                        src={stageLockSrc}
+                        alt=""
+                        className="hv-admin__pin-img hv-admin__pin-img--base"
+                      />
+                    ) : (
+                      <span
+                        className="hv-admin__pin-img hv-admin__pin-img--base"
+                        style={{
+                          display: 'block',
+                          background: 'linear-gradient(145deg, #e8e4dc, #d4cfc4)',
+                        }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <div className="hv-admin__stage-gen" aria-live="polite">
+                      <div className="hv-admin__stage-gen__veil" aria-hidden="true" />
+                      <div className="hv-admin__stage-gen__sheen" aria-hidden="true" />
+                      <div className="hv-admin__stage-gen__copy">
+                        <p className="hv-admin__stage-gen__eyebrow">Creating look</p>
+                        <p className="hv-admin__stage-gen__status">Starting generation…</p>
+                        <div className="hv-admin__stage-gen__meter" aria-hidden="true">
+                          <div
+                            className="hv-admin__stage-gen__meter-fill"
+                            style={{ transform: 'scaleX(0.12)' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 

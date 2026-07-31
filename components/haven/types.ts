@@ -347,6 +347,15 @@ export function isRoomSetGenerating(status?: RoomSetGenerateStatus): boolean {
   return status != null && IN_PROGRESS_GENERATE.has(String(status));
 }
 
+/** True when the UI can stop waiting on a generate job. */
+export function isRoomSetGenerateTerminal(
+  status?: RoomSetGenerateStatus,
+  imageUrl?: string | null,
+): boolean {
+  if (status === 'failed') return true;
+  return status === 'ready' && Boolean(imageUrl?.trim());
+}
+
 const PLACING_FUN_LINES = [
   'Adjusting couches…',
   'Straightening paintings…',
