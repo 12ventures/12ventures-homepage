@@ -523,7 +523,9 @@ class PoseidonService {
   }
 
   async getAnalyticsSummary(filter: DashboardFilter, includeTestCalls = false): Promise<AnalyticsSummary> {
-    return this.request(`/api/dashboard/analytics/summary?${buildAnalyticsParams(filter, includeTestCalls).toString()}`);
+    const params = buildAnalyticsParams(filter, includeTestCalls);
+    params.set('accepted_calls_only', 'true');
+    return this.request(`/api/dashboard/analytics/summary?${params.toString()}`);
   }
 
   async getCostAnalytics(filter: DashboardFilter, includeTestCalls = false): Promise<CostAnalytics> {
