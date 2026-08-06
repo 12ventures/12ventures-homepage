@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Plain-English production readiness assessment for NociApp, prepared by 12 VENTURES.">
+<title>Noci production readiness summary</title>
+<style>
+  :root {
+    --paper:#F4F1F0; --surface:#FBFAF9; --surface-2:#EFEAEC;
+    --ink:#1B1720; --ink-soft:#4C4451; --ink-faint:#877D8E;
+    --line:#E4DDE0; --line-strong:#D3C9CE;
+    --accent:#6E2C51; --accent-soft:#9A5578;
+    --crit:#AF352E; --crit-bg:#AF352E1A;
+    --warn:#9C6C18; --warn-bg:#B07A2220;
+    --low:#4F6473; --low-bg:#566A7818;
+    --good:#3C7A57; --good-bg:#3C7A5718;
+    --shadow:0 1px 2px #1b17200f, 0 8px 30px #1b172010;
+    --maxw:1140px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#151219; --surface:#1D1A23; --surface-2:#241F2B;
+      --ink:#ECE6EE; --ink-soft:#B7AEBE; --ink-faint:#7E7488;
+      --line:#312A38; --line-strong:#3E3646;
+      --accent:#CA8CAD; --accent-soft:#A96A8C;
+      --crit:#E36A62; --crit-bg:#E36A6220;
+      --warn:#D8A84A; --warn-bg:#D8A84A1E;
+      --low:#8FA3B1; --low-bg:#8FA3B119;
+      --good:#71BB8E; --good-bg:#71BB8E1C;
+      --shadow:0 1px 2px #0000003a, 0 10px 34px #00000040;
+    }
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased; font-size:16px; }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 24px; }
+  .serif { font-family:Georgia,"Times New Roman",serif; }
+  .mono { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  .eyebrow { font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; }
+  .num { font-variant-numeric:tabular-nums; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+
+  .masthead { border-bottom:1px solid var(--line-strong); background:var(--surface); position:relative; }
+  .masthead::before { content:""; position:absolute; inset:0 0 auto; height:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-soft) 55%,transparent); }
+  .masthead-inner { padding:52px 24px 40px; max-width:var(--maxw); margin:0 auto; }
+  .top-row { display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap; }
+  .pill { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; font-family:ui-monospace,monospace;
+    font-size:11.5px; color:var(--good); background:var(--good-bg); border:1px solid color-mix(in srgb,var(--good) 40%,transparent);
+    padding:6px 12px; border-radius:999px; font-weight:700; }
+  .pill .dot { width:7px; height:7px; border-radius:50%; background:var(--good); }
+  h1 { font-family:Georgia,serif; font-weight:600; letter-spacing:-.015em; font-size:clamp(2.1rem,5vw,3.4rem);
+    line-height:1.04; margin:.35em 0 .28em; max-width:18ch; text-wrap:balance; }
+  h1 em { color:var(--accent); }
+  .dek { color:var(--ink-soft); font-size:1.06rem; max-width:70ch; margin:0; }
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line);
+    border-radius:14px; overflow:hidden; margin:36px 0 4px; box-shadow:var(--shadow); }
+  .kpi { background:var(--surface); padding:22px 20px; }
+  .kpi .k-num { display:block; font-family:Georgia,serif; font-size:2.5rem; line-height:1; }
+  .kpi .accent { color:var(--accent); }
+  .kpi .k-label { display:block; margin-top:9px; font-size:12.5px; }
+  .kpi .k-sub { display:block; margin-top:3px; font-size:11px; color:var(--ink-faint); font-family:ui-monospace,monospace; }
+  .jump-nav { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
+  .jump-nav a { font-size:12px; color:var(--ink-soft); background:var(--surface-2); border:1px solid var(--line);
+    border-radius:999px; padding:6px 11px; }
+
+  section { padding:52px 0; border-bottom:1px solid var(--line); }
+  .sec-head { display:flex; align-items:baseline; gap:14px; margin-bottom:24px; }
+  .sec-head h2 { font-family:Georgia,serif; font-weight:600; font-size:1.7rem; margin:0; letter-spacing:-.01em; }
+  .sec-head .idx { font-size:12px; color:var(--ink-faint); }
+  .lede { font-family:Georgia,serif; font-size:1.35rem; line-height:1.4; margin:0 0 8px; max-width:60ch; text-wrap:balance; }
+  .lede b { color:var(--accent); }
+  .body-copy { color:var(--ink-soft); max-width:76ch; }
+
+  .snapshot-grid { display:grid; grid-template-columns:1fr; gap:16px; margin-top:22px; }
+  .snapshot { background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:22px; box-shadow:var(--shadow); }
+  .snapshot .cap { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; }
+  .snapshot h3 { font-family:Georgia,serif; font-size:1.25rem; margin:7px 0; }
+  .snapshot p { color:var(--ink-soft); font-size:13.5px; margin:0; }
+  .fact-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px; }
+  .fact { background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:16px; }
+  .fact .n { font-family:Georgia,serif; font-size:1.5rem; color:var(--accent); }
+  .fact .t { font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+
+  .scale { display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line);
+    border-radius:13px; overflow:hidden; box-shadow:var(--shadow); }
+  .scale-item { background:var(--surface); padding:16px 12px; min-height:88px; }
+  .scale-item .score { display:block; font-family:Georgia,serif; font-size:1.8rem; line-height:1; margin-bottom:9px; }
+  .scale-item .label { display:block; font-weight:700; font-size:12px; }
+  .s1 .score, .score-pill.s1 { color:var(--crit); }
+  .s2 .score, .score-pill.s2 { color:var(--crit); }
+  .s3 .score, .score-pill.s3 { color:var(--warn); }
+  .s4 .score, .score-pill.s4, .s5 .score, .score-pill.s5 { color:var(--good); }
+  .priority-key { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
+  .priority-note { border-left:3px solid var(--line-strong); background:var(--surface); padding:12px 14px; border-radius:0 9px 9px 0;
+    color:var(--ink-soft); font-size:12.5px; }
+  .priority-note b { color:var(--ink); }
+  .priority-note.p0 { border-left-color:var(--crit); }
+  .priority-note.p1 { border-left-color:var(--warn); }
+  .priority-note.p2 { border-left-color:var(--low); }
+
+  .categories { display:flex; flex-direction:column; gap:18px; }
+  .category { background:var(--surface); border:1px solid var(--line); border-radius:15px; overflow:hidden; box-shadow:var(--shadow); }
+  .category-head { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:18px 22px;
+    background:var(--surface-2); border-bottom:1px solid var(--line); }
+  .category-title { display:flex; align-items:baseline; gap:12px; }
+  .cat-num { font-family:ui-monospace,monospace; font-size:11px; color:var(--accent); }
+  .category-title h3 { font-family:Georgia,serif; font-size:1.25rem; margin:0; }
+  .count { font-family:ui-monospace,monospace; font-size:10px; color:var(--ink-faint); white-space:nowrap; }
+  .area { padding:20px 22px; border-bottom:1px solid var(--line); }
+  .area:last-child { border-bottom:none; }
+  .area-top { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:10px; }
+  .area-top h4 { font-size:1.04rem; margin:0; }
+  .area-badges { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:7px; }
+  .score-pill, .priority-pill { font-family:ui-monospace,monospace; font-size:10px; font-weight:700; letter-spacing:.04em;
+    padding:5px 9px; border-radius:999px; white-space:nowrap; }
+  .score-pill { background:var(--surface-2); border:1px solid var(--line); }
+  .readiness-meter { width:104px; height:8px; background:var(--line); border-radius:999px; overflow:hidden;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 5%,transparent); }
+  .readiness-meter span { display:block; height:100%; border-radius:inherit; }
+  .readiness-meter.s1 span, .readiness-meter.s2 span { background:var(--crit); }
+  .readiness-meter.s3 span { background:var(--warn); }
+  .readiness-meter.s4 span, .readiness-meter.s5 span { background:var(--good); }
+  .priority-pill.p0 { color:var(--crit); background:var(--crit-bg); }
+  .priority-pill.p1 { color:var(--warn); background:var(--warn-bg); }
+  .priority-pill.p2 { color:var(--low); background:var(--low-bg); }
+  .area-copy { max-width:90ch; }
+  .area-copy p { margin:0; color:var(--ink-soft); font-size:13.5px; }
+  .evidence { margin-top:10px; color:var(--ink-faint); font-family:ui-monospace,monospace; font-size:10px; }
+
+  .source-details { border-top:1px solid var(--line); background:color-mix(in srgb,var(--surface-2) 52%,var(--surface)); }
+  .source-details summary { cursor:pointer; padding:15px 22px; font-family:ui-monospace,monospace; font-size:10px;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:700; list-style:none; }
+  .source-details summary::-webkit-details-marker { display:none; }
+  .source-details summary::before { content:"+"; display:inline-block; width:18px; color:var(--accent); }
+  .source-details[open] summary::before { content:"−"; }
+  .source-detail-body { padding:0 22px 20px 40px; max-width:100ch; }
+  .source-detail-body p { margin:0 0 11px; color:var(--ink-soft); font-size:12.75px; }
+  .source-detail-body p:last-child { margin-bottom:0; }
+
+  .strength-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .strength, .decision { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .strength h3 { font-family:Georgia,serif; font-size:1.1rem; margin:0 0 6px; }
+  .strength p, .decision p { color:var(--ink-soft); font-size:13px; margin:0; }
+  .sequence { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+  .step { display:grid; grid-template-columns:70px 1fr; gap:18px; align-items:baseline; padding:20px 24px; background:var(--surface);
+    border-bottom:1px solid var(--line); }
+  .step:last-child { border-bottom:none; }
+  .step .n { font-family:Georgia,serif; font-size:2.2rem; color:var(--accent); }
+  .step h3 { margin:0 0 3px; font-size:1.06rem; }
+  .step p { margin:0; color:var(--ink-soft); font-size:13.5px; max-width:80ch; }
+  .decision-grid { display:grid; grid-template-columns:1fr; gap:14px; }
+  .decision .d-num { font-family:ui-monospace,monospace; color:var(--accent); font-size:11px; }
+  .decision h3 { font-size:1rem; margin:7px 0 5px; }
+  .note { background:var(--accent); color:#fff; border-radius:13px; padding:20px 22px; margin-top:18px; box-shadow:var(--shadow); }
+  .note strong { font-family:Georgia,serif; font-size:1.15rem; }
+  .note p { margin:5px 0 0; opacity:.9; font-size:13px; }
+  footer { padding:40px 0 64px; }
+  .foot-note { color:var(--ink-faint); font-size:12px; margin-top:10px; max-width:85ch; }
+
+  @media (max-width:820px) {
+    .kpis, .fact-row { grid-template-columns:repeat(2,1fr); }
+    .snapshot-grid, .strength-grid, .decision-grid, .area-copy { grid-template-columns:1fr; }
+    .scale { grid-template-columns:1fr; }
+    .scale-item { min-height:0; border-bottom:1px solid var(--line); }
+    .scale-item:last-child { border-bottom:none; }
+    .priority-key { grid-template-columns:1fr; }
+  }
+  @media (max-width:560px) {
+    .masthead-inner { padding-top:40px; }
+    .category-head, .area-top { align-items:flex-start; flex-direction:column; }
+    .area-badges { justify-content:flex-start; }
+    .step { grid-template-columns:44px 1fr; padding:18px; gap:10px; }
+    .step .n { font-size:1.7rem; }
+  }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="top-row">
+      <span class="eyebrow">NOCI x 12 VENTURES · EXECUTIVE SUMMARY · TECHNICAL BRIEFING</span>
+      <span class="pill"><span class="dot"></span>PRODUCTION READINESS REVIEW</span>
+    </div>
+    <h1>Noci production readiness summary</h1>
+    <p class="dek">In July, we identified eight areas to validate after getting access to the repo. This document presents our findings across each area to establish a shared understanding of the platform’s current state. It is intended to guide our discussion and help inform the appropriate path forward.</p>
+    <div class="kpis">
+      <div class="kpi"><span class="k-num accent num">8</span><span class="k-label">validation categories</span><span class="k-sub">same structure as the July review</span></div>
+      <div class="kpi"><span class="k-num num">13</span><span class="k-label">readiness areas scored</span><span class="k-sub">evidence-backed assessment</span></div>
+      <div class="kpi"><span class="k-num num">13</span><span class="k-label">high findings</span><span class="k-sub">technical findings document</span></div>
+      <div class="kpi"><span class="k-num num">30</span><span class="k-label">total findings</span><span class="k-sub">13 high · 13 medium · 1 low–medium · 3 low</span></div>
+    </div>
+    <nav class="jump-nav" aria-label="Briefing sections">
+      <a href="#snapshot">Executive snapshot</a><a href="#scale">Scoring</a><a href="#assessment">Assessment</a><a href="#discussion">Discussion questions</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="snapshot">
+    <div class="sec-head"><span class="idx mono">01</span><h2>Executive snapshot</h2></div>
+    <div class="snapshot-grid">
+      <article class="snapshot"><span class="cap">What are the gaps to bring the Noci app to production?</span><h3>13 HIGH items that need to be addressed.</h3><p>Primarily in process and custody, not in the product code. No CI, no wired error transport, no proven restore, one shared back-office credential. The initial engineering was done; the operational production follow-throughs are incomplete.</p></article>
+      <article class="snapshot"><span class="cap">Is the core platform architecture sound?</span><h3>Yes.</h3><p>The platform architecture is credible for the current product and expected near-term scale. The primary gaps are operational rather than architectural, including delivery controls, observability, recovery, operator identity, data governance, and background-work management. The core commerce platform, database, customer authentication, and AI cost controls are sound, supporting focused production hardening rather than re-platforming. Shopify has been the system of record since the day a backend existed, payments are fully delegated and pinned by a guard test, and the shopper path is deliberately fail-open. 164 API routes, 64 models, 8,056 tests, clean typecheck across ~1,400 files. Nothing we found requires a rebuild.</p></article>
+    </div>
+    <div class="fact-row">
+      <div class="fact"><div class="n num">164</div><div class="t">API routes</div></div>
+      <div class="fact"><div class="n num">64</div><div class="t">database models</div></div>
+      <div class="fact"><div class="n num">8,056</div><div class="t">tests</div></div>
+      <div class="fact"><div class="n num">~1,400</div><div class="t">files</div></div>
+    </div>
+  </section>
+
+  <section id="scale">
+    <div class="sec-head"><span class="idx mono">02</span><h2>How to read the assessment</h2></div>
+    <div class="scale" aria-label="Readiness scale from one to five">
+      <div class="scale-item s1"><span class="score">1 / 5</span><span class="label">Uncontrolled</span></div>
+      <div class="scale-item s2"><span class="score">2 / 5</span><span class="label">Material gap</span></div>
+      <div class="scale-item s3"><span class="score">3 / 5</span><span class="label">Partially ready</span></div>
+      <div class="scale-item s4"><span class="score">4 / 5</span><span class="label">Near ready</span></div>
+      <div class="scale-item s5"><span class="score">5 / 5</span><span class="label">Production ready</span></div>
+    </div>
+    <div class="priority-key">
+      <div class="priority-note p0"><b>P0</b><br>Must be addressed before dependable production operation or team transition.</div>
+      <div class="priority-note p1"><b>P1</b><br>Focused hardening for scale and maintainability.</div>
+      <div class="priority-note p2"><b>P2</b><br>Preservation and optimization.</div>
+    </div>
+  </section>
+
+  <section id="assessment">
+    <div class="sec-head"><span class="idx mono">03</span><h2>Production readiness assessment</h2></div>
+    <p class="body-copy">This scorecard follows the same eight validation areas established in the July 15 Initial Technical Review. The 13 production readiness areas are organized beneath those headings, making this document the evidence-based continuation of the earlier review.</p>
+    <div class="categories">
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">01</span><h3>Platform Architecture</h3></div><span class="count">2 READINESS AREAS</span></header>
+        <div class="area"><div class="area-top"><h4>Architecture</h4><div class="area-badges"><span class="score-pill s3">3 / 5 · PARTIALLY READY</span><span class="readiness-meter s3" role="img" aria-label="Readiness 3 out of 5"><span style="width:60%"></span></span><span class="priority-pill p1">P1</span></div></div><div class="area-copy"><p>The architectural foundation is strong, no rewrite is needed. The remaining work is operational maturity.</p></div><div class="evidence">EVIDENCE · F-12 · F-15 · F-16 · F-24 · F-26 · F-27</div></div>
+        <div class="area"><div class="area-top"><h4>Data</h4><div class="area-badges"><span class="score-pill s2">2 / 5 · MATERIAL GAP</span><span class="readiness-meter s2" role="img" aria-label="Readiness 2 out of 5"><span style="width:40%"></span></span><span class="priority-pill p0">P0</span></div></div><div class="area-copy"><p>The database design and indexing are strong, but source custody, stale fallback data, unreplayable migrations, incomplete deletion, and missing retention controls create material production and recovery risk.</p></div><div class="evidence">EVIDENCE · F-03 · F-04 · F-15 · F-16 · F-21 · F-22 · F-23</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>Shopify is the authoritative system of record, and the boundary is clean. Payments and checkout are fully delegated — no payment code, no payment SDK, pinned by a guard test. The manual-upload lane never forks commerce truth: supplier files stage into Neon and reach shoppers only via a Shopify draft a human promotes.</p>
+          <p>Four tiers are authoritative for different fields; three of them are sound. The fourth is ~1.44 MB of committed TypeScript holding the merchandising taxonomy the storefront navigates by. Changing a colour tag takes an engineer, a script run, a commit and a redeploy.</p>
+          <p>The catalog half of that tier is a sweep; the taxonomy half is a data-modelling gap. The runtime read seam shipped five days after the build-time bake and works: 57 modules use it, 69 still import the snapshot, and the primary shopper surfaces are already migrated. The taxonomy is different — primary data that never had a database home, with no query path.</p>
+          <p>The fail-open floor is a legitimate design carrying a stale payload. A catalog read that throws — including a five-second timeout — falls back to a snapshot 20 days old describing the archived prototype line, so pages for real, purchasable products return hard 404s with no error surfaced. The staleness gate that would catch this exists, is pinned by a test, and is enabled nowhere.</p>
+        </div></details>
+      </article>
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">02</span><h3>AI Platform Architecture</h3></div><span class="count">1 READINESS AREA</span></header>
+        <div class="area"><div class="area-top"><h4>AI Systems</h4><div class="area-badges"><span class="score-pill s3">3 / 5 · PARTIALLY READY</span><span class="readiness-meter s3" role="img" aria-label="Readiness 3 out of 5"><span style="width:60%"></span></span><span class="priority-pill p1">P1</span></div></div><div class="area-copy"><p>Paid-generation safety controls are thoughtful, and the queue architecture is sound. Model selection is hardcoded, structured output is inconsistent, and fleet-wide concurrency and queue-health controls are incomplete.</p></div><div class="evidence">EVIDENCE · F-11 · F-12 · F-26 · F-28</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>Model selection is hardcoded at every call site. 19 Claude model literals across 17 files, no central registry, no environment override. The image and video vendors are more hardcoded still, and that is where the money goes.</p>
+          <p>Both language models in use are one generation behind current. Nothing is broken today, but model retirement is a scheduled event: 17 files would fail at once with no config-level lever to recover with. There is no documented policy for which task gets which model.</p>
+          <p>An upgrade today would be close to a string swap. The call sites are already clean of the parameters that break on current-generation models — the constraint is where the strings live, not how the calls are built.</p>
+          <p>Structured output follows two incompatible conventions with no house rule. 13 modules use forced tool use, which cannot return an unparseable response; 8 describe JSON in the prompt and scrape it back out of free text. Failures degrade rather than break and none reaches a shopper — the cost is wasted paid calls and unexplained gaps in admin output.</p>
+        </div></details>
+      </article>
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">03</span><h3>AI Reliability and Observability</h3></div><span class="count">1 READINESS AREA</span></header>
+        <div class="area"><div class="area-top"><h4>Observability</h4><div class="area-badges"><span class="score-pill s1">1 / 5 · UNCONTROLLED</span><span class="readiness-meter s1" role="img" aria-label="Readiness 1 out of 5"><span style="width:20%"></span></span><span class="priority-pill p0">P0</span></div></div><div class="area-copy"><p>Observability is good for solo founder MVP, but requires out of the box logging and monitoring.</p></div><div class="evidence">EVIDENCE · F-10 · F-12 · A-03 · A-04</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>This is the weakest dimension in the assessment: a well-built monitoring seam exists and almost nothing calls it. Two callers, against 293 ad-hoc log call sites across 125 files, and no off-box transport is wired. Vercel logs are short-retention without a drain, so most error evidence likely evaporates.</p>
+          <p>The deliberate fail-open design makes that gap sharper than it would be elsewhere. The code catches aggressively and returns success on purpose — the Shopify webhook always returns 200 post-HMAC to avoid a retry storm, which is right. But caught errors never reach the framework's error hook, so they never reach a monitor. A fail-open system without observability fails invisibly.</p>
+          <p>The Sentry configuration is a trap for an incoming team. The DSN is read and surfaced in log lines, but no Sentry SDK ships. Setting it in Vercel changes nothing.</p>
+          <p>Async work has no health signal. No queue-depth or lease-age metric and no alerting. Backlog is visible only by opening the relevant admin desk, and nothing detects that a drain has been stuck for two hours.</p>
+          <p>Log hygiene is genuinely good and worth preserving. No emails, phone numbers, tokens or secrets are emitted at any of the 293 sites, and messages carry consistent subsystem prefixes.</p>
+        </div></details>
+      </article>
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">04</span><h3>Infrastructure and Deployment</h3></div><span class="count">3 READINESS AREAS</span></header>
+        <div class="area"><div class="area-top"><h4>Infrastructure</h4><div class="area-badges"><span class="score-pill s3">3 / 5 · PARTIALLY READY</span><span class="readiness-meter s3" role="img" aria-label="Readiness 3 out of 5"><span style="width:60%"></span></span><span class="priority-pill p1">P1</span></div></div><div class="area-copy"><p>Vercel + Neon is an appropriate and cost-efficient platform for the current stage. The missing pieces are operational: verified backup settings, runtime measurements, environment configuration, and ownership.</p></div><div class="evidence">EVIDENCE · F-04 · F-07 · F-12 · PLATFORM AND COST ASSESSMENTS</div></div>
+        <div class="area"><div class="area-top"><h4>CI/CD</h4><div class="area-badges"><span class="score-pill s1">1 / 5 · UNCONTROLLED</span><span class="readiness-meter s1" role="img" aria-label="Readiness 1 out of 5"><span style="width:20%"></span></span><span class="priority-pill p0">P0</span></div></div><div class="area-copy"><p>There is no CI pipeline or required automated gate. Tests and typechecking run by convention, while a push to main is effectively a production release.</p></div><div class="evidence">EVIDENCE · F-01 · F-02 · F-19 · F-23</div></div>
+        <div class="area"><div class="area-top"><h4>Deployment</h4><div class="area-badges"><span class="score-pill s2">2 / 5 · MATERIAL GAP</span><span class="readiness-meter s2" role="img" aria-label="Readiness 2 out of 5"><span style="width:40%"></span></span><span class="priority-pill p0">P0</span></div></div><div class="area-copy"><p>Fresh environments cannot be rebuilt from migration history, staging is absent, and the Shopify store and domain remain prototype-stage launch boundaries.</p></div><div class="evidence">EVIDENCE · F-07 · F-23</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>There is no CI of any kind. No workflow files, no Dockerfile, no infrastructure-as-code. The Vercel build is the only automated gate and it does not run tests; deploy is a push to main.</p>
+          <p>The migration history cannot rebuild the database. Against an empty PostgreSQL instance, migrate deploy fails at migration 2 of 50 — an early migration alters a table a later migration creates. A direct schema push succeeds in 607 ms across all 64 models, so the schema is sound and the defect is confined to the history.</p>
+          <p>That defect is load-bearing in two directions. The documented go-live command is the broken one, working against production only because that database already records those migrations as applied. And no staging, preview or local database can be provisioned from the repository.</p>
+          <p>Production boundaries are still prototype-shaped. The Vercel project is named for the prototype, the domain is a placeholder, and the Shopify store is flagged temporary by founder ruling. Since Shopify is the system of record for products, prices, orders and payments, a store migration is significant, unscheduled work.</p>
+        </div></details>
+      </article>
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">05</span><h3>Security and Governance</h3></div><span class="count">1 READINESS AREA</span></header>
+        <div class="area"><div class="area-top"><h4>Security</h4><div class="area-badges"><span class="score-pill s2">2 / 5 · MATERIAL GAP</span><span class="readiness-meter s2" role="img" aria-label="Readiness 2 out of 5"><span style="width:40%"></span></span><span class="priority-pill p0">P0</span></div></div><div class="area-copy"><p>Customer authentication is strong, but the back office relies on one shared, non-revocable credential. Several public writers and cron routes lack consistent rate limits or fail-closed enforcement, and customer-data governance is incomplete.</p></div><div class="evidence">EVIDENCE · F-05 · F-14 · F-17 · F-18 · F-21 · A-01</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>Customer authentication is the strongest part of the auth surface. Real Shopify OAuth, an AES-GCM sealed session cookie with context binding, mandatory refresh-token rotation, and a dedup that prevents the single-use refresh race from causing silent logout loops. 86 of 92 gated admin routes also re-check authorization inside the handler.</p>
+          <p>The back office is the weakest, and the mechanics are worse than a shared password implies. One credential protects every verb, with no accounts, roles or actor attribution. The session token is a hash of that password — identical for every admin, device and session, permanently — so no session can be revoked individually, and it is accepted as a bearer header. Login's only friction is a half-second in-process delay that parallel connections defeat.</p>
+          <p>Under a team operating model this changes character rather than degree. The documented onboarding step hands every engineer one file carrying the admin password, the production database URL and roughly fifteen vendor credentials, with no revocation path short of rotating the shared secret.</p>
+          <p>Cron authentication is a checklist item rather than a property of the code. 12 of 16 cron endpoints run when the secret is unset; the hardening reached only the four spend lanes, and not the most expensive lane in the system. The client documents this risk in two places.</p>
+          <p>Two unauthenticated public write endpoints have no rate limit. Each accepts up to 4.5 MB, runs a CPU-bound re-encode and persists permanently; image moderation ships dark by founder ruling. A third calls a paid vendor API with no spend cap.</p>
+          <p>Customer-data governance is incomplete, while third-party handling is correct. Account deletion reaches 2 of 9 personal-data stores, Shopify's redaction webhook is unhandled, and no store has a retention limit. The consent banner does not bind the server: the conversion relay would send hashed email and phone to Meta and TikTok regardless of the shopper's choice — though it is still inert, so that gap is free to close today. Against all of this, the try-on avatar privacy design is exemplary.</p>
+        </div></details>
+      </article>
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">06</span><h3>Performance and Scalability</h3></div><span class="count">1 READINESS AREA</span></header>
+        <div class="area"><div class="area-top"><h4>Scalability</h4><div class="area-badges"><span class="score-pill s2">2 / 5 · MATERIAL GAP</span><span class="readiness-meter s2" role="img" aria-label="Readiness 2 out of 5"><span style="width:40%"></span></span><span class="priority-pill p0">P0</span></div></div><div class="area-copy"><p>The storefront has a thoughtful availability design, but large client bundles, unoptimized images, queue controls, connection contention, and missing runtime measurements limit confidence under production load.</p></div><div class="evidence">EVIDENCE · F-12 · F-16 · F-20 · F-24 · F-26</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>The database is not the performance problem. 159 indexes across 64 tables, no missing-index catastrophe, no N+1 pattern on any shopper request path, and raw SQL correctly parameterised at all nine sites.</p>
+          <p>Client payload is. First Load JS measures 406–502 kB gzipped on shopper routes against a widely used healthy target of roughly 130 kB, because the committed catalog and taxonomy tables cross the client boundary through the unretired shim described in section 1. Prisma appears in zero client chunks — the server boundary itself holds.</p>
+          <p>There is no image optimisation layer at all. No use of the framework's image component, 82 raw image tags, none carrying a width. On-model shots average 1.09 MB across 1,641 files and are what the grid leads with; the flat-lay pipeline averages 0.12 MB and is well optimised.</p>
+          <p>The queue mechanism is sound; its bounds are missing. Claims are a real compare-and-swap with leases, poison items park, and a cron backstop reclaims stale work. Absent are a global concurrency budget, backpressure and a retry policy — while the Looks lane permits exactly one rendering set across the entire back office. Cost concurrency is unbounded and throughput concurrency is bounded at one; neither is a trade-off anyone chose.</p>
+          <p>The Neon connection pool is the highest-probability bottleneck. Eleven routes can hold connections for over thirteen minutes, four crons fire every minute with self-continuing chains, and all storefront traffic shares the pool. Exhaustion is also the likeliest trigger for the stale-snapshot fallback above — which, without a transport, presents as a quietly frozen catalog rather than an outage.</p>
+        </div></details>
+      </article>
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">07</span><h3>Engineering Workflow</h3></div><span class="count">3 READINESS AREAS</span></header>
+        <div class="area"><div class="area-top"><h4>Codebase</h4><div class="area-badges"><span class="score-pill s4">4 / 5 · NEAR READY</span><span class="readiness-meter s4" role="img" aria-label="Readiness 4 out of 5"><span style="width:80%"></span></span><span class="priority-pill p2">P2</span></div></div><div class="area-copy"><p>The typecheck is clean, more than 8,000 tests pass, the database layer is well indexed, and important shopper, payment, and customer-auth boundaries are strong. This is the strongest area in the assessment.</p></div><div class="evidence">EVIDENCE · VERIFICATION RESULTS AND ASSESSMENT STRENGTHS</div></div>
+        <div class="area"><div class="area-top"><h4>Testing</h4><div class="area-badges"><span class="score-pill s3">3 / 5 · PARTIALLY READY</span><span class="readiness-meter s3" role="img" aria-label="Readiness 3 out of 5"><span style="width:60%"></span></span><span class="priority-pill p1">P1</span></div></div><div class="area-copy"><p>The automated test suite is substantial, but broken code can still reach the main codebase because unreliable tests limit its effectiveness as a quality gate. CI/CD missing, several broken tests, several known integration tests failing.</p></div><div class="evidence">EVIDENCE · F-01 · F-02 · F-06</div></div>
+        <div class="area"><div class="area-top"><h4>Maintainability</h4><div class="area-badges"><span class="score-pill s3">3 / 5 · PARTIALLY READY</span><span class="readiness-meter s3" role="img" aria-label="Readiness 3 out of 5"><span style="width:60%"></span></span><span class="priority-pill p1">P1</span></div></div><div class="area-copy"><p>Incident history and design rationale are unusually well documented. Stale documents, generated source data, hardcoded configuration, and limited review enforcement make too much knowledge dependent on human memory.</p></div><div class="evidence">EVIDENCE · F-09 · F-11 · F-15 · F-20 · F-28</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>The codebase is the strongest area in the assessment. Clean typecheck, roughly 8,030 passing tests across 741 files, a well-indexed schema, and server/client separation enforced by a hand-rolled guard written because the canonical one does not resolve under this repo's test setup.</p>
+          <p>The test assets are valuable; the trustworthy gate is missing. Six failures introduced by the two July remediation waves sit in main undetected, breaking the team's own rule of zero new failing names per change. Three runs of unchanged main produced 23, 25 and 26 failures, so at least two tests are flaky against one that is documented.</p>
+          <p>Nineteen production-dependency vulnerabilities, nine rated high, had never been audited. The dependency surface is commendably small — 16 production packages against roughly 15 vendor integrations — which limits blast radius. The gap is purely that nothing looks.</p>
+          <p>Documentation is authoritative, unusually good, and unmaintained. The 31-chapter handover carries an internal index, house rules, an incident ledger and a first-day checklist — and had already drifted six days after it was written, citing 45 migrations against 51 and 672 test files against 741. With no CI, there is no authority to check it against.</p>
+        </div></details>
+      </article>
+
+      <article class="category">
+        <header class="category-head"><div class="category-title"><span class="cat-num">08</span><h3>Production Operations</h3></div><span class="count">1 READINESS AREA</span></header>
+        <div class="area"><div class="area-top"><h4>Operations</h4><div class="area-badges"><span class="score-pill s2">2 / 5 · MATERIAL GAP</span><span class="readiness-meter s2" role="img" aria-label="Readiness 2 out of 5"><span style="width:40%"></span></span><span class="priority-pill p0">P0</span></div></div><div class="area-copy"><p>No backup and restore procedure has been proven, production alerting is not confirmed, queue health is not visible, and cron hardening is incomplete. Go-live readiness is ahead of operational readiness.</p></div><div class="evidence">EVIDENCE · F-04 · F-10 · F-12 · F-18 · F-22</div></div>
+        <details class="source-details"><summary>Key findings from the source document</summary><div class="source-detail-body">
+          <p>No backup or restore posture exists in the repository, and no restore has been drilled. Point-in-time restore is marked in the handover as an assumed safety net, inferred rather than configured. Section 4's defect makes this concrete: schema-first recovery does not work today.</p>
+          <p>The handover's own “single biggest data-loss risk” is absent from the delivered checkout. The manufacturer master lists, supplier intake spreadsheets, catalog image sources and production repair scripts are not in the repository, while live scripts still read those paths. The data exists on one machine with no backup visible anywhere.</p>
+          <p>One recovery hazard is invisible to the tooling. Purchase idempotency rests on a raw-SQL partial index that Prisma cannot see and will propose dropping, so a restore or schema sync by someone unaware would silently remove it.</p>
+          <p>Nothing alerts. Queue backlog, catalog fallback provenance and sync error rates are visible only by opening an admin desk. The nightly Shopify reconcile is a single 300-second pass with no resumable cursor — fine at today's 1,400 products, and its failure mode with growth is silent incompleteness recorded as a successful run.</p>
+          <p>Operating the platform currently assumes one operator. Launching the product is better supported than running it: identity, review gates, staging and alerting all presuppose one person who remembers.</p>
+        </div></details>
+      </article>
+    </div>
+  </section>
+
+  <section id="discussion">
+    <div class="sec-head"><span class="idx mono">04</span><h2>Discussion questions</h2></div>
+    <div class="decision-grid">
+      <article class="decision"><span class="d-num">01</span><p>What are Noci’s primary business goals and objectives over the next 6-12 months?</p></article>
+      <article class="decision"><span class="d-num">02</span><p>What is the go-to-market and growth plan? Are there key business milestones or industry events (e.g., Fashion Week) that drive launch timing or feature priorities?</p></article>
+      <article class="decision"><span class="d-num">03</span><p>What are the highest-priority product requirements, and what is the planned sequence and timeline to deliver?</p></article>
+      <article class="decision"><span class="d-num">04</span><p>Is multi-tenancy a near-term requirement or a future capability?</p></article>
+      <article class="decision"><span class="d-num">05</span><p>Platform strategy: Our review found that the current Vercel + Neon platform is appropriate for Noci’s current stage and is not a blocker to launch or production. Does that align with your current infrastructure strategy?</p></article>
+    </div>
+  </section>
+
+  <footer>
+    <span class="eyebrow">NOCI x 12 VENTURES</span>
+    <p class="foot-note">Executive Summary • Technical Briefing · Production Readiness Review • NociApp<br>Prepared for: Krish Menon and Noci Team · Prepared by: 12 VENTURES</p>
+  </footer>
+</main>
+</body>
+</html>

@@ -25,6 +25,9 @@ import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
 import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
 import MeridaWellness from './components/MeridaWellness';
 import SarhProductionDashboard from './components/sarh/SarhProductionDashboard';
+import NociHubPage from './components/noci/NociHubPage';
+import NociTechnicalAssessmentPage from './components/noci/NociReadinessPage';
+import NociExecutiveSummaryPage from './components/noci/NociExecutiveSummaryPage';
 import HavenApp from './components/haven/HavenApp';
 import HavenAdmin from './components/haven/HavenAdmin';
 import HavenStore from './components/haven/HavenStore';
@@ -261,6 +264,11 @@ const App: React.FC = () => {
             path="/o/sarh/voice-ai/production-dashboard"
             element={<SarhProductionDashboard />}
           />
+
+          {/* NociApp deliverables (shared password gate) */}
+          <Route path="/noci" element={<NociHubPage />} />
+          <Route path="/noci/executive-summary" element={<NociExecutiveSummaryPage />} />
+          <Route path="/noci/technical-assessment" element={<NociTechnicalAssessmentPage />} />
 
           {/* Prisma Health Demo Hub & Apps */}
           <Route
