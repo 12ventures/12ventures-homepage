@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Plain-English production readiness assessment for NociApp, prepared by 12 VENTURES.">
+<meta name="description" content="Plain-English production readiness assessment for Noci, prepared by 12 VENTURES.">
 <title>Noci production readiness summary</title>
 <style>
   :root {
@@ -157,7 +157,8 @@
   .step p { margin:0; color:var(--ink-soft); font-size:13.5px; max-width:80ch; }
   .decision-grid { display:grid; grid-template-columns:1fr; gap:14px; }
   .decision .d-num { font-family:ui-monospace,monospace; color:var(--accent); font-size:11px; }
-  .decision h3 { font-size:1rem; margin:7px 0 5px; }
+  .decision h3 { font-size:1rem; margin:7px 0 5px; color:var(--ink); }
+  .decision .answer { margin-top:8px; color:var(--ink); font-size:13.5px; }
   .note { background:var(--accent); color:#fff; border-radius:13px; padding:20px 22px; margin-top:18px; box-shadow:var(--shadow); }
   .note strong { font-family:Georgia,serif; font-size:1.15rem; }
   .note p { margin:5px 0 0; opacity:.9; font-size:13px; }
@@ -193,8 +194,8 @@
     <div class="kpis">
       <div class="kpi"><span class="k-num accent num">8</span><span class="k-label">validation categories</span><span class="k-sub">same structure as the July review</span></div>
       <div class="kpi"><span class="k-num num">13</span><span class="k-label">readiness areas scored</span><span class="k-sub">evidence-backed assessment</span></div>
-      <div class="kpi"><span class="k-num num">13</span><span class="k-label">high findings</span><span class="k-sub">technical findings document</span></div>
-      <div class="kpi"><span class="k-num num">30</span><span class="k-label">total findings</span><span class="k-sub">13 high · 13 medium · 1 low–medium · 3 low</span></div>
+      <div class="kpi"><span class="k-num num">16</span><span class="k-label">high findings</span><span class="k-sub">technical findings document</span></div>
+      <div class="kpi"><span class="k-num num">33</span><span class="k-label">total findings</span><span class="k-sub">16 high · 14 medium · 1 low–medium · 2 low</span></div>
     </div>
     <nav class="jump-nav" aria-label="Briefing sections">
       <a href="#snapshot">Executive snapshot</a><a href="#scale">Scoring</a><a href="#assessment">Assessment</a><a href="#discussion">Discussion questions</a>
@@ -206,7 +207,7 @@
   <section id="snapshot">
     <div class="sec-head"><span class="idx mono">01</span><h2>Executive snapshot</h2></div>
     <div class="snapshot-grid">
-      <article class="snapshot"><span class="cap">What are the gaps to bring the Noci app to production?</span><h3>13 HIGH items that need to be addressed.</h3><p>Primarily in process and custody, not in the product code. No CI, no wired error transport, no proven restore, one shared back-office credential. The initial engineering was done; the operational production follow-throughs are incomplete.</p></article>
+      <article class="snapshot"><span class="cap">What are the gaps to bring the Noci app to production?</span><h3>16 HIGH items that need to be addressed.</h3><p>Primarily in process and custody, not in the product code. No CI, no wired error transport, no proven restore, one shared back-office credential. The initial engineering was done; the operational production follow-throughs are incomplete.</p></article>
       <article class="snapshot"><span class="cap">Is the core platform architecture sound?</span><h3>Yes.</h3><p>The platform architecture is credible for the current product and expected near-term scale. The primary gaps are operational rather than architectural, including delivery controls, observability, recovery, operator identity, data governance, and background-work management. The core commerce platform, database, customer authentication, and AI cost controls are sound, supporting focused production hardening rather than re-platforming. Shopify has been the system of record since the day a backend existed, payments are fully delegated and pinned by a guard test, and the shopper path is deliberately fail-open. 164 API routes, 64 models, 8,056 tests, clean typecheck across ~1,400 files. Nothing we found requires a rebuild.</p></article>
     </div>
     <div class="fact-row">
@@ -341,17 +342,36 @@
   <section id="discussion">
     <div class="sec-head"><span class="idx mono">04</span><h2>Discussion questions</h2></div>
     <div class="decision-grid">
-      <article class="decision"><span class="d-num">01</span><p>What are Noci’s primary business goals and objectives over the next 6-12 months?</p></article>
-      <article class="decision"><span class="d-num">02</span><p>What is the go-to-market and growth plan? Are there key business milestones or industry events (e.g., Fashion Week) that drive launch timing or feature priorities?</p></article>
-      <article class="decision"><span class="d-num">03</span><p>What are the highest-priority product requirements, and what is the planned sequence and timeline to deliver?</p></article>
-      <article class="decision"><span class="d-num">04</span><p>Is multi-tenancy a near-term requirement or a future capability?</p></article>
-      <article class="decision"><span class="d-num">05</span><p>Platform strategy: Our review found that the current Vercel + Neon platform is appropriate for Noci’s current stage and is not a blocker to launch or production. Does that align with your current infrastructure strategy?</p></article>
+      <article class="decision">
+        <span class="d-num">01</span>
+        <h3>What are Noci's primary goals over the next 6–12 months?</h3>
+        <p class="answer">Launch, generate revenue, validate Iris, and grow to at least 20,000–30,000 monthly users by month 6.</p>
+      </article>
+      <article class="decision">
+        <span class="d-num">02</span>
+        <h3>What is the go-to-market plan?</h3>
+        <p class="answer">Use Google and Meta ads alongside driving users into style quizzes, then convert them through personalized recommendations and assisted "Shop Together" sessions. No specific industry-event deadline was mentioned.</p>
+      </article>
+      <article class="decision">
+        <span class="d-num">03</span>
+        <h3>What are the highest-priority product requirements?</h3>
+        <p class="answer">Core e-commerce first, followed by Iris, style quizzes, and "Shop Together." Launch is targeted as soon as possible, with production hardening estimated at 5–6 weeks.</p>
+      </article>
+      <article class="decision">
+        <span class="d-num">04</span>
+        <h3>Is multi-tenancy a near-term requirement?</h3>
+        <p class="answer">No. Launch with one Noci storefront, but design the platform to support additional brands later.</p>
+      </article>
+      <article class="decision">
+        <span class="d-num">05</span>
+        <h3>Does Vercel + Neon align with Noci's strategy?</h3>
+        <p class="answer">Yes for launch. It is not a current blocker. Noci remains open to AWS later if operational needs justify migrating.</p>
+      </article>
     </div>
   </section>
 
   <footer>
     <span class="eyebrow">NOCI x 12 VENTURES</span>
-    <p class="foot-note">Executive Summary • Technical Briefing · Production Readiness Review • NociApp<br>Prepared for: Krish Menon and Noci Team · Prepared by: 12 VENTURES</p>
   </footer>
 </main>
 </body>

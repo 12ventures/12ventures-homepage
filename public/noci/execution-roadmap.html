@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Draft execution roadmap for Noci, prepared by 12 VENTURES.">
+<title>Noci draft execution roadmap</title>
+<style>
+  :root {
+    --paper:#F4F1F0; --surface:#FBFAF9; --surface-2:#EFEAEC;
+    --ink:#1B1720; --ink-soft:#4C4451; --ink-faint:#877D8E;
+    --line:#E4DDE0; --line-strong:#D3C9CE;
+    --accent:#6E2C51; --accent-soft:#9A5578;
+    --crit:#AF352E; --crit-bg:#AF352E1A;
+    --warn:#9C6C18; --warn-bg:#B07A2220;
+    --low:#4F6473; --low-bg:#566A7818;
+    --good:#3C7A57; --good-bg:#3C7A5718;
+    --now-tint:#AF352E10;
+    --next-tint:#B07A2214;
+    --ongoing-tint:#566A7814;
+    --shadow:0 1px 2px #1b17200f, 0 8px 30px #1b172010;
+    --maxw:1180px;
+    --label-w:220px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#151219; --surface:#1D1A23; --surface-2:#241F2B;
+      --ink:#ECE6EE; --ink-soft:#B7AEBE; --ink-faint:#7E7488;
+      --line:#312A38; --line-strong:#3E3646;
+      --accent:#CA8CAD; --accent-soft:#A96A8C;
+      --crit:#E36A62; --crit-bg:#E36A6220;
+      --warn:#D8A84A; --warn-bg:#D8A84A1E;
+      --low:#8FA3B1; --low-bg:#8FA3B119;
+      --good:#71BB8E; --good-bg:#71BB8E1C;
+      --now-tint:#E36A6214;
+      --next-tint:#D8A84A14;
+      --ongoing-tint:#8FA3B114;
+      --shadow:0 1px 2px #0000003a, 0 10px 34px #00000040;
+    }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 24px; }
+  .eyebrow {
+    font-family:ui-monospace,monospace;
+    font-size:11px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:700;
+  }
+
+  .masthead {
+    border-bottom:1px solid var(--line-strong);
+    background:var(--surface);
+    position:relative;
+  }
+  .masthead::before {
+    content:"";
+    position:absolute;
+    inset:0 0 auto;
+    height:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-soft) 55%,transparent);
+  }
+  .masthead-inner {
+    padding:44px 24px 32px;
+    max-width:var(--maxw);
+    margin:0 auto;
+  }
+  h1 {
+    font-family:Georgia,"Times New Roman",serif;
+    font-weight:600;
+    letter-spacing:-.015em;
+    font-size:clamp(2rem,4.5vw,3rem);
+    line-height:1.05;
+    margin:.4em 0 0;
+  }
+
+  .board-wrap {
+    padding:36px 0 56px;
+    overflow-x:auto;
+  }
+  .board {
+    min-width:920px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+
+  .cols {
+    display:grid;
+    grid-template-columns:var(--label-w) 1fr 1fr 1fr;
+  }
+  .cols .spacer { background:var(--surface); }
+  .col-h {
+    padding:14px 16px;
+    text-align:center;
+    font-family:ui-monospace,monospace;
+    font-size:11px;
+    font-weight:750;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .col-h.now { color:var(--crit); background:var(--now-tint); }
+  .col-h.next { color:var(--warn); background:var(--next-tint); }
+  .col-h.ongoing { color:var(--low); background:var(--ongoing-tint); }
+
+  .row {
+    display:grid;
+    grid-template-columns:var(--label-w) 1fr 1fr 1fr;
+    min-height:92px;
+  }
+
+  .ws {
+    padding:16px 14px 16px 18px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:6px;
+    background:var(--surface);
+  }
+  .ws-name {
+    font-family:Georgia,"Times New Roman",serif;
+    font-weight:600;
+    font-size:14.5px;
+    line-height:1.25;
+    color:var(--ink);
+  }
+  .ws-meta {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:7px;
+  }
+  .ws-dur {
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  .badge {
+    display:inline-flex;
+    align-items:center;
+    font-family:ui-monospace,monospace;
+    font-size:10px;
+    font-weight:750;
+    letter-spacing:.03em;
+    padding:3px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .badge.p0 { color:var(--crit); background:var(--crit-bg); border:1px solid color-mix(in srgb,var(--crit) 35%,transparent); }
+  .badge.p1 { color:var(--warn); background:var(--warn-bg); border:1px solid color-mix(in srgb,var(--warn) 35%,transparent); }
+  .badge.alt { color:var(--good); background:var(--good-bg); border:1px solid color-mix(in srgb,var(--good) 35%,transparent); }
+  .badge.tbd { color:var(--ink-faint); background:var(--surface-2); border:1px solid var(--line-strong); }
+  .badge.tbd-blue { color:var(--low); background:var(--low-bg); border:1px solid color-mix(in srgb,var(--low) 35%,transparent); }
+
+  .cell {
+    position:relative;
+    padding:12px 10px;
+    display:flex;
+    align-items:center;
+    min-height:92px;
+  }
+  .cell.now { background:var(--now-tint); }
+  .cell.next { background:var(--next-tint); }
+  .cell.ongoing { background:var(--ongoing-tint); }
+
+  .bar {
+    width:100%;
+    border-radius:12px;
+    padding:12px 14px;
+    border:1.5px solid;
+    background:var(--surface);
+  }
+  .bar h3 {
+    margin:0;
+    font-size:13px;
+    font-weight:700;
+    line-height:1.3;
+  }
+  .bar p {
+    margin:4px 0 0;
+    font-size:12px;
+    color:var(--ink-soft);
+    line-height:1.35;
+  }
+  .bar.p0 { border-color:color-mix(in srgb,var(--crit) 65%,transparent); background:color-mix(in srgb,var(--crit-bg) 70%,var(--surface)); }
+  .bar.p0 h3 { color:var(--crit); }
+  .bar.p1 { border-color:color-mix(in srgb,var(--warn) 65%,transparent); background:color-mix(in srgb,var(--warn-bg) 70%,var(--surface)); }
+  .bar.p1 h3 { color:var(--warn); }
+  .bar.alt { border-color:color-mix(in srgb,var(--good) 65%,transparent); background:color-mix(in srgb,var(--good-bg) 70%,var(--surface)); }
+  .bar.alt h3 { color:var(--good); }
+  .bar.tbd { border-color:var(--line-strong); background:var(--surface-2); }
+  .bar.tbd h3 { color:var(--ink-soft); }
+  .bar.ongoing { border-color:color-mix(in srgb,var(--low) 55%,transparent); background:color-mix(in srgb,var(--low-bg) 70%,var(--surface)); }
+  .bar.ongoing h3 { color:var(--low); }
+  .bar.empty {
+    min-height:44px;
+    padding:0;
+    background:transparent;
+  }
+
+  /* Spanning bars sit in a track overlay across timeline cells */
+  .span-track {
+    grid-column:2 / -1;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    padding:12px 10px;
+    position:relative;
+    background:
+      linear-gradient(to right,
+        var(--now-tint) 0%, var(--now-tint) 33.333%,
+        var(--next-tint) 33.333%, var(--next-tint) 66.666%,
+        var(--ongoing-tint) 66.666%, var(--ongoing-tint) 100%);
+  }
+  .span-track .bar { align-self:center; }
+  .span-c1 { grid-column:1; }
+  .span-c2 { grid-column:2; }
+  .span-c3 { grid-column:3; }
+  .span-c2-3 { grid-column:2 / 4; }
+  .span-all { grid-column:1 / -1; }
+  .span-bridge {
+    grid-column:1 / 3;
+    width:72%;
+    justify-self:center;
+  }
+
+  footer { padding:0 0 48px; }
+  .foot-note {
+    color:var(--ink-faint);
+    font-size:12px;
+    margin:10px 0 0;
+  }
+
+  @media (max-width:640px) {
+    .masthead-inner { padding-top:36px; }
+    .board-wrap { padding-top:24px; }
+  }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-inner">
+    <span class="eyebrow">NOCI x 12 VENTURES</span>
+    <h1>Draft Execution Roadmap</h1>
+  </div>
+</header>
+
+<main class="wrap board-wrap">
+  <div class="board" role="table" aria-label="Draft execution roadmap">
+    <div class="cols" role="row">
+      <div class="spacer" role="columnheader"></div>
+      <div class="col-h now" role="columnheader">Now</div>
+      <div class="col-h next" role="columnheader">Next / in parallel</div>
+      <div class="col-h ongoing" role="columnheader">Ongoing</div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">Productionize for launch</div>
+        <div class="ws-meta">
+          <span class="ws-dur">~5–6 weeks</span>
+          <span class="badge p0">P0</span>
+        </div>
+      </div>
+      <div class="span-track">
+        <div class="bar p0 span-c1">
+          <h3>Resolve every HIGH finding before launch</h3>
+          <p>16 HIGH findings</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">Multi-admin backend</div>
+        <div class="ws-meta">
+          <span class="ws-dur">~3–4 weeks</span>
+          <span class="badge p1">P1</span>
+        </div>
+      </div>
+      <div class="span-track">
+        <div class="bar p1 span-c2">
+          <h3>Support multiple admins</h3>
+          <p>Coincides with multi-tenant work</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">Multi-tenant platform</div>
+        <div class="ws-meta">
+          <span class="ws-dur">~3+ months</span>
+          <span class="badge p1">P1</span>
+        </div>
+      </div>
+      <div class="span-track">
+        <div class="bar p1 span-c2-3">
+          <h3>Scalable support for multiple tenants</h3>
+          <p>Full multi-tenant migration</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">Multi-tenant hacked approach</div>
+        <div class="ws-meta">
+          <span class="ws-dur">~1–2 weeks</span>
+          <span class="badge alt">ALT</span>
+        </div>
+      </div>
+      <div class="span-track">
+        <div class="bar alt span-c2">
+          <h3>Alternative method</h3>
+          <p>Option for fast multi-tenant support</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">AWS / hybrid migration</div>
+        <div class="ws-meta">
+          <span class="ws-dur">~3–4 weeks</span>
+          <span class="badge tbd">TBD</span>
+        </div>
+      </div>
+      <div class="span-track">
+        <div class="bar tbd span-bridge">
+          <h3>Optionally Migrate from Vercel/Neon to AWS</h3>
+          <p>Requires a migration conversation for timing</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">Iris AI Merchandiser * (core)</div>
+        <div class="ws-meta">
+          <span class="ws-dur">Continuous workstream</span>
+          <span class="badge tbd-blue">TBD</span>
+        </div>
+      </div>
+      <div class="span-track">
+        <div class="bar ongoing span-c3">
+          <h3>Continuous iterations/ improvements</h3>
+          <p>Prioritized after launch</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">“Shop Together” Live Browsing</div>
+        <div class="ws-meta">
+          <span class="ws-dur">Continuous workstream</span>
+        </div>
+      </div>
+      <div class="span-track">
+        <div class="bar ongoing empty span-all" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="row" role="row">
+      <div class="ws" role="rowheader">
+        <div class="ws-name">Big Data and Analytics</div>
+      </div>
+      <div class="span-track">
+        <div class="bar ongoing empty span-all" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="wrap">
+  <span class="eyebrow">NOCI x 12 VENTURES</span>
+</footer>
+</body>
+</html>
