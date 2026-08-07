@@ -61,7 +61,7 @@ const NociHubPage: React.FC = () => {
               </div>
               <h2 className="noci-hub__card-title">Draft Execution Roadmap</h2>
               <p className="noci-hub__card-copy">
-                Proposed sequence of work to address readiness findings.
+                Strategic workstreams to support Noci's business objectives
               </p>
               <span className="noci-hub__card-cta">
                 Open <ArrowRight className="w-4 h-4" />
