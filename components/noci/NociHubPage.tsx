@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Presentation, SearchCode } from 'lucide-react';
+import { RiRoadMapLine } from 'react-icons/ri';
 import NociPasswordGate from './NociPasswordGate';
 
 const NociHubPage: React.FC = () => {
@@ -26,7 +27,6 @@ const NociHubPage: React.FC = () => {
               <div className="noci-hub__card-icon" aria-hidden="true">
                 <Presentation className="w-5 h-5" />
               </div>
-              <p className="noci-hub__card-kicker">For discussion</p>
               <h2 className="noci-hub__card-title">Executive summary</h2>
               <p className="noci-hub__card-copy">
                 Short briefing: scoring, snapshot, and findings counts.
@@ -43,10 +43,25 @@ const NociHubPage: React.FC = () => {
               <div className="noci-hub__card-icon" aria-hidden="true">
                 <SearchCode className="w-5 h-5" />
               </div>
-              <p className="noci-hub__card-kicker">Full review</p>
               <h2 className="noci-hub__card-title">Technical assessment</h2>
               <p className="noci-hub__card-copy">
                 Full findings register with severity and verification detail.
+              </p>
+              <span className="noci-hub__card-cta">
+                Open <ArrowRight className="w-4 h-4" />
+              </span>
+            </Link>
+
+            <Link
+              to="/noci/execution-roadmap"
+              className="noci-hub__card noci-hub__reveal noci-hub__reveal--4"
+            >
+              <div className="noci-hub__card-icon" aria-hidden="true">
+                <RiRoadMapLine size={20} />
+              </div>
+              <h2 className="noci-hub__card-title">Draft Execution Roadmap</h2>
+              <p className="noci-hub__card-copy">
+                Proposed sequence of work to address readiness findings.
               </p>
               <span className="noci-hub__card-cta">
                 Open <ArrowRight className="w-4 h-4" />
@@ -92,7 +107,7 @@ const NociHubPage: React.FC = () => {
           }
 
           .noci-hub__title {
-            max-width: 960px;
+            max-width: 720px;
             margin: 0 auto;
             padding: 56px 24px 40px;
             font-family: Georgia, "Times New Roman", serif;
@@ -104,23 +119,23 @@ const NociHubPage: React.FC = () => {
 
           .noci-hub__main {
             position: relative;
-            max-width: 960px;
+            max-width: 720px;
             margin: 0 auto;
             padding: 40px 24px 72px;
           }
 
           .noci-hub__grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
+            grid-template-columns: 1fr;
+            gap: 14px;
           }
 
           .noci-hub__card {
             position: relative;
             display: flex;
             flex-direction: column;
-            min-height: 240px;
-            padding: 28px 24px;
+            min-height: 168px;
+            padding: 26px 24px;
             border-radius: 16px;
             text-decoration: none;
             color: inherit;
@@ -146,7 +161,7 @@ const NociHubPage: React.FC = () => {
           }
 
           .noci-hub__card:hover {
-            transform: translateY(-6px);
+            transform: translateY(-4px);
             border-color: rgba(202, 140, 173, 0.55);
             box-shadow:
               0 0 0 1px rgba(202, 140, 173, 0.12),
@@ -185,19 +200,8 @@ const NociHubPage: React.FC = () => {
             transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
           }
 
-          .noci-hub__card-kicker {
-            margin: 0;
-            padding-right: 64px;
-            font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: #7E7488;
-          }
-
           .noci-hub__card-title {
-            margin: 10px 0 12px;
+            margin: 0 0 10px;
             padding-right: 64px;
             font-family: Georgia, "Times New Roman", serif;
             font-weight: 600;
@@ -208,7 +212,8 @@ const NociHubPage: React.FC = () => {
 
           .noci-hub__card-copy {
             margin: 0 0 auto;
-            max-width: 34ch;
+            max-width: 42ch;
+            padding-right: 64px;
             font-size: 14px;
             line-height: 1.58;
             color: #B7AEBE;
@@ -218,7 +223,7 @@ const NociHubPage: React.FC = () => {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            margin-top: 22px;
+            margin-top: 18px;
             font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
             font-size: 11px;
             font-weight: 700;
@@ -235,8 +240,9 @@ const NociHubPage: React.FC = () => {
           }
 
           .noci-hub__reveal--1 { animation-delay: 0.05s; }
-          .noci-hub__reveal--2 { animation-delay: 0.18s; }
-          .noci-hub__reveal--3 { animation-delay: 0.3s; }
+          .noci-hub__reveal--2 { animation-delay: 0.16s; }
+          .noci-hub__reveal--3 { animation-delay: 0.26s; }
+          .noci-hub__reveal--4 { animation-delay: 0.36s; }
 
           @keyframes noci-hub-in {
             to {
@@ -248,12 +254,6 @@ const NociHubPage: React.FC = () => {
           @keyframes noci-hub-glow {
             from { opacity: 0.7; transform: scale(1); }
             to { opacity: 1; transform: scale(1.04); }
-          }
-
-          @media (max-width: 720px) {
-            .noci-hub__grid {
-              grid-template-columns: 1fr;
-            }
           }
 
           @media (prefers-reduced-motion: reduce) {
