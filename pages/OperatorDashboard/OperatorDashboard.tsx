@@ -412,17 +412,29 @@ const OperatorDashboard: React.FC = () => {
       const range = getFilterDateKeyRange(periodRef.current, customRangeRef.current);
       const insightsAvailable = isInsightsFilterAvailable(periodRef.current, customRangeRef.current);
 
-      const insightsPromise = insightsAvailable
-        ? poseidonService.getAnalyticsInsights(filter, testCalls)
-        : Promise.resolve(null);
+      // Stagger the kickoff of the heavier requests instead of firing all 5 in
+      // the same instant. The backend is a single 1GB container — when a wide,
+      // uncached custom range hits summary/costs/history/insights at once, each
+      // can trigger its own multi-day Firestore scan, and having them all land
+      // simultaneously is what drove the RAM spikes we saw. A small stagger
+      // (backed up by a concurrency gate on the backend) spreads that peak out
+      // without meaningfully slowing down the common warm-cache case.
+      const staggerDelay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      const summaryPromise = poseidonService.getAnalyticsSummary(filter, testCalls);
+      const activePromise = poseidonService.getActiveCalls();
+      const costPromise = staggerDelay(150).then(() => poseidonService.getCostAnalytics(filter, testCalls));
       const historyPromise = refreshHistory
-        ? fetchCallHistoryForRange(range)
+        ? staggerDelay(300).then(() => fetchCallHistoryForRange(range))
+        : Promise.resolve(null);
+      const insightsPromise = insightsAvailable
+        ? staggerDelay(450).then(() => poseidonService.getAnalyticsInsights(filter, testCalls))
         : Promise.resolve(null);
 
       const results = await Promise.allSettled([
-        poseidonService.getAnalyticsSummary(filter, testCalls),
-        poseidonService.getCostAnalytics(filter, testCalls),
-        poseidonService.getActiveCalls(),
+        summaryPromise,
+        costPromise,
+        activePromise,
         historyPromise,
         insightsPromise,
       ]);
