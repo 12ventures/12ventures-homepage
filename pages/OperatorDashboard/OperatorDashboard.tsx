@@ -73,6 +73,13 @@ type PillPeriod = 'today' | 'past_7_days' | 'past_30_days' | 'past_90_days';
 
 const PILL_PERIODS: PillPeriod[] = ['today', 'past_7_days', 'past_30_days', 'past_90_days'];
 
+// The 30s poll only re-walks every page of the call-history date range (used
+// solely for the "calls per day" chart / today's-count) once every Nth tick —
+// 10 * 30s = 5 minutes — instead of every tick. That walk can be 10-20+
+// sequential /calls/history requests for a 30-90 day range, so doing it every
+// 30s was the dominant source of backend load on this dashboard.
+const POLL_HISTORY_EVERY_N_TICKS = 10;
+
 const PILL_LABELS: Record<PillPeriod, string> = {
   today: 'Today',
   past_7_days: '7 Days',
@@ -369,6 +376,7 @@ const OperatorDashboard: React.FC = () => {
   const includeTestCallsRef = useRef(false);
   includeTestCallsRef.current = includeTestCalls;
   const intervalRef = useRef<number | null>(null);
+  const pollCountRef = useRef(0);
   const periodRef = useRef<DashboardPeriod>(period);
   periodRef.current = period;
   const customRangeRef = useRef(customRange);
@@ -389,7 +397,14 @@ const OperatorDashboard: React.FC = () => {
   }, []);
 
   // ── Data fetching ─────────────────────────────────────────────────────
-  const fetchAll = useCallback(async (showPeriodSpinner = false) => {
+  // refreshHistory controls whether we re-walk every page of
+  // fetchCallHistoryForRange (used only to build the "calls per day" chart /
+  // today's-count — see historyCalls/dailyCallCounts below). That walk can be
+  // 10-20+ sequential /calls/history requests for a 30-90 day range, so the
+  // 30s poll below skips it most ticks and only refreshes it every 5 minutes
+  // (see POLL_HISTORY_EVERY_N_TICKS) — mount and filter/period changes always
+  // refresh it immediately.
+  const fetchAll = useCallback(async (showPeriodSpinner = false, refreshHistory = true) => {
     if (showPeriodSpinner) setPeriodLoading(true);
     try {
       const filter = buildDashboardFilter(periodRef.current, customRangeRef.current);
@@ -400,12 +415,15 @@ const OperatorDashboard: React.FC = () => {
       const insightsPromise = insightsAvailable
         ? poseidonService.getAnalyticsInsights(filter, testCalls)
         : Promise.resolve(null);
+      const historyPromise = refreshHistory
+        ? fetchCallHistoryForRange(range)
+        : Promise.resolve(null);
 
       const results = await Promise.allSettled([
         poseidonService.getAnalyticsSummary(filter, testCalls),
         poseidonService.getCostAnalytics(filter, testCalls),
         poseidonService.getActiveCalls(),
-        fetchCallHistoryForRange(range),
+        historyPromise,
         insightsPromise,
       ]);
 
@@ -431,7 +449,7 @@ const OperatorDashboard: React.FC = () => {
       }
 
       if (historyResult.status === 'fulfilled') {
-        setAllCalls(historyResult.value);
+        if (historyResult.value !== null) setAllCalls(historyResult.value);
       } else {
         console.error('[OperatorDashboard] history fetch error', historyResult.reason);
       }
@@ -457,11 +475,17 @@ const OperatorDashboard: React.FC = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initial load + 30s poll
+  // Initial load + 30s poll (summary/costs/active/insights every tick; the
+  // expensive full-range history walk only every POLL_HISTORY_EVERY_N_TICKS)
   useEffect(() => {
     setLoading(true);
+    pollCountRef.current = 0;
     void fetchAll();
-    intervalRef.current = window.setInterval(() => void fetchAll(), 30_000);
+    intervalRef.current = window.setInterval(() => {
+      pollCountRef.current += 1;
+      const refreshHistory = pollCountRef.current % POLL_HISTORY_EVERY_N_TICKS === 0;
+      void fetchAll(false, refreshHistory);
+    }, 30_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
