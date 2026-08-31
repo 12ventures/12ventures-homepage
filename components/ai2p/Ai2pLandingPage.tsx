@@ -5,6 +5,7 @@ import MediaSlot from './MediaSlot';
 import AssessmentPreview from './AssessmentPreview';
 import AssessmentForm from './AssessmentForm';
 import ReadinessBoard from './ReadinessBoard';
+import HeroReadyPanel from './HeroReadyPanel';
 
 const FONT_HREF =
   'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap';
@@ -244,6 +245,9 @@ const Ai2pLandingPage: React.FC = () => {
                 See what you get
               </button>
             </div>
+          </div>
+          <div className="ai2p-hero-panel">
+            <HeroReadyPanel />
           </div>
         </div>
       </header>
