@@ -29,6 +29,7 @@ import NociHubPage from './components/noci/NociHubPage';
 import NociTechnicalAssessmentPage from './components/noci/NociReadinessPage';
 import NociExecutiveSummaryPage from './components/noci/NociExecutiveSummaryPage';
 import NociExecutionRoadmapPage from './components/noci/NociExecutionRoadmapPage';
+import Ai2pLandingPage from './components/ai2p/Ai2pLandingPage';
 import HavenApp from './components/haven/HavenApp';
 import HavenAdmin from './components/haven/HavenAdmin';
 import HavenStore from './components/haven/HavenStore';
@@ -271,6 +272,16 @@ const App: React.FC = () => {
           <Route path="/noci/executive-summary" element={<NociExecutiveSummaryPage />} />
           <Route path="/noci/technical-assessment" element={<NociTechnicalAssessmentPage />} />
           <Route path="/noci/execution-roadmap" element={<NociExecutionRoadmapPage />} />
+
+          {/* AI 2 Production (working name) */}
+          <Route
+            path="/ai-2-production"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <Ai2pLandingPage />
+              </BrandLayout>
+            }
+          />
 
           {/* Prisma Health Demo Hub & Apps */}
           <Route
