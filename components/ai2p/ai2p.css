@@ -234,22 +234,44 @@
   opacity: 1;
 }
 
-/* Same left edge as nav / page wrap, content pinned left into the dark zone */
+/* Same left edge as nav / page wrap; copy left, ready panel right */
 .ai2p-hero-rail {
   position: relative;
   z-index: 2;
   width: min(100% - 40px, var(--ai2p-max));
   margin-inline: auto;
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
 }
 
 .ai2p-hero-content {
   width: min(100%, 34rem);
   max-width: 34rem;
   text-align: left;
+  flex: 1 1 auto;
   /* Optical lift: true center reads slightly low under a top nav */
   transform: translateY(-4vh);
+}
+
+.ai2p-hero-panel {
+  flex: 0 0 auto;
+  width: min(100%, 300px);
+  transform: translateY(-2vh);
+  opacity: 0;
+  filter: saturate(0.92);
+  transition:
+    opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.85s ease;
+  transition-delay: 0s;
+}
+
+.ai2p-hero.is-revealed .ai2p-hero-panel {
+  opacity: 1;
+  filter: none;
+  /* Wait for left stack (brand → CTAs) to settle first */
+  transition-delay: 1.55s;
 }
 
 .ai2p-hero-brand {
@@ -296,6 +318,293 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 0;
+}
+
+/* —— Hero ready panel —— */
+.ai2p-ready {
+  border: 1px solid rgba(243, 238, 230, 0.14);
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  background:
+    linear-gradient(165deg, rgba(26, 28, 34, 0.88), rgba(14, 15, 18, 0.92));
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(243, 238, 230, 0.06);
+}
+
+.ai2p-ready-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ai2p-ready-label {
+  font-family: var(--ai2p-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(243, 238, 230, 0.45);
+}
+
+.ai2p-ready-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--ai2p-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8fbf9c;
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-status {
+  animation: ai2p-ready-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 2.7s forwards;
+}
+
+.ai2p-ready-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ai2p-good);
+  box-shadow: 0 0 0 0 rgba(90, 143, 110, 0.55);
+  opacity: 0;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-pulse {
+  opacity: 1;
+  animation: ai2p-ready-pulse 2.2s ease-out 2.85s infinite;
+}
+
+@keyframes ai2p-ready-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(90, 143, 110, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(90, 143, 110, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(90, 143, 110, 0);
+  }
+}
+
+@keyframes ai2p-ready-fade-up {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ai2p-ready-row-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ai2p-ready-check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ai2p-ready-tick-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ai2p-ready-spark-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ai2p-ready-spark-fill {
+  to {
+    opacity: 1;
+  }
+}
+
+.ai2p-ready-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.ai2p-ready-checks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li {
+  animation: ai2p-ready-row-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(1) {
+  animation-delay: 1.85s;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(2) {
+  animation-delay: 2.05s;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(3) {
+  animation-delay: 2.25s;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(4) {
+  animation-delay: 2.45s;
+}
+
+.ai2p-ready-check {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #0b0c0e;
+  background: linear-gradient(160deg, #8fbf9c, var(--ai2p-good));
+  opacity: 0;
+  transform: scale(0.35);
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(1) .ai2p-ready-check {
+  animation: ai2p-ready-check-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) 1.98s forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(2) .ai2p-ready-check {
+  animation: ai2p-ready-check-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) 2.18s forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(3) .ai2p-ready-check {
+  animation: ai2p-ready-check-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) 2.38s forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(4) .ai2p-ready-check {
+  animation: ai2p-ready-check-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) 2.58s forwards;
+}
+
+.ai2p-ready-check svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ai2p-ready-tick {
+  stroke-dasharray: 18;
+  stroke-dashoffset: 18;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(1) .ai2p-ready-tick {
+  animation: ai2p-ready-tick-draw 0.28s ease 2.12s forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(2) .ai2p-ready-tick {
+  animation: ai2p-ready-tick-draw 0.28s ease 2.32s forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(3) .ai2p-ready-tick {
+  animation: ai2p-ready-tick-draw 0.28s ease 2.52s forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-checks li:nth-child(4) .ai2p-ready-tick {
+  animation: ai2p-ready-tick-draw 0.28s ease 2.72s forwards;
+}
+
+.ai2p-ready-check-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ai2p-ready-check-copy strong {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ai2p-paper);
+}
+
+.ai2p-ready-check-copy span {
+  font-size: 0.78rem;
+  color: rgba(243, 238, 230, 0.5);
+  line-height: 1.35;
+}
+
+.ai2p-ready-metrics {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(243, 238, 230, 0.1);
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-metrics {
+  animation: ai2p-ready-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 2.75s forwards;
+}
+
+.ai2p-ready-metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ai2p-ready-metric-label {
+  font-family: var(--ai2p-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(243, 238, 230, 0.42);
+}
+
+.ai2p-ready-metric-val {
+  font-family: var(--ai2p-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8fbf9c;
+}
+
+.ai2p-ready-spark {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ai2p-ready-spark-line {
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+}
+
+.ai2p-ready-spark-fill {
+  opacity: 0;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-spark-line {
+  animation: ai2p-ready-spark-draw 1s cubic-bezier(0.22, 1, 0.36, 1) 2.9s forwards;
+}
+
+.ai2p-hero.is-revealed .ai2p-ready-spark-fill {
+  animation: ai2p-ready-spark-fill 0.7s ease 3.1s forwards;
 }
 
 .ai2p-scroll-cue {
@@ -1455,10 +1764,22 @@
     padding: 96px 0 72px;
   }
 
+  .ai2p-hero-rail {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 28px;
+  }
+
   .ai2p-hero-content {
     width: 100%;
     max-width: none;
     transform: translateY(-2vh);
+  }
+
+  .ai2p-hero-panel {
+    width: min(100%, 340px);
+    transform: none;
+    align-self: flex-start;
   }
 
   .ai2p-hero-scrim {
@@ -1595,6 +1916,7 @@
   .ai2p-nav,
   .ai2p-hero-media,
   .ai2p-hero-glow,
+  .ai2p-hero-panel,
   .ai2p-reveal-scope .ai2p-r,
   .ai2p-reveal-scope .ai2p-r-media,
   .ai2p-section-crack .ai2p-section-crack-media,
@@ -1612,5 +1934,26 @@
 
   .ai2p-scroll-cue.is-visible {
     animation: none;
+  }
+
+  .ai2p-ready-pulse {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .ai2p-ready-status,
+  .ai2p-ready-checks li,
+  .ai2p-ready-check,
+  .ai2p-ready-metrics,
+  .ai2p-ready-spark-fill {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .ai2p-ready-tick,
+  .ai2p-ready-spark-line {
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
   }
 }
