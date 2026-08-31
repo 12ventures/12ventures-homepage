@@ -23,6 +23,9 @@ const CUE_SIZE = 44;
 const CUE_PAD = 18;
 const CUE_REVEAL_MS = 1600;
 
+const dStyle = (n: number): React.CSSProperties =>
+  ({ ['--d' as string]: n }) as React.CSSProperties;
+
 function getCurrentSectionIndex() {
   const marker = window.innerHeight * 0.4;
   let current = -1;
@@ -134,6 +137,48 @@ const Ai2pLandingPage: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const root = document.querySelector('.ai2p');
+    const scopes = Array.from(document.querySelectorAll<HTMLElement>('.ai2p-reveal-scope'));
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const revealAll = () => {
+      root?.classList.add('is-page-ready');
+      scopes.forEach((scope) => scope.classList.add('is-revealed'));
+    };
+
+    if (reduce) {
+      revealAll();
+      return;
+    }
+
+    const readyFrame = window.requestAnimationFrame(() => {
+      root?.classList.add('is-page-ready');
+      document.querySelector('.ai2p-hero')?.classList.add('is-revealed');
+    });
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-revealed');
+          io.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.18, rootMargin: '0px 0px -10% 0px' }
+    );
+
+    scopes.forEach((scope) => {
+      if (scope.classList.contains('ai2p-hero')) return;
+      io.observe(scope);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(readyFrame);
+      io.disconnect();
+    };
+  }, []);
+
   const scrollToRequest = () => {
     document.getElementById('request')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -167,7 +212,7 @@ const Ai2pLandingPage: React.FC = () => {
         </div>
       </nav>
 
-      <header className="ai2p-hero">
+      <header className="ai2p-hero ai2p-reveal-scope">
         <div className="ai2p-hero-media" aria-hidden="true">
           <MediaSlot
             src="/ai2p/hero-facade.png"
@@ -180,16 +225,18 @@ const Ai2pLandingPage: React.FC = () => {
         <div className="ai2p-hero-glow" aria-hidden="true" />
         <div className="ai2p-hero-rail">
           <div className="ai2p-hero-content">
-            <p className="ai2p-hero-brand">AI 2 Production</p>
-            <h1>
+            <p className="ai2p-hero-brand ai2p-r" style={dStyle(0)}>
+              AI 2 Production
+            </p>
+            <h1 className="ai2p-r" style={dStyle(1)}>
               Launch with confidence in{' '}
               <span className="ai2p-em">what you already built</span>.
             </h1>
-            <p className="ai2p-hero-dek">
+            <p className="ai2p-hero-dek ai2p-r" style={dStyle(2)}>
               We dig into what you built, tell you what will hold under real users,
               and give you a clear path to launch and grow without guessing.
             </p>
-            <div className="ai2p-hero-actions">
+            <div className="ai2p-hero-actions ai2p-r" style={dStyle(3)}>
               <button type="button" className="ai2p-btn ai2p-btn-primary" onClick={scrollToRequest}>
                 Request an assessment
               </button>
@@ -202,21 +249,27 @@ const Ai2pLandingPage: React.FC = () => {
       </header>
 
       <main>
-        <section className="ai2p-section ai2p-section-light" id="case" aria-labelledby="case-title">
+        <section
+          className="ai2p-section ai2p-section-light ai2p-reveal-scope"
+          id="case"
+          aria-labelledby="case-title"
+        >
           <div className="ai2p-wrap ai2p-split">
             <div className="ai2p-split-copy">
-              <p className="ai2p-eyebrow ai2p-kicker">Why this exists</p>
-              <h2 className="ai2p-h2" id="case-title">
+              <p className="ai2p-eyebrow ai2p-kicker ai2p-r" style={dStyle(0)}>
+                Why this exists
+              </p>
+              <h2 className="ai2p-h2 ai2p-r" id="case-title" style={dStyle(1)}>
                 It looked ready. <span className="ai2p-em-uline">It was not</span>.
               </h2>
-              <p className="ai2p-capsule">
+              <p className="ai2p-capsule ai2p-r" style={dStyle(2)}>
                 One founder had already spent heavily on AI and run hard automated reviews
                 of the codebase. The demo looked sharp. Underneath, the architecture was
                 not sound enough for a real launch. Shipping as-is would have put them at
                 risk the moment real users showed up.
               </p>
             </div>
-            <div className="ai2p-split-media">
+            <div className="ai2p-split-media ai2p-r-media" style={dStyle(2)}>
               <MediaSlot
                 src="/ai2p/case-surface.png"
                 label="case-surface"
@@ -227,7 +280,11 @@ const Ai2pLandingPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="ai2p-section ai2p-section-crack" id="foundation" aria-labelledby="foundation-title">
+        <section
+          className="ai2p-section ai2p-section-crack ai2p-reveal-scope"
+          id="foundation"
+          aria-labelledby="foundation-title"
+        >
           <div className="ai2p-section-crack-media" aria-hidden="true">
             <MediaSlot
               src="/ai2p/agents-blindspot.png"
@@ -240,42 +297,50 @@ const Ai2pLandingPage: React.FC = () => {
           <div className="ai2p-wrap ai2p-section-crack-inner">
             <div className="ai2p-split">
               <div className="ai2p-split-copy">
-                <p className="ai2p-eyebrow ai2p-kicker">What we check</p>
-                <h2 className="ai2p-h2" id="foundation-title">
+                <p className="ai2p-eyebrow ai2p-kicker ai2p-r" style={dStyle(0)}>
+                  What we check
+                </p>
+                <h2 className="ai2p-h2 ai2p-r" id="foundation-title" style={dStyle(1)}>
                   See the <span className="ai2p-em">real</span> state of your product.
                 </h2>
-                <p className="ai2p-capsule">
+                <p className="ai2p-capsule ai2p-r" style={dStyle(2)}>
                   We score the foundation across a few areas that decide whether a launch
                   survives: architecture, security, ops, and scale. You see where you are
                   today, what is blocking a safe launch, and what “ready” looks like.
                 </p>
-                <ul className="ai2p-check-list">
+                <ul className="ai2p-check-list ai2p-r" style={dStyle(3)}>
                   <li>Architecture: will the structure hold under real use?</li>
                   <li>Security: are money and data paths actually safe?</li>
                   <li>Ops: can you see problems before customers do?</li>
                   <li>Scale: what breaks when traffic or spend grows?</li>
                 </ul>
               </div>
-              <div className="ai2p-split-media">
+              <div className="ai2p-split-media ai2p-r-media" style={dStyle(2)}>
                 <ReadinessBoard />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="ai2p-section ai2p-section-cutaway" id="point" aria-labelledby="point-title">
+        <section
+          className="ai2p-section ai2p-section-cutaway ai2p-reveal-scope"
+          id="point"
+          aria-labelledby="point-title"
+        >
           <div className="ai2p-wrap ai2p-split ai2p-split-rev">
             <div className="ai2p-split-copy">
-              <p className="ai2p-eyebrow ai2p-kicker">The point</p>
-              <h2 className="ai2p-h2" id="point-title">
+              <p className="ai2p-eyebrow ai2p-kicker ai2p-r" style={dStyle(0)}>
+                The point
+              </p>
+              <h2 className="ai2p-h2 ai2p-r" id="point-title" style={dStyle(1)}>
                 Finished on the outside is <span className="ai2p-em">not enough</span>.
               </h2>
-              <p className="ai2p-capsule">
+              <p className="ai2p-capsule ai2p-r" style={dStyle(2)}>
                 Agents are good at polishing what you can see. We open up the foundation,
                 show you what is solid, and get you to a place you can launch and grow from.
               </p>
             </div>
-            <div className="ai2p-split-media">
+            <div className="ai2p-split-media ai2p-r-media" style={dStyle(2)}>
               <MediaSlot
                 src="/ai2p/cutaway-foundation.png"
                 label="cutaway-foundation"
@@ -287,7 +352,7 @@ const Ai2pLandingPage: React.FC = () => {
         </section>
 
         <section
-          className="ai2p-section ai2p-section-grain ai2p-section-how"
+          className="ai2p-section ai2p-section-grain ai2p-section-how ai2p-reveal-scope"
           id="how"
           aria-labelledby="how-title"
         >
@@ -295,16 +360,18 @@ const Ai2pLandingPage: React.FC = () => {
           <div className="ai2p-wrap ai2p-section-inner">
             <div className="ai2p-how-head">
               <div className="ai2p-how-copy">
-                <p className="ai2p-eyebrow ai2p-kicker">How it works</p>
-                <h2 className="ai2p-h2" id="how-title">
+                <p className="ai2p-eyebrow ai2p-kicker ai2p-r" style={dStyle(0)}>
+                  How it works
+                </p>
+                <h2 className="ai2p-h2 ai2p-r" id="how-title" style={dStyle(1)}>
                   Straight path to a <span className="ai2p-em">real answer</span>.
                 </h2>
-                <p className="ai2p-lede">
+                <p className="ai2p-lede ai2p-r" style={dStyle(2)}>
                   Senior engineers lead the review. Agents help where they save time. We do not
                   rip out your stack unless there is a good reason.
                 </p>
               </div>
-              <div className="ai2p-how-signal" aria-hidden="true">
+              <div className="ai2p-how-signal ai2p-r-media" style={dStyle(2)} aria-hidden="true">
                 <svg viewBox="0 0 280 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <text x="8" y="18" className="ai2p-how-signal-label">
                     noise
@@ -312,7 +379,6 @@ const Ai2pLandingPage: React.FC = () => {
                   <text x="232" y="18" className="ai2p-how-signal-label">
                     clear
                   </text>
-                  {/* Jagged early signal */}
                   <path
                     className="ai2p-how-signal-noise"
                     d="M8 72 L22 48 L36 88 L50 40 L64 76 L78 52 L92 84 L106 44"
@@ -320,7 +386,6 @@ const Ai2pLandingPage: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  {/* Settling mid */}
                   <path
                     className="ai2p-how-signal-mid"
                     d="M106 44 L128 62 L148 50 L168 58 L188 54"
@@ -328,7 +393,6 @@ const Ai2pLandingPage: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  {/* Clean answer */}
                   <path
                     className="ai2p-how-signal-clear"
                     d="M188 54 L280 54"
@@ -338,7 +402,6 @@ const Ai2pLandingPage: React.FC = () => {
                   <circle className="ai2p-how-signal-dot" cx="106" cy="44" r="3.5" />
                   <circle className="ai2p-how-signal-dot" cx="188" cy="54" r="3.5" />
                   <circle className="ai2p-how-signal-end" cx="272" cy="54" r="5" />
-                  {/* Stage ticks */}
                   <path className="ai2p-how-signal-tick" d="M64 98 V108" />
                   <path className="ai2p-how-signal-tick" d="M148 98 V108" />
                   <path className="ai2p-how-signal-tick" d="M232 98 V108" />
@@ -356,13 +419,13 @@ const Ai2pLandingPage: React.FC = () => {
             </div>
 
             <div className="ai2p-steps">
-              <article className="ai2p-step">
+              <article className="ai2p-step ai2p-r" style={dStyle(3)}>
                 <span className="ai2p-step-rail" aria-hidden="true" />
                 <span className="ai2p-step-num">01</span>
                 <h3>Share access</h3>
                 <p>Read-only repo and staging. If we cannot see it, we cannot judge it.</p>
               </article>
-              <article className="ai2p-step">
+              <article className="ai2p-step ai2p-r" style={dStyle(4)}>
                 <span className="ai2p-step-rail" aria-hidden="true" />
                 <span className="ai2p-step-num">02</span>
                 <h3>We go through it</h3>
@@ -371,7 +434,7 @@ const Ai2pLandingPage: React.FC = () => {
                   skims past.
                 </p>
               </article>
-              <article className="ai2p-step ai2p-step-end">
+              <article className="ai2p-step ai2p-step-end ai2p-r" style={dStyle(5)}>
                 <span className="ai2p-step-rail" aria-hidden="true" />
                 <span className="ai2p-step-num">03</span>
                 <h3>You get the truth, written down</h3>
@@ -384,20 +447,24 @@ const Ai2pLandingPage: React.FC = () => {
         </section>
 
         <section
-          className="ai2p-section ai2p-section-light ai2p-section-grain"
+          className="ai2p-section ai2p-section-light ai2p-section-grain ai2p-reveal-scope"
           id="preview"
           aria-labelledby="preview-title"
         >
           <div className="ai2p-wrap ai2p-section-inner">
-            <p className="ai2p-eyebrow ai2p-kicker">The deliverable</p>
-            <h2 className="ai2p-h2" id="preview-title">
+            <p className="ai2p-eyebrow ai2p-kicker ai2p-r" style={dStyle(0)}>
+              The deliverable
+            </p>
+            <h2 className="ai2p-h2 ai2p-r" id="preview-title" style={dStyle(1)}>
               Written so you can <span className="ai2p-em">decide</span>, not decode.
             </h2>
-            <p className="ai2p-capsule">
+            <p className="ai2p-capsule ai2p-r" style={dStyle(2)}>
               Ranked findings, a short plain-English snapshot, and a Now / Next path.
               Enough clarity to know if you are ready to launch.
             </p>
-            <AssessmentPreview />
+            <div className="ai2p-r-media" style={dStyle(3)}>
+              <AssessmentPreview />
+            </div>
           </div>
         </section>
 
@@ -429,50 +496,56 @@ const Ai2pLandingPage: React.FC = () => {
         </section>
         */}
 
-        <section className="ai2p-section ai2p-section-faq" id="faq" aria-labelledby="faq-title">
+        <section
+          className="ai2p-section ai2p-section-faq ai2p-reveal-scope"
+          id="faq"
+          aria-labelledby="faq-title"
+        >
           <div className="ai2p-faq-glow" aria-hidden="true" />
           <div className="ai2p-wrap">
-            <p className="ai2p-eyebrow ai2p-kicker">FAQ</p>
-            <h2 className="ai2p-h2" id="faq-title">
+            <p className="ai2p-eyebrow ai2p-kicker ai2p-r" style={dStyle(0)}>
+              FAQ
+            </p>
+            <h2 className="ai2p-h2 ai2p-r" id="faq-title" style={dStyle(1)}>
               Quick answers
             </h2>
             <div className="ai2p-faq">
-              <details>
+              <details className="ai2p-r" style={dStyle(2)}>
                 <summary>Will you rewrite my product?</summary>
                 <p>
                   No. We tell you what is sound and what is not. We keep what holds. Big
                   rewrites only when the current foundation cannot carry a real launch.
                 </p>
               </details>
-              <details>
+              <details className="ai2p-r" style={dStyle(3)}>
                 <summary>Can I just have AI review it again?</summary>
                 <p>
                   You can, and many founders already have. Tools still miss structural
                   problems. That is why senior engineers lead, with agents as support.
                 </p>
               </details>
-              <details>
+              <details className="ai2p-r" style={dStyle(4)}>
                 <summary>How does pricing work?</summary>
                 <p>
                   Paid assessment. We quote after we see your repo, stage, and stack. No
                   surprise scope after the fact.
                 </p>
               </details>
-              <details>
+              <details className="ai2p-r" style={dStyle(5)}>
                 <summary>What do I walk away with?</summary>
                 <p>
                   A written assessment: what will hold at launch, what has to change first,
                   and a practical order of work.
                 </p>
               </details>
-              <details>
+              <details className="ai2p-r" style={dStyle(6)}>
                 <summary>Who does the work?</summary>
                 <p>
                   Senior engineers at 12 VENTURES. Agents speed the pass. People own the
                   judgment.
                 </p>
               </details>
-              <details>
+              <details className="ai2p-r" style={dStyle(7)}>
                 <summary>Do I have to change my stack?</summary>
                 <p>
                   Usually no. If it fits, we say so. We only push a major change when the
@@ -483,18 +556,26 @@ const Ai2pLandingPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="ai2p-section ai2p-section-close" id="close" aria-labelledby="close-title">
+        <section
+          className="ai2p-section ai2p-section-close ai2p-reveal-scope"
+          id="close"
+          aria-labelledby="close-title"
+        >
           <div className="ai2p-close-glow" aria-hidden="true" />
           <div className="ai2p-wrap">
-            <p className="ai2p-eyebrow ai2p-kicker">Next step</p>
-            <h2 className="ai2p-h2" id="close-title">
+            <p className="ai2p-eyebrow ai2p-kicker ai2p-r" style={dStyle(0)}>
+              Next step
+            </p>
+            <h2 className="ai2p-h2 ai2p-r" id="close-title" style={dStyle(1)}>
               Find out if you are <span className="ai2p-em">actually ready</span>.
             </h2>
-            <p className="ai2p-lede">
+            <p className="ai2p-lede ai2p-r" style={dStyle(2)}>
               Request an assessment. We will look at your product, scope the work, and
               send a straight quote before anything starts.
             </p>
-            <AssessmentForm />
+            <div className="ai2p-r" style={dStyle(3)}>
+              <AssessmentForm />
+            </div>
           </div>
         </section>
       </main>
