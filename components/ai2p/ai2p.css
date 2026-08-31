@@ -180,6 +180,16 @@
   position: absolute;
   inset: 0;
   z-index: 0;
+  opacity: 0;
+  transform: scale(1.05);
+  transition:
+    opacity 1.25s cubic-bezier(0.22, 1, 0.36, 1) 0.05s,
+    transform 1.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
+}
+
+.ai2p-hero.is-revealed .ai2p-hero-media {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .ai2p-hero-media .ai2p-media {
@@ -212,10 +222,16 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s ease 0.35s;
   background:
     radial-gradient(ellipse 48% 58% at 16% 46%, rgba(196, 164, 132, 0.12), transparent 70%),
     radial-gradient(ellipse 28% 36% at 10% 28%, rgba(212, 184, 150, 0.06), transparent 72%),
     radial-gradient(ellipse 36% 42% at 32% 70%, rgba(196, 164, 132, 0.04), transparent 75%);
+}
+
+.ai2p-hero.is-revealed .ai2p-hero-glow {
+  opacity: 1;
 }
 
 /* Same left edge as nav / page wrap, content pinned left into the dark zone */
@@ -1496,9 +1512,98 @@
   }
 }
 
+/* —— Reveal motion —— */
+.ai2p-nav {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+}
+
+.ai2p.is-page-ready .ai2p-nav {
+  opacity: 1;
+  transform: none;
+}
+
+.ai2p-reveal-scope .ai2p-r {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--d, 0) * 95ms + 80ms);
+}
+
+.ai2p-reveal-scope.is-revealed .ai2p-r {
+  opacity: 1;
+  transform: none;
+}
+
+.ai2p-reveal-scope .ai2p-r-media {
+  opacity: 0;
+  transform: translateY(20px) scale(1.02);
+  filter: saturate(0.92);
+  transition:
+    opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.05s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1.05s ease;
+  transition-delay: calc(var(--d, 2) * 95ms + 120ms);
+}
+
+.ai2p-reveal-scope.is-revealed .ai2p-r-media {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.ai2p-section-crack .ai2p-section-crack-media {
+  opacity: 0;
+  transform: scale(1.03);
+  transition:
+    opacity 1.15s ease,
+    transform 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ai2p-section-crack.is-revealed .ai2p-section-crack-media {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ai2p-section-how .ai2p-how-wash,
+.ai2p-section-faq .ai2p-faq-glow,
+.ai2p-section-close .ai2p-close-glow {
+  opacity: 0;
+  transition: opacity 1.2s ease 0.15s;
+}
+
+.ai2p-section-how.is-revealed .ai2p-how-wash,
+.ai2p-section-faq.is-revealed .ai2p-faq-glow,
+.ai2p-section-close.is-revealed .ai2p-close-glow {
+  opacity: 1;
+}
+
+.ai2p-hero .ai2p-r {
+  transition-delay: calc(var(--d, 0) * 110ms + 220ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ai2p * {
     transition: none !important;
+  }
+
+  .ai2p-nav,
+  .ai2p-hero-media,
+  .ai2p-hero-glow,
+  .ai2p-reveal-scope .ai2p-r,
+  .ai2p-reveal-scope .ai2p-r-media,
+  .ai2p-section-crack .ai2p-section-crack-media,
+  .ai2p-section-how .ai2p-how-wash,
+  .ai2p-section-faq .ai2p-faq-glow,
+  .ai2p-section-close .ai2p-close-glow {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
   }
 
   .ai2p-scroll-cue {
