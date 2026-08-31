@@ -537,7 +537,12 @@ class PoseidonService {
   }
 
   async getAnalyticsInsights(filter: DashboardFilter, includeTestCalls = false): Promise<AnalyticsInsights> {
-    return this.request(`/api/dashboard/analytics/insights?${buildAnalyticsParams(filter, includeTestCalls).toString()}`);
+    const params = buildAnalyticsParams(filter, includeTestCalls);
+    // Keep Unique Callers' denominator on the same "accepted" definition as Key
+    // Metrics total (exclude triage-never-left and <60s calls). Without this,
+    // Unique Callers shows unique/all-calls while Total Calls shows accepted-only.
+    params.set('accepted_calls_only', 'true');
+    return this.request(`/api/dashboard/analytics/insights?${params.toString()}`);
   }
 
   async getAnalyticsInsightsBreakdown(

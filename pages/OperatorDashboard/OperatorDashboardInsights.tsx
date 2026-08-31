@@ -219,7 +219,7 @@ const OperatorDashboardInsights: React.FC<Props> = ({
       <div className={sectionClass}>
         <p className="od-section-label od-reveal" style={odReveal(rb)}>Call Insights</p>
         <div className="od-insights-unavailable od-reveal" style={odReveal(rb + 1)}>
-          <p>Insights are not available for this time period. Try Today through This Month, or a custom range up to 90 days.</p>
+          <p>Insights are not available for this time period. Try Today through This Year, or a custom range up to 366 days.</p>
         </div>
       </div>
     );

@@ -128,9 +128,9 @@ function toApiPeriod(period: DashboardPeriod): ApiPeriod {
   return period;
 }
 
-/** Insights API only supports periods up to this_month — returns null for unsupported periods. */
+/** Insights API supported named periods (mirrors backend's _VALID_INSIGHTS_PERIODS) — returns null for unsupported periods. */
 const INSIGHTS_SUPPORTED_PERIODS: ApiPeriod[] = [
-  'today', 'yesterday', 'past_7_days', 'past_30_days', 'this_week', 'this_month',
+  'today', 'yesterday', 'past_7_days', 'past_30_days', 'this_week', 'this_month', 'this_year',
 ];
 function toInsightsPeriod(period: DashboardPeriod): ApiPeriod | null {
   const api = toApiPeriod(period);
@@ -341,7 +341,7 @@ function isInsightsFilterAvailable(
   customRange: { dateFrom: string; dateTo: string } | null,
 ): boolean {
   if (customRange) {
-    return customRangeSpanDays(customRange.dateFrom, customRange.dateTo) <= 90;
+    return customRangeSpanDays(customRange.dateFrom, customRange.dateTo) <= 366;
   }
   return toInsightsPeriod(period) !== null;
 }
