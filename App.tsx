@@ -30,12 +30,14 @@ import NociTechnicalAssessmentPage from './components/noci/NociReadinessPage';
 import NociExecutiveSummaryPage from './components/noci/NociExecutiveSummaryPage';
 import NociExecutionRoadmapPage from './components/noci/NociExecutionRoadmapPage';
 import Ai2pLandingPage from './components/ai2p/Ai2pLandingPage';
+import HealthSystemsLandingPage from './components/healthsystems/HealthSystemsLandingPage';
 import HavenApp from './components/haven/HavenApp';
 import HavenAdmin from './components/haven/HavenAdmin';
 import HavenStore from './components/haven/HavenStore';
 import HavenProductPage from './components/haven/HavenProductPage';
 import HavenRoomSetPage from './components/haven/HavenRoomSetPage';
 
+// Brand shell for routed demos / landings
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
   <BrandingProvider initialBrandId={initialBrandId}>
     {children}
@@ -279,6 +281,16 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
                 <Ai2pLandingPage />
+              </BrandLayout>
+            }
+          />
+
+          {/* Applied AI for Health Systems */}
+          <Route
+            path="/health-systems"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <HealthSystemsLandingPage />
               </BrandLayout>
             }
           />
