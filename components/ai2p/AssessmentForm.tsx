@@ -5,6 +5,7 @@ interface FormState {
   email: string;
   product: string;
   stack: string;
+  website: string;
   canShareAccess: boolean;
 }
 
@@ -13,6 +14,7 @@ const EMPTY: FormState = {
   email: '',
   product: '',
   stack: '',
+  website: '',
   canShareAccess: false,
 };
 
@@ -56,6 +58,7 @@ const AssessmentForm: React.FC = () => {
             'AI2P assessment request',
             form.stack ? `stack: ${form.stack}` : null,
             form.product ? `built: ${form.product}` : null,
+            form.website ? `website: ${form.website.trim()}` : null,
             'repo_access: yes',
           ]
             .filter(Boolean)
@@ -138,6 +141,22 @@ const AssessmentForm: React.FC = () => {
         />
       </div>
 
+      <div className="ai2p-field">
+        <label htmlFor="ai2p-website">
+          Website <span className="ai2p-optional">(optional)</span>
+        </label>
+        <input
+          id="ai2p-website"
+          name="website"
+          type="text"
+          inputMode="url"
+          autoComplete="url"
+          placeholder="https://"
+          value={form.website}
+          onChange={onChange}
+        />
+      </div>
+
       <label className="ai2p-check">
         <input
           type="checkbox"
@@ -145,9 +164,7 @@ const AssessmentForm: React.FC = () => {
           checked={form.canShareAccess}
           onChange={onChange}
         />
-        <span>
-          I can share read-only repo or staging access.
-        </span>
+        <span>I can share read-only repo or staging access.</span>
       </label>
 
       {error && <p className="ai2p-form-error">{error}</p>}

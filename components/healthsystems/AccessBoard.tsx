@@ -1,10 +1,17 @@
 import React from 'react';
 
+interface AccessBoardProps {
+  context?: string;
+}
+
 /** Patient Access / voice agent KPI board — PDF stats, illustrative layout. */
-const AccessBoard: React.FC = () => (
+const AccessBoard: React.FC<AccessBoardProps> = ({ context }) => (
   <aside className="hs-board" aria-label="Patient access results">
     <div className="hs-board-top">
-      <span className="hs-board-label">Patient access · deployed</span>
+      <div>
+        <span className="hs-board-label">Patient access · deployed</span>
+        {context ? <p className="hs-board-context">{context}</p> : null}
+      </div>
       <div className="hs-board-live">
         <span className="hs-board-pulse" aria-hidden="true" />
         24/7 coverage
@@ -46,7 +53,7 @@ const AccessBoard: React.FC = () => (
     </ul>
 
     <div className="hs-capacity">
-      <span className="hs-board-label">Capacity without incremental hiring</span>
+      <span className="hs-board-label">Capacity without new hiring</span>
       <div className="hs-capacity-row">
         <div>
           <strong>2 FTE</strong>
@@ -54,7 +61,7 @@ const AccessBoard: React.FC = () => (
         </div>
         <div>
           <strong>7 FTE</strong>
-          <span>peak concurrent equivalent</span>
+          <span>peak capacity equivalent</span>
         </div>
       </div>
       <svg className="hs-capacity-bars" viewBox="0 0 280 56" aria-hidden="true">
@@ -63,7 +70,7 @@ const AccessBoard: React.FC = () => (
         <rect className="hs-cap-track" x="0" y="34" width="280" height="14" rx="3" />
         <rect className="hs-cap-fill b" x="0" y="34" width="240" height="14" rx="3" />
       </svg>
-      <p className="hs-board-note">Capacity scales beyond demonstrated peak.</p>
+      <p className="hs-board-note">Capacity can scale past the peak shown here.</p>
     </div>
   </aside>
 );

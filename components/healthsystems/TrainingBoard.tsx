@@ -1,10 +1,17 @@
 import React from 'react';
 
+interface TrainingBoardProps {
+  context?: string;
+}
+
 /** Workforce training KPI board — PDF stats, illustrative layout. */
-const TrainingBoard: React.FC = () => (
+const TrainingBoard: React.FC<TrainingBoardProps> = ({ context }) => (
   <aside className="hs-board hs-board-training" aria-label="Workforce training results">
     <div className="hs-board-top">
-      <span className="hs-board-label">Workforce training · deployed</span>
+      <div>
+        <span className="hs-board-label">Workforce training · deployed</span>
+        {context ? <p className="hs-board-context">{context}</p> : null}
+      </div>
       <div className="hs-board-live hs-board-live-alt">5/5 staff rating</div>
     </div>
 
@@ -72,15 +79,15 @@ const TrainingBoard: React.FC = () => (
     <ul className="hs-kpi-grid hs-kpi-grid-3">
       <li>
         <span className="hs-kpi-num">#1</span>
-        <span className="hs-kpi-txt">cohort vs traditional</span>
+        <span className="hs-kpi-txt">vs traditional cohort</span>
       </li>
       <li>
         <span className="hs-kpi-num">100%</span>
-        <span className="hs-kpi-txt">compliance</span>
+        <span className="hs-kpi-txt">compliance rate</span>
       </li>
       <li>
         <span className="hs-kpi-num">$500K+</span>
-        <span className="hs-kpi-txt">annual RN training savings</span>
+        <span className="hs-kpi-txt">RN training savings / year</span>
       </li>
     </ul>
   </aside>

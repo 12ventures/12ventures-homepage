@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './healthsystems.css';
 import MediaSlot from './MediaSlot';
-import MethodStrip from './MethodStrip';
 import AccessBoard from './AccessBoard';
 import TrainingBoard from './TrainingBoard';
 import ConversationForm from './ConversationForm';
@@ -10,7 +9,7 @@ import ConversationForm from './ConversationForm';
 const FONT_HREF =
   'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap';
 
-const PAGE_SECTIONS = ['method', 'access', 'training', 'close'] as const;
+const PAGE_SECTIONS = ['agenda', 'access', 'training', 'portfolio', 'engage', 'close'] as const;
 
 const CUE_SIZE = 44;
 const CUE_PAD = 18;
@@ -35,7 +34,11 @@ function getActiveSurface(index: number) {
   return document.getElementById(PAGE_SECTIONS[index]);
 }
 
-const HealthSystemsLandingPage: React.FC = () => {
+/**
+ * PE / sponsor value-creation variant of Applied AI for Health Systems.
+ * Same visual system; copy framed for hospital execs + portfolio sponsors.
+ */
+const HealthSystemsPeLandingPage: React.FC = () => {
   const [cue, setCue] = useState({ present: false, visible: false, top: 0 });
   const sectionIndexRef = useRef<number | null>(null);
   const revealTimerRef = useRef<number | null>(null);
@@ -43,7 +46,7 @@ const HealthSystemsLandingPage: React.FC = () => {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Applied AI for Health Systems · 12 VENTURES';
+    document.title = 'Applied AI for Health Systems · Portfolio · 12 VENTURES';
 
     let link = document.querySelector<HTMLLinkElement>('link[data-hs-font]');
     if (!link) {
@@ -179,7 +182,7 @@ const HealthSystemsLandingPage: React.FC = () => {
   };
 
   return (
-    <div className="hs">
+    <div className="hs hs-pe">
       <nav className="hs-nav" aria-label="Primary">
         <div className="hs-wrap hs-nav-inner">
           <Link className="hs-nav-brand" to="/">
@@ -206,20 +209,24 @@ const HealthSystemsLandingPage: React.FC = () => {
             <p className="hs-hero-brand hs-r" style={dStyle(0)}>
               Applied AI for Health Systems
             </p>
+            <p className="hs-hero-kicker hs-r" style={dStyle(0)}>
+              For hospital leaders and PE sponsors
+            </p>
             <h1 className="hs-r" style={dStyle(1)}>
-              AI that ships into operations and{' '}
-              <span className="hs-em">shows up in the numbers</span>.
+              <span className="hs-em">Proven</span> in production. Ready to roll out across
+              the <span className="hs-em">portfolio</span>.
             </h1>
             <p className="hs-hero-dek hs-r" style={dStyle(2)}>
-              12 VENTURES partners with health systems to identify, deploy, and scale AI
-              for patient access, workforce performance, and measurable operational impact.
+              Two live hospital deployments cut abandoned calls, closed staffing gaps, and
+              cut training time in half. Prove it at one site, then take the same playbook
+              to every hospital in the platform.
             </p>
             <div className="hs-hero-actions hs-r" style={dStyle(3)}>
               <a className="hs-btn hs-btn-primary" href="#request">
                 Book a conversation
               </a>
               <a className="hs-btn hs-btn-ghost" href="#access">
-                See deployed results
+                See the numbers
               </a>
             </div>
           </div>
@@ -229,23 +236,110 @@ const HealthSystemsLandingPage: React.FC = () => {
       <main>
         <section
           className="hs-section hs-section-method hs-reveal-scope"
-          id="method"
-          aria-labelledby="method-title"
+          id="agenda"
+          aria-labelledby="agenda-title"
         >
           <div className="hs-wrap">
             <p className="hs-eyebrow hs-r" style={dStyle(0)}>
-              How we work
+              Why this matters now
             </p>
-            <h2 className="hs-h2 hs-h2-wide hs-r" id="method-title" style={dStyle(1)}>
-              Opportunity → production → <span className="hs-em">impact</span>.
+            <h2 className="hs-h2 hs-r" id="agenda-title" style={dStyle(1)}>
+              Clear owner. Clear <span className="hs-em">upside</span>.
             </h2>
             <p className="hs-lede hs-r" style={dStyle(2)}>
-              We help health systems move AI from idea into live workflows, then prove it
-              with operational metrics.
+              Every use case has a named owner and a financial target from day one.
             </p>
-            <div className="hs-r" style={dStyle(3)}>
-              <MethodStrip />
-            </div>
+            <ul className="hs-agenda hs-r" style={dStyle(3)}>
+              <li className="hs-agenda-cfo">
+                <span className="hs-agenda-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="hs-agenda-role">CFO · Margin</span>
+                <strong className="hs-agenda-hit">P&amp;L savings</strong>
+                <p>
+                  Labor is the largest cost. Turn fixed headcount into scalable capacity that
+                  shows up in the numbers.
+                </p>
+              </li>
+              <li className="hs-agenda-coo">
+                <span className="hs-agenda-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="8.25"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                    />
+                    <path
+                      d="M12 8v4.2l2.6 1.6"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="hs-agenda-role">COO · Operations</span>
+                <strong className="hs-agenda-hit">24/7 coverage</strong>
+                <p>
+                  True round-the-clock access without new shifts. Peak volume is handled by
+                  the agent, not overtime.
+                </p>
+              </li>
+              <li className="hs-agenda-cno">
+                <span className="hs-agenda-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M4 16l5.2-5.2 3.6 3.6L20 7"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14.5 7H20v5.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="hs-agenda-role">CNO / CHRO · Workforce</span>
+                <strong className="hs-agenda-hit">Faster to floor</strong>
+                <p>
+                  New hires reach the floor faster and stay longer in the roles that are
+                  hardest to fill.
+                </p>
+              </li>
+              <li className="hs-agenda-ceo">
+                <span className="hs-agenda-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M5 18V9.5M10.5 18V6M16 18v-7.5M21 18H3"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+                <span className="hs-agenda-role">CEO · Growth &amp; sponsor</span>
+                <strong className="hs-agenda-hit">Platform EBITDA</strong>
+                <p>
+                  Captured demand plus a proven rollout. Value that builds across the
+                  portfolio before exit.
+                </p>
+              </li>
+            </ul>
           </div>
         </section>
 
@@ -257,15 +351,34 @@ const HealthSystemsLandingPage: React.FC = () => {
           <div className="hs-wrap hs-split">
             <div className="hs-split-copy">
               <p className="hs-eyebrow hs-r" style={dStyle(0)}>
-                Patient access
+                Live results · Patient access
               </p>
               <h2 className="hs-h2 hs-r" id="access-title" style={dStyle(1)}>
-                AI voice agent for <span className="hs-em">24/7</span> call coverage.
+                Abandoned calls became{' '}
+                <span className="hs-em">captured demand</span>.
               </h2>
               <p className="hs-capsule hs-r" style={dStyle(2)}>
-                Deployed at a Southern California health system. The agent handles multiple
-                patient calls at once and captures demand that would otherwise be lost to
-                abandoned calls.
+                Southern California health system · 364 beds · ~2,200 employees. An AI voice
+                agent replaced a weekday-only desk with true 24/7 coverage and answers
+                multiple calls at once.
+              </p>
+              <ul className="hs-hit-row hs-r" style={dStyle(3)}>
+                <li>
+                  <strong>9% → 2%</strong>
+                  <span>call abandonment</span>
+                </li>
+                <li>
+                  <strong>100%</strong>
+                  <span>24/7 coverage</span>
+                </li>
+                <li>
+                  <strong>7 FTE</strong>
+                  <span>peak capacity equivalent</span>
+                </li>
+              </ul>
+              <p className="hs-note hs-r" style={dStyle(4)}>
+                The desk was budgeted for 6 staff (Mon–Fri, 8–5) and runs with 4. The agent
+                covers the gap.
               </p>
             </div>
             <div className="hs-split-media hs-r-media" style={dStyle(2)}>
@@ -278,7 +391,7 @@ const HealthSystemsLandingPage: React.FC = () => {
             </div>
           </div>
           <div className="hs-wrap hs-board-wrap hs-r-media" style={dStyle(3)}>
-            <AccessBoard />
+            <AccessBoard context="364 beds · ~2,200 employees · Southern California" />
           </div>
         </section>
 
@@ -290,14 +403,32 @@ const HealthSystemsLandingPage: React.FC = () => {
           <div className="hs-wrap hs-split hs-split-rev">
             <div className="hs-split-copy">
               <p className="hs-eyebrow hs-r" style={dStyle(0)}>
-                Workforce training
+                Live results · Workforce
               </p>
               <h2 className="hs-h2 hs-r" id="training-title" style={dStyle(1)}>
-                Role-specific training that gets staff to the floor <span className="hs-em">faster</span>.
+                Half the onboarding cost. <span className="hs-em">Twice</span> the speed to floor.
               </h2>
               <p className="hs-capsule hs-r" style={dStyle(2)}>
-                Deployed at a Los Angeles community health system. Interactive, AI-powered
-                learning cut training time and cost while lifting competency and retention.
+                Los Angeles community health system · 131 beds · ~1,500 employees.
+                Role-specific AI training cuts time and cost, raises competency, and reduces
+                reliance on premium labor.
+              </p>
+              <ul className="hs-hit-row hs-r" style={dStyle(3)}>
+                <li>
+                  <strong>−50%</strong>
+                  <span>training time &amp; cost</span>
+                </li>
+                <li>
+                  <strong>2×</strong>
+                  <span>faster to the floor</span>
+                </li>
+                <li>
+                  <strong>$500K+</strong>
+                  <span>RN savings per year</span>
+                </li>
+              </ul>
+              <p className="hs-note hs-r" style={dStyle(4)}>
+                Those savings repeat with every new hiring class.
               </p>
             </div>
             <div className="hs-split-media hs-r-media" style={dStyle(2)}>
@@ -310,15 +441,14 @@ const HealthSystemsLandingPage: React.FC = () => {
             </div>
           </div>
           <div className="hs-wrap hs-board-wrap hs-r-media" style={dStyle(3)}>
-            <TrainingBoard />
+            <TrainingBoard context="131 beds · ~1,500 employees · Los Angeles" />
           </div>
         </section>
 
-        {/* Where we go next — parked for now
         <section
           className="hs-section hs-section-next hs-reveal-scope"
-          id="next"
-          aria-labelledby="next-title"
+          id="portfolio"
+          aria-labelledby="portfolio-title"
         >
           <div className="hs-next-media" aria-hidden="true">
             <MediaSlot
@@ -331,32 +461,85 @@ const HealthSystemsLandingPage: React.FC = () => {
           <div className="hs-next-scrim" aria-hidden="true" />
           <div className="hs-wrap hs-next-inner">
             <p className="hs-eyebrow hs-eyebrow-on-dark hs-r" style={dStyle(0)}>
-              Where we go next
+              Portfolio math
             </p>
-            <h2 className="hs-h2 hs-h2-on-dark hs-r" id="next-title" style={dStyle(1)}>
-              From proven deployments into the next layer of the system.
+            <h2 className="hs-h2 hs-h2-on-dark hs-r" id="portfolio-title" style={dStyle(1)}>
+              Prove it once. Multiply it across the platform.
             </h2>
             <p className="hs-lede hs-lede-on-dark hs-r" style={dStyle(2)}>
-              Shared roadmap across access and workforce: deepen what is live, then extend
-              into adjacent workflows.
+              Recurring operating gains become EBITDA. Capture them before exit and they
+              show up in the multiple, not as a one-time cost cut.
             </p>
             <ol className="hs-next-steps hs-r" style={dStyle(3)}>
               <li>
-                <strong>EHR-integrated scheduling</strong>
-                <span>Registration automation on top of voice coverage.</span>
+                <strong>01 · Prove here</strong>
+                <span>
+                  Start with the highest-impact use cases at one hospital. Prove adoption
+                  and unit economics on site.
+                </span>
               </li>
               <li>
-                <strong>Scale training cohorts</strong>
-                <span>More roles, same competency and compliance bar.</span>
+                <strong>02 · Standardize</strong>
+                <span>
+                  Lock the workflow, integration, and change playbook so the next site costs
+                  a fraction of the first.
+                </span>
               </li>
               <li>
-                <strong>Measure and expand</strong>
-                <span>Replicate high-impact patterns across the system.</span>
+                <strong>03 · Scale the platform</strong>
+                <span>
+                  Roll out to affiliated hospitals. Keep local workflows. One diligence
+                  story, portfolio-wide leverage.
+                </span>
               </li>
             </ol>
           </div>
         </section>
-        */}
+
+        <section
+          className="hs-section hs-section-method hs-reveal-scope"
+          id="engage"
+          aria-labelledby="engage-title"
+        >
+          <div className="hs-wrap">
+            <p className="hs-eyebrow hs-r" style={dStyle(0)}>
+              How we work together
+            </p>
+            <h2 className="hs-h2 hs-r" id="engage-title" style={dStyle(1)}>
+              Production in 90 days. Not another pilot.
+            </h2>
+            <ol className="hs-engage hs-r" style={dStyle(2)}>
+              <li>
+                <span className="hs-engage-when">Weeks 1–2</span>
+                <strong>Opportunity scan</strong>
+                <p>
+                  Working session with your leaders. Rank use cases by dollars, fit, and
+                  feasibility. Built around your hospitals, not a generic deck.
+                </p>
+              </li>
+              <li>
+                <span className="hs-engage-when">First 90 days</span>
+                <strong>Go live</strong>
+                <p>
+                  Live in production with baselines agreed up front. Your operators own
+                  adoption with us alongside.
+                </p>
+              </li>
+              <li>
+                <span className="hs-engage-when">Ongoing</span>
+                <strong>Measure and scale</strong>
+                <p>
+                  Track operating and financial impact against baseline. Package what works
+                  for the next hospital.
+                </p>
+              </li>
+            </ol>
+            <p className="hs-note hs-r" style={dStyle(3)}>
+              Next on access: EHR scheduling and registration, so recovered calls turn into
+              booked visits.
+            </p>
+          </div>
+        </section>
 
         <section
           className="hs-section hs-section-close hs-reveal-scope"
@@ -368,14 +551,15 @@ const HealthSystemsLandingPage: React.FC = () => {
               Next step
             </p>
             <h2 className="hs-h2 hs-r" id="close-title" style={dStyle(1)}>
-              Let’s identify high-impact AI for <span className="hs-em">your</span> system.
+              Ready to scale this across your{' '}
+              <span className="hs-em">portfolio</span>?
             </h2>
             <p className="hs-lede hs-r" style={dStyle(2)}>
-              Tell us about your system. We will map where production AI can improve
-              access, workforce performance, and measurable operations.
+              Tell us about your hospitals or portfolio. We will map where production AI
+              can move margin, labor, and access.
             </p>
             <div className="hs-r" style={dStyle(3)}>
-              <ConversationForm variant="exec" />
+              <ConversationForm variant="pe" />
             </div>
           </div>
         </section>
@@ -385,8 +569,11 @@ const HealthSystemsLandingPage: React.FC = () => {
         <div className="hs-wrap hs-footer-inner">
           <p className="hs-eyebrow">12 VENTURES</p>
           <p>
-            Applied AI for Health Systems ·{' '}
+            Applied AI for Health Systems · Production, not pilots ·{' '}
             <a href="mailto:hello@12ventures.io">hello@12ventures.io</a>
+          </p>
+          <p className="hs-footer-fine">
+            Results shown are from live production deployments.
           </p>
         </div>
       </footer>
@@ -417,4 +604,4 @@ const HealthSystemsLandingPage: React.FC = () => {
   );
 };
 
-export default HealthSystemsLandingPage;
+export default HealthSystemsPeLandingPage;
