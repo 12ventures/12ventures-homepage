@@ -45,37 +45,6 @@ const TrainingBoard: React.FC<TrainingBoardProps> = ({ context }) => (
       </li>
     </ul>
 
-    <div className="hs-train-spark-wrap">
-      <span className="hs-board-label">Competency lift</span>
-      <svg
-        className="hs-train-spark"
-        viewBox="0 0 220 64"
-        role="img"
-        aria-label="Competency trending upward"
-      >
-        <defs>
-          <linearGradient id="hsTrainFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3d8b74" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#3d8b74" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path
-          className="hs-train-spark-fill"
-          d="M0 50 L28 48 L56 44 L84 40 L112 32 L140 24 L168 16 L198 10 L220 6 L220 64 L0 64 Z"
-          fill="url(#hsTrainFill)"
-        />
-        <path
-          className="hs-train-spark-line"
-          d="M0 50 L28 48 L56 44 L84 40 L112 32 L140 24 L168 16 L198 10 L220 6"
-          fill="none"
-          stroke="#3d8b74"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
-
     <ul className="hs-kpi-grid hs-kpi-grid-3">
       <li>
         <span className="hs-kpi-num">#1</span>

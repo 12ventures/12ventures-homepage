@@ -15,7 +15,7 @@ export const brands: Brand[] = [
   {
     id: '12-ventures',
     name: '12 Ventures',
-    subtitle: 'The Home of Innovation',
+    subtitle: 'Applied AI | Measurable Results',
     logoUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
     mascotUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
     wallpaperUrl: '/images/otter-wallpaper.png',
@@ -130,7 +130,11 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children, in
   };
 
   useEffect(() => {
-     document.title = `${currentBrand.name} - ${currentBrand.subtitle ?? 'Modernize Workforce Learning'}`;
+    if (currentBrand.id === '12-ventures') {
+      document.title = '12 VENTURES | Applied AI | Measurable Results';
+      return;
+    }
+    document.title = `${currentBrand.name} - ${currentBrand.subtitle ?? 'Modernize Workforce Learning'}`;
   }, [currentBrand]);
 
   return (

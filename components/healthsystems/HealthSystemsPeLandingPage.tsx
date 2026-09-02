@@ -569,11 +569,8 @@ const HealthSystemsPeLandingPage: React.FC = () => {
         <div className="hs-wrap hs-footer-inner">
           <p className="hs-eyebrow">12 VENTURES</p>
           <p>
-            Applied AI for Health Systems · Production, not pilots ·{' '}
+            Applied AI for Health Systems ·{' '}
             <a href="mailto:hello@12ventures.io">hello@12ventures.io</a>
-          </p>
-          <p className="hs-footer-fine">
-            Results shown are from live production deployments.
           </p>
         </div>
       </footer>

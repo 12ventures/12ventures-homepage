@@ -38,8 +38,7 @@ const PAGE_GRADIENT = `
 const VIDEO_EDGE_MASK =
   'radial-gradient(ellipse 40% 62% at 50% 50%, black 16%, rgba(0,0,0,0.55) 52%, transparent 78%)';
 
-const PAGE_TITLE =
-  '12 VENTURES | Building Intelligent Organizations | AI Transformation. Scalable Results.';
+const PAGE_TITLE = '12 VENTURES | Applied AI | Measurable Results';
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;

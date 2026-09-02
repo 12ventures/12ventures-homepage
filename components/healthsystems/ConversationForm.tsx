@@ -176,7 +176,6 @@ const ConversationForm: React.FC<ConversationFormProps> = ({ variant = 'exec' })
       <button className="hs-btn hs-btn-primary" type="submit" disabled={loading}>
         {loading ? 'Sending…' : 'Request a conversation'}
       </button>
-      <p className="hs-form-note">We reply from hello@12ventures.io.</p>
     </form>
   );
 };
