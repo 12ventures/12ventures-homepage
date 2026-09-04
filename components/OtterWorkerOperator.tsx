@@ -6,10 +6,10 @@ const YOUTUBE_ID = 'A_bvdgfUIVA';
 const EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1&color=white&iv_load_policy=3`;
 
 const VALUE_PROPS = [
-  { stat: '100% Coverage', label: 'For patient and employee calls and communications' },
-  { stat: 'Zero Wait Time', label: 'Zero wait times and abandoned calls' },
-  { stat: '24/7 Availability', label: 'Full Coverage Any Time of Day' },
-  { stat: 'Fraction of the Cost', label: 'Massive savings and ROI' },
+  { stat: '100% Coverage' },
+  { stat: 'Zero Wait Time' },
+  { stat: '24/7 Availability' },
+  { stat: 'Fraction of the Cost' },
 ];
 
 const OPERATOR_USES = [
