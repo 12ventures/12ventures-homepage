@@ -5,7 +5,7 @@ import { openCalendarBooking } from '../utils/calendar';
 
 export interface ValueProp {
   stat: string;
-  label: string;
+  label?: string;
 }
 
 interface BookDemoModalProps {
@@ -139,12 +139,20 @@ const BookDemoModal: React.FC<BookDemoModalProps> = ({
               <div className="space-y-3 mt-6">
                 {valueProps.map((vp) => (
                   <div
-                    key={vp.label}
-                    className="flex items-center gap-4 rounded-2xl px-4 py-3"
+                    key={vp.stat + (vp.label || '')}
+                    className={`rounded-2xl px-4 py-3${vp.label ? ' flex items-center gap-4' : ''}`}
                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
                   >
-                    <span className="text-xl font-black text-blue-400 w-16 flex-shrink-0">{vp.stat}</span>
-                    <span className="text-xs text-white/60 leading-snug">{vp.label}</span>
+                    <span
+                      className={`font-black text-blue-400 leading-snug${
+                        vp.label ? ' text-xl w-16 flex-shrink-0' : ' text-base'
+                      }`}
+                    >
+                      {vp.stat}
+                    </span>
+                    {vp.label ? (
+                      <span className="text-xs text-white/60 leading-snug">{vp.label}</span>
+                    ) : null}
                   </div>
                 ))}
               </div>

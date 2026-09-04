@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Living knowledge support questions for the MLKCH knowledge graph.">
+<title>Living Knowledge Support Questions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper:      #f4f6f8;
+    --surface:    #ffffff;
+    --ink:        #14202b;
+    --ink-soft:   #4a5b66;
+    --ink-faint:  #74858f;
+    --rule:       #dde4e8;
+    --rule-soft:  #e9eef1;
+    --accent:     #1f5f6b;
+    --accent-bg:  #e4eef0;
+
+    --now:        #2f6b4a;
+    --now-bg:     #e3efe7;
+    --partial:    #8a6212;
+    --partial-bg: #f4ecdc;
+    --link:       #3b4a8f;
+    --link-bg:    #e6e8f5;
+    --blocked:    #9b3a34;
+    --blocked-bg: #f5e5e3;
+
+    --f-display: "Spectral", Georgia, "Times New Roman", serif;
+    --f-body:    "Public Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --f-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #101619;
+      --surface:    #171f24;
+      --ink:        #e4eaed;
+      --ink-soft:   #a4b3bb;
+      --ink-faint:  #7d8d96;
+      --rule:       #2a353b;
+      --rule-soft:  #212b31;
+      --accent:     #6cb6c1;
+      --accent-bg:  #1a2c30;
+
+      --now:        #6dbb8c;
+      --now-bg:     #16291f;
+      --partial:    #d2a44e;
+      --partial-bg: #2b2317;
+      --link:       #8f9ce0;
+      --link-bg:    #1c1f33;
+      --blocked:    #e0857d;
+      --blocked-bg: #2e1c1a;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #101619;
+    --surface:    #171f24;
+    --ink:        #e4eaed;
+    --ink-soft:   #a4b3bb;
+    --ink-faint:  #7d8d96;
+    --rule:       #2a353b;
+    --rule-soft:  #212b31;
+    --accent:     #6cb6c1;
+    --accent-bg:  #1a2c30;
+
+    --now:        #6dbb8c;
+    --now-bg:     #16291f;
+    --partial:    #d2a44e;
+    --partial-bg: #2b2317;
+    --link:       #8f9ce0;
+    --link-bg:    #1c1f33;
+    --blocked:    #e0857d;
+    --blocked-bg: #2e1c1a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 50rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 6rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.1rem;
+  }
+
+  h1 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: clamp(2.1rem, 5.5vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0 0 1rem;
+  }
+
+  .standfirst {
+    font-family: var(--f-display);
+    font-size: 1.18rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 40rem;
+    margin: 0 0 2rem;
+  }
+
+  .provenance {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.6rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+  }
+  .provenance div { display: flex; gap: 0.45rem; }
+  .provenance dt {
+    font-family: var(--f-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0;
+    padding-top: 0.12rem;
+  }
+  .provenance dd { margin: 0; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+  /* ---------- prose blocks ---------- */
+
+  h2 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 3.5rem 0 0.5rem;
+  }
+
+  .theme-note {
+    color: var(--ink-soft);
+    font-size: 0.93rem;
+    margin: 0 0 1.5rem;
+    max-width: 38rem;
+  }
+
+  p { margin: 0 0 1rem; }
+  .lede { max-width: 38rem; }
+
+  /* ---------- the ask ---------- */
+
+  .ask {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 1.5rem 1.6rem 1.3rem;
+    margin: 2.5rem 0;
+  }
+  .ask h3 {
+    font-family: var(--f-body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 0.9rem;
+  }
+  .ask ol { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 0.55rem; }
+  .ask li { padding-left: 0.2rem; }
+  .ask strong { font-weight: 600; }
+
+  /* ---------- tally ---------- */
+
+  .tally {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: 2rem 0 0.9rem;
+  }
+  .tally-cell {
+    background: var(--surface);
+    padding: 1.05rem 1.1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .tally-n {
+    font-family: var(--f-display);
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .tally-label {
+    font-family: var(--f-mono);
+    font-size: 0.67rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .tally-cell.s-now    .tally-n { color: var(--now); }
+  .tally-cell.s-part   .tally-n { color: var(--partial); }
+  .tally-cell.s-link   .tally-n { color: var(--link); }
+  .tally-cell.s-block  .tally-n { color: var(--blocked); }
+
+  .legend {
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    margin: 0 0 1rem;
+  }
+
+  /* ---------- question rows ---------- */
+
+  .qlist { display: flex; flex-direction: column; gap: 1px; background: var(--rule-soft); border-block: 1px solid var(--rule-soft); }
+
+  .q {
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    gap: 0 0.9rem;
+    padding: 1.15rem 1.2rem 1.1rem 0;
+    border-left: 3px solid var(--rule);
+  }
+  .q.s-now   { border-left-color: var(--now); }
+  .q.s-part  { border-left-color: var(--partial); }
+  .q.s-link  { border-left-color: var(--link); }
+  .q.s-block { border-left-color: var(--blocked); }
+
+  .qnum {
+    font-family: var(--f-mono);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    text-align: right;
+    padding-top: 0.28rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .qtext {
+    font-family: var(--f-display);
+    font-size: 1.06rem;
+    line-height: 1.45;
+    margin: 0 0 0.6rem;
+  }
+
+  .qmeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.55rem;
+    font-size: 0.8rem;
+  }
+
+  .needs-label {
+    font-family: var(--f-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  code {
+    font-family: var(--f-mono);
+    font-size: 0.76rem;
+    background: var(--accent-bg);
+    color: var(--accent);
+    padding: 0.1rem 0.36rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .status {
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.16rem 0.45rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .s-now   > .qbody .status, .status.s-now   { background: var(--now-bg);     color: var(--now); }
+  .s-part  > .qbody .status, .status.s-part  { background: var(--partial-bg); color: var(--partial); }
+  .s-link  > .qbody .status, .status.s-link  { background: var(--link-bg);    color: var(--link); }
+  .s-block > .qbody .status, .status.s-block { background: var(--blocked-bg); color: var(--blocked); }
+
+  .qnote {
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    margin: 0.55rem 0 0;
+    max-width: 36rem;
+  }
+  .qnote em { font-style: italic; }
+
+  /* ---------- close ---------- */
+
+  .close {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+  }
+  .close h2 { margin-top: 0; }
+
+  .caveat {
+    font-size: 0.86rem;
+    color: var(--ink-faint);
+    border-left: 2px solid var(--rule);
+    padding-left: 1rem;
+    margin: 2rem 0 0;
+    max-width: 38rem;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, .q:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 34rem) {
+    .q { grid-template-columns: 1fr; padding-left: 1.1rem; }
+    .qnum { text-align: left; padding-top: 0; margin-bottom: 0.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <p class="eyebrow">Living Knowledge · Draft for review</p>
+
+  <h1>Twenty-five living knowledge questions</h1>
+
+  <p class="standfirst">A candidate question set for the MLKCH knowledge graph, drawn from the two document sets we hold. We are not asking you to answer these — we are asking which ones you would actually ask, and who asks them.</p>
+
+  <dl class="provenance">
+    <div><dt>Drawn from</dt><dd>15 policies · 17 orientation documents</dd></div>
+    <div><dt>Policy dates</dt><dd>May 2024 – Dec 2025</dd></div>
+    <div><dt>Status</dt><dd>Draft — nothing here is validated</dd></div>
+  </dl>
+
+  <div class="ask">
+    <h3>What we need from you</h3>
+    <ol>
+      <li><strong>Would you ask this?</strong> Strike anything you would never actually ask. A short list of real questions beats a long list of plausible ones.</li>
+      <li><strong>Who asks it?</strong> Name the role — compliance, accreditation, nursing education, HR, a unit manager. Different askers want different answers to the same words.</li>
+      <li><strong>What did we miss?</strong> The questions you ask most, that aren't here. These matter more than anything on the list.</li>
+    </ol>
+  </div>
+
+  <p class="lede">Each question is tagged with the relationships a knowledge graph would need in order to answer it, and with whether the documents we currently hold can support it. That second tag is the honest part: most of these we cannot answer yet, and the pattern of what's missing tells us what to build and what to ask you for next.</p>
+
+  <div class="tally">
+    <div class="tally-cell s-now"><span class="tally-n">7</span><span class="tally-label">Answerable now</span></div>
+    <div class="tally-cell s-part"><span class="tally-n">5</span><span class="tally-label">Partial</span></div>
+    <div class="tally-cell s-link"><span class="tally-n">4</span><span class="tally-label">Needs linking work</span></div>
+    <div class="tally-cell s-block"><span class="tally-n">9</span><span class="tally-label">Needs missing data</span></div>
+  </div>
+
+  <p class="legend"><strong>Answerable now</strong> — supported by the documents in hand. <strong>Partial</strong> — answerable imprecisely; the facts exist as prose and need normalising. <strong>Needs linking work</strong> — unblocked by connecting policies to the training derived from them; no new documents required. <strong>Needs missing data</strong> — blocked until we receive something we don't have.</p>
+
+  <h2>Currency and the review cycle</h2>
+  <p class="theme-note">Every policy we hold prints an approval, an effective date, and a triennial P&amp;P review schedule. This is the strongest ground in the corpus.</p>
+
+  <div class="qlist">
+    <div class="q s-now">
+      <div class="qnum">Q1</div>
+      <div class="qbody">
+        <p class="qtext">Which policies are past their triennial review date?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>requires-review</code><code>effective-date</code>
+          <span class="status s-now">Answerable now</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q s-now">
+      <div class="qnum">Q2</div>
+      <div class="qbody">
+        <p class="qtext">Which policies fall due for review in the next ninety days?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>requires-review</code><code>effective-date</code>
+          <span class="status s-now">Answerable now</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q s-now">
+      <div class="qnum">Q3</div>
+      <div class="qbody">
+        <p class="qtext">When was HR-1042 Unlawful Harassment last reviewed, and who approved it?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>approved-by</code><code>review-date</code>
+          <span class="status s-now">Answerable now</span>
+        </div>
+        <p class="qnote">All fifteen policies print approval by the MLK-LA Board of Directors with a date.</p>
+      </div>
+    </div>
+
+    <div class="q s-block">
+      <div class="qnum">Q4</div>
+      <div class="qbody">
+        <p class="qtext">Which version of HR-1028 Paid Time Off was in force on 1 June 2024?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>version</code><code>validity-interval</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+        <p class="qnote">No policy prints a version number, and effective and review dates are identical on all fifteen records — so we cannot reconstruct what was in force on a past date. <em>The policy register would fix this.</em></p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Derivation and change impact</h2>
+  <p class="theme-note">Nothing currently connects a policy to the orientation material that teaches it. This is the single most important gap, and most of it is work rather than missing documents.</p>
+
+  <div class="qlist">
+    <div class="q s-block">
+      <div class="qnum">Q5</div>
+      <div class="qbody">
+        <p class="qtext">HR-1042 was revised on 10 December 2025. Which orientation materials teach it, and now need re-review?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>governs</code><code>derived-from</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+        <p class="qnote">No document states which policy it was built from. We can <em>propose</em> the link — GHO Packet I's anti-harassment section against HR-1042 — but a person has to confirm it. <em>An existing policy-to-training crosswalk, if one is kept for survey readiness, would answer this outright.</em></p>
+      </div>
+    </div>
+
+    <div class="q s-link">
+      <div class="qnum">Q6</div>
+      <div class="qbody">
+        <p class="qtext">Which training content predates the last revision of the policy that governs it?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>governs</code><code>effective-date</code>
+          <span class="status s-link">Needs linking work</span>
+        </div>
+        <p class="qnote">Once Q5's links exist, this is arithmetic — the packets print their own revision dates and the policies print theirs.</p>
+      </div>
+    </div>
+
+    <div class="q s-block">
+      <div class="qnum">Q7</div>
+      <div class="qbody">
+        <p class="qtext">If we retire HR-1037 Solicitation and Distribution, what else has to change?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>impacts</code><code>governs</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q s-link">
+      <div class="qnum">Q8</div>
+      <div class="qbody">
+        <p class="qtext">Which policies have no derived training material at all?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>governs</code>
+          <span class="status s-link">Needs linking work</span>
+        </div>
+        <p class="qnote">A gap question — answerable from an incomplete graph, which is precisely what document search cannot do.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Audience and assignment</h2>
+  <p class="theme-note">Every policy prints a SCOPE / COVERAGE section; every orientation packet prints an intended audience. Both are prose, not a controlled list of roles.</p>
+
+  <div class="qlist">
+    <div class="q s-now">
+      <div class="qnum">Q9</div>
+      <div class="qbody">
+        <p class="qtext">Which policies apply to hospital outsourced staff?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>applies-to</code>
+          <span class="status s-now">Answerable now</span>
+        </div>
+        <p class="qnote">HR-1007, HR-1018, HR-1036 and HR-1048 name hospital outsourced staff explicitly in their scope sections.</p>
+      </div>
+    </div>
+
+    <div class="q s-part">
+      <div class="qnum">Q10</div>
+      <div class="qbody">
+        <p class="qtext">Which orientation must a registry LDRP RN complete before a first shift?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>applies-to</code><code>role</code>
+          <span class="status s-part">Partial</span>
+        </div>
+        <p class="qnote">The audience is printed, but as prose that mixes role, employment cohort and delivery mode — "Registry LDRP RN", "New Hire/Registry &amp; Traveler", "LDRP Team" all appear in one packet. We need an agreed list of roles.</p>
+      </div>
+    </div>
+
+    <div class="q s-part">
+      <div class="qnum">Q11</div>
+      <div class="qbody">
+        <p class="qtext">Are volunteers covered by harassment-prevention content?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>applies-to</code><code>role</code>
+          <span class="status s-part">Partial</span>
+        </div>
+        <p class="qnote">HR-1042's scope reads "all MLKCH employees and others on Hospital property". Whether that includes volunteers is a judgement someone has to make once — and recording that judgement is exactly what the graph is for.</p>
+      </div>
+    </div>
+
+    <div class="q s-link">
+      <div class="qnum">Q12</div>
+      <div class="qbody">
+        <p class="qtext">Which roles have orientation content but no identified governing policy?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>applies-to</code><code>governs</code>
+          <span class="status s-link">Needs linking work</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Conflict and consistency</h2>
+  <p class="theme-note">The corpus contains four files whose covers all read <em>General Hospital Orientation Overview Packet Part I</em>, and three Medical Staff packets, with no printed statement of which supersedes which.</p>
+
+  <div class="qlist">
+    <div class="q s-block">
+      <div class="qnum">Q13</div>
+      <div class="qbody">
+        <p class="qtext">Four files are titled Overview Packet Part I. Which one is current?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>supersedes</code><code>version</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+        <p class="qnote">We can flag the ambiguity today. We cannot resolve it — no file claims to supersede another. <em>This needs someone to tell us, once.</em></p>
+      </div>
+    </div>
+
+    <div class="q s-now">
+      <div class="qnum">Q14</div>
+      <div class="qbody">
+        <p class="qtext">Do the four Packet I variants say the same thing about a given topic?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>conflicts-with</code>
+          <span class="status s-now">Answerable now</span>
+        </div>
+        <p class="qnote">Discoverable by comparison, and the clearest case where a graph beats keyword or similarity search — which will return a passage from a stale variant without ever mentioning that three others exist.</p>
+      </div>
+    </div>
+
+    <div class="q s-now">
+      <div class="qnum">Q15</div>
+      <div class="qbody">
+        <p class="qtext">Does the Packet I quiz answer key agree with all four Packet I variants?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>conflicts-with</code><code>evidence-for</code>
+          <span class="status s-now">Answerable now</span>
+        </div>
+        <p class="qnote">The quiz prints its own answer key, which makes it the only document in either set with stated correct answers.</p>
+      </div>
+    </div>
+
+    <div class="q s-link">
+      <div class="qnum">Q16</div>
+      <div class="qbody">
+        <p class="qtext">Does any training material contradict the policy that governs it?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>governs</code><code>conflicts-with</code>
+          <span class="status s-link">Needs linking work</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Evidence and attestation</h2>
+  <p class="theme-note">The orientation packets contain signature lines and quizzes, so the practice of attestation clearly exists. None of the records do. Every question in this section is blocked on the same one dataset.</p>
+
+  <div class="qlist">
+    <div class="q s-block">
+      <div class="qnum">Q17</div>
+      <div class="qbody">
+        <p class="qtext">Show every staff member who acknowledged HR-1036 Social Media since it was revised.</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>attestation</code><code>evidence-for</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q s-block">
+      <div class="qnum">Q18</div>
+      <div class="qbody">
+        <p class="qtext">For an ED RN who started in March, what evidence do we hold that they completed ED orientation?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>attestation</code><code>applies-to</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q s-block">
+      <div class="qnum">Q19</div>
+      <div class="qbody">
+        <p class="qtext">Which staff need to re-attest, because a policy they acknowledged has since changed?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>attestation</code><code>version</code><code>impacts</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+        <p class="qnote">On our reading this is the highest-value question in the whole set, and the most thoroughly blocked — it needs attestation records, version identity and policy-to-training links all at once. <em>An LMS completion export is the unlock.</em></p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Survey readiness</h2>
+  <p class="theme-note">GHO Packet I states on its cover that it complies with Joint Commission, Title 22, and federal and state orientation requirements. Nothing in the corpus represents the requirements themselves, so that claim cannot currently be checked.</p>
+
+  <div class="qlist">
+    <div class="q s-block">
+      <div class="qnum">Q20</div>
+      <div class="qbody">
+        <p class="qtext">Which orientation requirement does each section of Packet I satisfy?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>requirement</code><code>satisfies</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+        <p class="qnote">Requires the requirement side of the mapping. Title 22 is public; Joint Commission standards are licensed.</p>
+      </div>
+    </div>
+
+    <div class="q s-part">
+      <div class="qnum">Q21</div>
+      <div class="qbody">
+        <p class="qtext">A surveyor asks how we orient contract staff. What do we hand them?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>applies-to</code><code>document</code>
+          <span class="status s-part">Partial</span>
+        </div>
+        <p class="qnote">Roughly answerable today — Packet I names registry, travellers and contract staff on its cover. Precision depends on Q13, since we cannot yet say which copy is current.</p>
+      </div>
+    </div>
+
+    <div class="q s-block">
+      <div class="qnum">Q22</div>
+      <div class="qbody">
+        <p class="qtext">Which orientation requirements have no corresponding content?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>requirement</code><code>satisfies</code>
+          <span class="status s-block">Needs missing data</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Authority and provenance</h2>
+  <p class="theme-note">Approval is recorded at document level. Support questions are often about one specific claim inside a document, which is a finer grain than anything the corpus currently carries.</p>
+
+  <div class="qlist">
+    <div class="q s-now">
+      <div class="qnum">Q23</div>
+      <div class="qbody">
+        <p class="qtext">Who approved POC-4097 Pain Assessment, and on what date?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>approved-by</code>
+          <span class="status s-now">Answerable now</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q s-part">
+      <div class="qnum">Q24</div>
+      <div class="qbody">
+        <p class="qtext">Under whose authority does the pain reassessment interval stand?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>approved-by</code><code>claim</code>
+          <span class="status s-part">Partial</span>
+        </div>
+        <p class="qnote">We can name the approver of the document. We cannot yet attach approval to the individual clinical statement inside it, which is what the question is really asking.</p>
+      </div>
+    </div>
+
+    <div class="q s-part">
+      <div class="qnum">Q25</div>
+      <div class="qbody">
+        <p class="qtext">Which policies reference POC-4034, which we don't hold?</p>
+        <div class="qmeta">
+          <span class="needs-label">Needs</span>
+          <code>cites</code>
+          <span class="status s-part">Partial</span>
+        </div>
+        <p class="qnote">The policies carry RELATED POLICIES sections we haven't yet extracted. A dangling-reference report is useful living-knowledge output in its own right.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="close">
+    <h2>What we do with your answers</h2>
+    <p class="lede">The questions you keep become the specification for the ontology — the set of relationships the graph is actually built to support. The ones you strike, we don't build for. The ones you add, we come back to you about.</p>
+    <p class="lede">We would rather build for eight questions someone genuinely asks than twenty-five we invented.</p>
+
+    <p class="caveat">Every statement here about the corpus comes from the two document sets we hold and their manifests, verified file by file. Nothing about your policies, approvals or review cycles was inferred or filled in — where a fact was absent, the question is marked blocked rather than answered. The questions themselves are our proposals, and none of them has been validated with anyone at MLKCH yet. That is what this document is for.</p>
+  </div>
+
+</div>
+
+</body>
+</html>
