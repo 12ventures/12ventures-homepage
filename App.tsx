@@ -33,6 +33,7 @@ import Ai2pLandingPage from './components/ai2p/Ai2pLandingPage';
 import Ai2pLandingPageV2 from './components/ai2p-v2/Ai2pLandingPage';
 import HealthSystemsLandingPage from './components/healthsystems/HealthSystemsLandingPage';
 import HealthSystemsPeLandingPage from './components/healthsystems/HealthSystemsPeLandingPage';
+import VoiceSolutionLandingPage from './components/healthsystems/VoiceSolutionLandingPage';
 import HavenApp from './components/haven/HavenApp';
 import HavenAdmin from './components/haven/HavenAdmin';
 import HavenStore from './components/haven/HavenStore';
@@ -309,6 +310,14 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
                 <HealthSystemsPeLandingPage />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/ai-voice-solution"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <VoiceSolutionLandingPage />
               </BrandLayout>
             }
           />
