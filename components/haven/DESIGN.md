@@ -58,9 +58,12 @@ No continuous glow. Honor `prefers-reduced-motion`.
 
 ## Components
 
-- **Style chips:** horizontal scroll, selected = sage fill + ink text; unselected = paper + mist border
+- **Reuse first (required):** Product tiles and hotspot popovers use `HavenProductCard` (`.hv-product` in `haven-product.css`). Storefront catalog grids that need a PDP link use `HavenStoreProductCard`. Do not invent a second product card with a stacked image + caption panel.
+- **Image-led surfaces (required):** When an element’s primary content is a photo (style picker, room set card, product tile, stage thumb), the **image is the surface**. Label overlays the photo (gradient scrim). Selection rings/highlights the image edge — never a shared border wrapping image + caption stacked below. Do not treat photos as insets inside bordered text cards.
+- **Style chips (consumer):** horizontal scroll; prefer image-as-surface tiles when thumbs exist; selected = ring/overlay on the photo, not a chrome box around label+thumb
 - **Shopping cards:** image-led, merchant + price, single “Buy” action — not dense product tables
 - **Design notes:** short curator bullets, not paragraphs
+- **Hotspots:** same pins + `HavenProductCard` popover on studio and store look pages
 
 ## Copy voice
 
