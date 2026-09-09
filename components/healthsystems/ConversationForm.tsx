@@ -18,9 +18,29 @@ const EMPTY: FormState = {
   focus: '',
 };
 
+type FormVariant = 'exec' | 'pe' | 'voice';
+
+const FORM_LABEL: Record<FormVariant, string> = {
+  exec: 'Health Systems conversation request',
+  pe: 'Health Systems PE conversation request',
+  voice: 'Health Systems Voice Solution conversation request',
+};
+
+const FORM_FALLBACK_URL: Record<FormVariant, string> = {
+  exec: 'https://12ventures.io/health-systems',
+  pe: 'https://12ventures.io/health-systems/pe',
+  voice: 'https://12ventures.io/ai-voice-solution',
+};
+
+const FOCUS_PLACEHOLDER: Record<FormVariant, string> = {
+  exec: 'Access, workforce, portfolio rollout, or something else.',
+  pe: 'Access, workforce, portfolio rollout, or something else.',
+  voice: 'After-hours coverage, abandoned calls, or something else.',
+};
+
 interface ConversationFormProps {
   /** Shown in Snapskill how_did_you_hear for routing. */
-  variant?: 'exec' | 'pe';
+  variant?: FormVariant;
 }
 
 const ConversationForm: React.FC<ConversationFormProps> = ({ variant = 'exec' }) => {
@@ -39,11 +59,6 @@ const ConversationForm: React.FC<ConversationFormProps> = ({ variant = 'exec' })
     setError(null);
     setLoading(true);
 
-    const label =
-      variant === 'pe'
-        ? 'Health Systems PE conversation request'
-        : 'Health Systems conversation request';
-
     try {
       const res = await fetch('https://api.snapskill.io/api/v1/analytics/demo-booking', {
         method: 'POST',
@@ -54,18 +69,14 @@ const ConversationForm: React.FC<ConversationFormProps> = ({ variant = 'exec' })
           job_title: form.role.trim() || 'n/a',
           company: form.organization.trim() || 'n/a',
           how_did_you_hear: [
-            label,
+            FORM_LABEL[variant],
             form.focus ? `focus: ${form.focus.trim()}` : null,
             form.website ? `website: ${form.website.trim()}` : null,
           ]
             .filter(Boolean)
             .join(' · '),
           source_url:
-            typeof window !== 'undefined'
-              ? window.location.href
-              : variant === 'pe'
-                ? 'https://12ventures.io/health-systems/pe'
-                : 'https://12ventures.io/health-systems',
+            typeof window !== 'undefined' ? window.location.href : FORM_FALLBACK_URL[variant],
         }),
       });
       if (!res.ok) throw new Error('Failed');
@@ -165,7 +176,7 @@ const ConversationForm: React.FC<ConversationFormProps> = ({ variant = 'exec' })
         <textarea
           id="hs-focus"
           name="focus"
-          placeholder="Access, workforce, portfolio rollout, or something else."
+          placeholder={FOCUS_PLACEHOLDER[variant]}
           value={form.focus}
           onChange={onChange}
         />

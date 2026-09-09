@@ -6,11 +6,14 @@ const YOUTUBE_ID = 'A_bvdgfUIVA';
 const EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1&color=white&iv_load_policy=3`;
 
 const VALUE_PROPS = [
-  { stat: '100% Coverage' },
-  { stat: 'Zero Wait Time' },
-  { stat: '24/7 Availability' },
-  { stat: 'Fraction of the Cost' },
+  { stat: '100% Coverage', label: 'For patient and employee calls and communications' },
+  { stat: 'Zero Wait Time', label: 'Zero wait times and abandoned calls' },
+  { stat: '24/7 Availability', label: 'Full Coverage Any Time of Day' },
+  { stat: 'Fraction of the Cost', label: 'Massive savings and ROI' },
 ];
+
+// Modal has a narrower layout; show just the headline stat there to avoid crowding.
+const MODAL_VALUE_PROPS = VALUE_PROPS.map(({ stat }) => ({ stat }));
 
 const OPERATOR_USES = [
   'Patient + Employee Calls',
@@ -69,7 +72,7 @@ const OtterWorkerOperator: React.FC = () => {
           onClose={() => setModalOpen(false)}
           product="Operator"
           tagline="24/7 standardized labor on-demand. Fraction of the cost."
-          valueProps={VALUE_PROPS}
+          valueProps={MODAL_VALUE_PROPS}
           sourceUrl="OtterWorker I Operator Page"
           email="operator@otterworks.ai"
         />
