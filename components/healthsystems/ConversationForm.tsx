@@ -18,24 +18,27 @@ const EMPTY: FormState = {
   focus: '',
 };
 
-type FormVariant = 'exec' | 'pe' | 'voice';
+type FormVariant = 'exec' | 'pe' | 'voice' | 'training';
 
 const FORM_LABEL: Record<FormVariant, string> = {
   exec: 'Health Systems conversation request',
   pe: 'Health Systems PE conversation request',
   voice: 'Health Systems Voice Solution conversation request',
+  training: 'Health Systems Workforce Training conversation request',
 };
 
 const FORM_FALLBACK_URL: Record<FormVariant, string> = {
   exec: 'https://12ventures.io/health-systems',
   pe: 'https://12ventures.io/health-systems/pe',
   voice: 'https://12ventures.io/ai-voice-solution',
+  training: 'https://12ventures.io/ai-workforce-training',
 };
 
 const FOCUS_PLACEHOLDER: Record<FormVariant, string> = {
   exec: 'Access, workforce, portfolio rollout, or something else.',
   pe: 'Access, workforce, portfolio rollout, or something else.',
   voice: 'After-hours coverage, abandoned calls, or something else.',
+  training: 'Onboarding time, competency, compliance, or something else.',
 };
 
 interface ConversationFormProps {
