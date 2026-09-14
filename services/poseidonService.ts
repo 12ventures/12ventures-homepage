@@ -581,7 +581,12 @@ class PoseidonService {
     const url = `${this.baseUrl}/api/dashboard/calls/history/export?${params.toString()}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Export failed: ${response.statusText}`);
-    const blob = await response.blob();
+    const raw = await response.arrayBuffer();
+    const { stripReportFilePathColumn } = await import('../utils/stripXlsxColumn');
+    const stripped = stripReportFilePathColumn(raw);
+    const blob = new Blob([stripped], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objectUrl;
