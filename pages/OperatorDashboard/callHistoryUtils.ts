@@ -35,8 +35,8 @@ export function getDisplayOutcomeStatus(call: CallHistoryItem): DisplayOutcomeSt
 
 export const DISPLAY_STATUS_ORDER: DisplayOutcomeStatus[] = [
   'completed',
-  'declined',
   'incomplete',
+  'declined',
   'failed',
 ];
 
@@ -45,6 +45,18 @@ export const DISPLAY_STATUS_LABELS: Record<DisplayOutcomeStatus, string> = {
   declined: 'Declined',
   incomplete: 'Incomplete',
   failed: 'Failed',
+};
+
+/**
+ * Hover copy for the status-breakdown modal. Declined is applied in the
+ * dashboard (`isNonEngagementCall`); the other three are the backend
+ * `outcome_status` after that overlay.
+ */
+export const DISPLAY_STATUS_DESCRIPTIONS: Record<DisplayOutcomeStatus, string> = {
+  completed: 'Intake was successfully gathered.',
+  declined: 'The call lasted under 45 seconds.',
+  incomplete: 'Caller started intake but did not finish. The call lasted 45 seconds or longer.',
+  failed: 'The call ended because of a system or telephony error.',
 };
 
 export const DISPLAY_STATUS_COLORS: Record<DisplayOutcomeStatus, string> = {

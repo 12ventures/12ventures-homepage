@@ -576,6 +576,8 @@ class PoseidonService {
   async downloadCallsExport(includeTestCalls = false): Promise<void> {
     const params = new URLSearchParams({ tabs: 'true', tz: DASHBOARD_TZ });
     if (includeTestCalls) params.set('include_test_calls', 'true');
+    // Same call set as Key Metrics / analytics summary.
+    params.set('accepted_calls_only', 'true');
     const url = `${this.baseUrl}/api/dashboard/calls/history/export?${params.toString()}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Export failed: ${response.statusText}`);
