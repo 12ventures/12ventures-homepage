@@ -190,13 +190,16 @@ export function countWeekdaysInRange(dateFrom: string, dateTo: string): number {
 }
 
 /**
- * Divisor for daily call averages: weekdays only, unless the period is
- * exclusively weekend day(s) (e.g. Sat–Sun or a single Saturday).
+ * Divisor for daily call averages: every calendar day in the range.
+ *
+ * Previously weekdays only (unless the period was exclusively weekend). Restore
+ * that behavior by returning `weekdays > 0 ? weekdays : total` instead of `total`.
  */
 export function getDailyAverageDivisorDays(dateFrom: string, dateTo: string): number {
   const total = customRangeSpanDays(dateFrom, dateTo);
-  const weekdays = countWeekdaysInRange(dateFrom, dateTo);
-  return weekdays > 0 ? weekdays : total;
+  // const weekdays = countWeekdaysInRange(dateFrom, dateTo);
+  // return weekdays > 0 ? weekdays : total;
+  return total;
 }
 
 /** Per-day call counts (hospital TZ) for an inclusive YYYY-MM-DD range. */
@@ -229,8 +232,8 @@ export interface DailyAverageResult {
 }
 
 /**
- * Daily average excluding weekends and days with ≤1 call.
- * Numerator = calls on qualifying days only; divisor = count of those days.
+ * Daily average over every calendar day in the range (weekends and low-volume
+ * days included). Previously skipped weekends and days with < DAILY_AVERAGE_MIN_CALLS.
  */
 export function computeDailyAverage(
   dateFrom: string,
@@ -238,21 +241,22 @@ export function computeDailyAverage(
   dailyCounts: Record<string, number>,
   minCallsPerDay = DAILY_AVERAGE_MIN_CALLS,
 ): DailyAverageResult | null {
-  const weekdays = countWeekdaysInRange(dateFrom, dateTo);
-  const useWeekdaysOnly = weekdays > 0;
+  void minCallsPerDay; // unused while the low-volume-day filter below is commented out
+  // const weekdays = countWeekdaysInRange(dateFrom, dateTo);
+  // const useWeekdaysOnly = weekdays > 0;
 
   let qualifyingCalls = 0;
   let divisorDays = 0;
   let cursor = dateFrom;
   while (cursor <= dateTo) {
-    const dow = calendarDayOfWeek(cursor);
-    const isWeekend = dow === 0 || dow === 6;
-    const dayEligible = useWeekdaysOnly ? !isWeekend : true;
+    // const dow = calendarDayOfWeek(cursor);
+    // const isWeekend = dow === 0 || dow === 6;
+    // const dayEligible = useWeekdaysOnly ? !isWeekend : true;
     const count = dailyCounts[cursor] ?? 0;
-    if (dayEligible && count >= minCallsPerDay) {
-      qualifyingCalls += count;
-      divisorDays++;
-    }
+    // if (dayEligible && count >= minCallsPerDay) {
+    qualifyingCalls += count;
+    divisorDays++;
+    // }
     cursor = addCalendarDays(cursor, 1);
   }
 
@@ -524,7 +528,9 @@ class PoseidonService {
 
   async getAnalyticsSummary(filter: DashboardFilter, includeTestCalls = false): Promise<AnalyticsSummary> {
     const params = buildAnalyticsParams(filter, includeTestCalls);
-    params.set('accepted_calls_only', 'true');
+    // Short-call / triage filter — commented out so Key Metrics matches call
+    // history (every non-test call). Restore to hide hangups / never-left-triage:
+    // params.set('accepted_calls_only', 'true');
     return this.request(`/api/dashboard/analytics/summary?${params.toString()}`);
   }
 
@@ -538,10 +544,9 @@ class PoseidonService {
 
   async getAnalyticsInsights(filter: DashboardFilter, includeTestCalls = false): Promise<AnalyticsInsights> {
     const params = buildAnalyticsParams(filter, includeTestCalls);
-    // Keep Unique Callers' denominator on the same "accepted" definition as Key
-    // Metrics total (exclude triage-never-left and <60s calls). Without this,
-    // Unique Callers shows unique/all-calls while Total Calls shows accepted-only.
-    params.set('accepted_calls_only', 'true');
+    // Same as Key Metrics: do not send accepted_calls_only so unique callers /
+    // hourly totals include short and triage-only calls. Restore with:
+    // params.set('accepted_calls_only', 'true');
     return this.request(`/api/dashboard/analytics/insights?${params.toString()}`);
   }
 
@@ -576,14 +581,15 @@ class PoseidonService {
   async downloadCallsExport(includeTestCalls = false): Promise<void> {
     const params = new URLSearchParams({ tabs: 'true', tz: DASHBOARD_TZ });
     if (includeTestCalls) params.set('include_test_calls', 'true');
-    // Same call set as Key Metrics / analytics summary.
-    params.set('accepted_calls_only', 'true');
+    // Same call set as Key Metrics / call history (every non-test call).
+    // Restore to drop triage-never-left and <60s calls:
+    // params.set('accepted_calls_only', 'true');
     const url = `${this.baseUrl}/api/dashboard/calls/history/export?${params.toString()}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Export failed: ${response.statusText}`);
     const raw = await response.arrayBuffer();
-    const { stripReportFilePathColumn } = await import('../utils/stripXlsxColumn');
-    const stripped = stripReportFilePathColumn(raw);
+    const { sanitizeCallsExportXlsx } = await import('../utils/stripXlsxColumn');
+    const stripped = sanitizeCallsExportXlsx(raw);
     const blob = new Blob([stripped], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });

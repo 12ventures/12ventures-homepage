@@ -47,6 +47,57 @@ export const DISPLAY_STATUS_LABELS: Record<DisplayOutcomeStatus, string> = {
   failed: 'Failed',
 };
 
+function parseBackendOutcomeStatus(
+  raw: string,
+): CallHistoryItem['outcome_status'] | null {
+  const s = raw.trim().toLowerCase();
+  if (s === 'completed') return 'completed';
+  if (s === 'failed') return 'failed';
+  if (s === 'incomplete' || s.startsWith('incomplete')) return 'incomplete';
+  return null;
+}
+
+/**
+ * Same labels as the dashboard Call History pills / breakdown, from the
+ * raw export fields (backend status + duration / triage overlay).
+ */
+export function getDisplayOutcomeLabelFromFields(fields: {
+  outcomeStatus: string;
+  finalAgent?: string | null;
+  outcomeReason?: string | null;
+  durationSeconds?: number | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+}): string | null {
+  const lowered = fields.outcomeStatus.trim().toLowerCase();
+  if (lowered === 'declined' || lowered === '< 45 seconds') {
+    const duration = fields.durationSeconds;
+    const agent = fields.finalAgent?.trim().toLowerCase() ?? '';
+    const reason = fields.outcomeReason?.trim() ?? '';
+    if (
+      agent === 'triage' ||
+      reason === 'completed_at_triage' ||
+      (duration != null && duration < NON_ENGAGEMENT_MAX_SECONDS)
+    ) {
+      return DISPLAY_STATUS_LABELS.declined;
+    }
+  }
+
+  const outcome_status = parseBackendOutcomeStatus(fields.outcomeStatus);
+  if (!outcome_status) return null;
+
+  const call = {
+    outcome_status,
+    final_agent: fields.finalAgent ?? '',
+    outcome_reason: fields.outcomeReason ?? null,
+    duration_seconds: fields.durationSeconds ?? undefined,
+    started_at: fields.startedAt || '1970-01-01T00:00:00.000Z',
+    ended_at: fields.endedAt ?? undefined,
+  } as CallHistoryItem;
+
+  return DISPLAY_STATUS_LABELS[getDisplayOutcomeStatus(call)];
+}
+
 /**
  * Hover copy for the status-breakdown modal. Declined is applied in the
  * dashboard (`isNonEngagementCall`); the other three are the backend
