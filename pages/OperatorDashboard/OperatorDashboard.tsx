@@ -18,7 +18,7 @@ import {
   FiActivity,
   FiAlertCircle,
   FiArrowUp,
-  FiDownload,
+  // FiDownload, // TEMP: export XLS hidden
   FiTrendingUp,
 } from 'react-icons/fi';
 import { IoShieldCheckmark } from 'react-icons/io5';
@@ -53,7 +53,7 @@ import {
 } from './callHistoryUtils';
 import { getOdChartTheme } from './operatorDashboardChartTheme';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Toaster, toast } from 'sonner';
+// import { Toaster, toast } from 'sonner'; // TEMP: export XLS hidden
 import './OperatorDashboard.css';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -358,7 +358,7 @@ const OperatorDashboard: React.FC = () => {
   const [allCalls, setAllCalls] = useState<CallHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [periodLoading, setPeriodLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  // const [downloading, setDownloading] = useState(false); // TEMP: export XLS hidden
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   // const [showCostBasis, setShowCostBasis] = useState(false); // TEMP: cost view hidden
@@ -717,28 +717,29 @@ const OperatorDashboard: React.FC = () => {
     </div>
   );
 
-  const handleDownload = useCallback(async () => {
-    setDownloading(true);
-    const toastId = toast.loading('Preparing your export', {
-      description:
-        'Compiling all-time call history. This may take a few minutes. You can keep using the dashboard.',
-    });
-    try {
-      await poseidonService.downloadCallsExport(includeTestCalls);
-      toast.success('Export complete', {
-        id: toastId,
-        description: 'Your spreadsheet has been downloaded.',
-      });
-    } catch (err) {
-      console.error('[OperatorDashboard] export error', err);
-      toast.error('Export failed', {
-        id: toastId,
-        description: 'The spreadsheet could not be generated. Please try again.',
-      });
-    } finally {
-      setDownloading(false);
-    }
-  }, [includeTestCalls]);
+  // TEMP: export XLS hidden
+  // const handleDownload = useCallback(async () => {
+  //   setDownloading(true);
+  //   const toastId = toast.loading('Preparing your export', {
+  //     description:
+  //       'Compiling all-time call history. This may take a few minutes. You can keep using the dashboard.',
+  //   });
+  //   try {
+  //     await poseidonService.downloadCallsExport(includeTestCalls);
+  //     toast.success('Export complete', {
+  //       id: toastId,
+  //       description: 'Your spreadsheet has been downloaded.',
+  //     });
+  //   } catch (err) {
+  //     console.error('[OperatorDashboard] export error', err);
+  //     toast.error('Export failed', {
+  //       id: toastId,
+  //       description: 'The spreadsheet could not be generated. Please try again.',
+  //     });
+  //   } finally {
+  //     setDownloading(false);
+  //   }
+  // }, [includeTestCalls]);
 
   // TEMP: cost view hidden — backtick (`) toggle
   // useEffect(() => {
@@ -786,6 +787,7 @@ const OperatorDashboard: React.FC = () => {
 
   return (
     <div className={`od-root${revealed ? ' od-root--revealed' : ''}`}>
+      {/* TEMP: export XLS hidden
       <Toaster
         theme="dark"
         position="bottom-right"
@@ -793,6 +795,7 @@ const OperatorDashboard: React.FC = () => {
         offset={20}
         toastOptions={{ className: 'od-toast' }}
       />
+      */}
       {/* ── Header ── */}
       <div className="od-header od-reveal" style={odReveal(0)}>
         <div className="od-header-left">
@@ -821,6 +824,7 @@ const OperatorDashboard: React.FC = () => {
             <IoShieldCheckmark size={18} />
             Status: Healthy
           </button>
+          {/* TEMP: export XLS hidden
           <button
             type="button"
             className={`od-action-btn${downloading ? ' od-action-btn--exporting' : ''}`}
@@ -831,6 +835,7 @@ const OperatorDashboard: React.FC = () => {
             <FiDownload size={13} aria-hidden="true" />
             {downloading ? 'Exporting…' : 'Export XLS'}
           </button>
+          */}
         </div>
       </div>
 
