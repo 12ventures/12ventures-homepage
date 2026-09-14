@@ -1,17 +1,75 @@
-import React, { useCallback, useEffect, useId, useMemo, useState, memo } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { FiInfo, FiX } from 'react-icons/fi';
+import { FiBarChart2, FiX } from 'react-icons/fi';
 import { useBackdropDismiss } from '../../hooks/useBackdropDismiss';
 import type { CallHistoryItem } from '../../services/poseidonService';
 import {
+  DISPLAY_STATUS_DESCRIPTIONS,
   summarizeCallHistoryStatuses,
   type CallStatusBreakdownItem,
+  type DisplayOutcomeStatus,
 } from './callHistoryUtils';
 import './CallHistoryStatusBreakdown.css';
 
 interface Props {
   calls: CallHistoryItem[];
   periodLabel: string;
+}
+
+function StatusMeaningLabel({
+  status,
+  children,
+}: {
+  status: DisplayOutcomeStatus;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const tipId = useId();
+  const description = DISPLAY_STATUS_DESCRIPTIONS[status];
+
+  const show = useCallback(() => {
+    const el = labelRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = 280;
+    const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+    setPos({ top: rect.bottom + 6, left });
+    setOpen(true);
+  }, []);
+
+  const hide = useCallback(() => setOpen(false), []);
+
+  return (
+    <>
+      <span
+        ref={labelRef}
+        className="od-history-status-modal__label od-history-status-modal__label--tip"
+        tabIndex={0}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        aria-describedby={open ? tipId : undefined}
+      >
+        {children}
+      </span>
+      {open &&
+        createPortal(
+          <div
+            id={tipId}
+            className="od-status-popover od-status-popover--hover"
+            role="tooltip"
+            style={{ top: pos.top, left: pos.left, width: 280, pointerEvents: 'none' }}
+          >
+            <p className="od-status-popover__title">{children}</p>
+            <p className="od-status-popover__line">{description}</p>
+          </div>,
+          document.body,
+        )}
+    </>
+  );
 }
 
 /**
@@ -143,9 +201,9 @@ const CallHistoryStatusBreakdown: React.FC<Props> = ({ calls, periodLabel }) => 
           className="od-history-status-info"
           onClick={() => setOpen(true)}
           aria-label="View call status breakdown"
-          title="View status breakdown"
         >
-          <FiInfo size={13} aria-hidden="true" />
+          <FiBarChart2 size={13} aria-hidden="true" />
+          Breakdown
         </button>
       </div>
 
@@ -198,7 +256,9 @@ const CallHistoryStatusBreakdown: React.FC<Props> = ({ calls, periodLabel }) => 
                           style={{ background: item.color }}
                           aria-hidden="true"
                         />
-                        <span className="od-history-status-modal__label">{item.label}</span>
+                        <StatusMeaningLabel status={item.status}>
+                          {item.label}
+                        </StatusMeaningLabel>
                         <span className="od-history-status-modal__count">{item.count}</span>
                         <span className="od-history-status-modal__pct">{pct}%</span>
                       </li>

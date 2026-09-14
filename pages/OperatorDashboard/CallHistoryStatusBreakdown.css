@@ -36,21 +36,35 @@
 .od-history-status-info {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--od-text-faint, #64748b);
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px 0 7px;
+  border: 1px solid var(--od-glass-border);
+  border-radius: 7px;
+  background: var(--od-glass-bg);
+  color: var(--od-text-body);
+  font-size: 0.6875rem;
+  font-weight: var(--od-fw-medium, 600);
+  letter-spacing: 0.02em;
+  line-height: 1;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.od-history-status-info svg {
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .od-history-status-info:hover {
   color: var(--od-accent, #60a5fa);
-  background: rgba(59, 130, 246, 0.12);
+  background: var(--od-glass-bg-hover);
+  border-color: var(--od-accent, #60a5fa);
+}
+
+.od-history-status-info:focus-visible {
+  outline: 2px solid var(--od-accent, #60a5fa);
+  outline-offset: 2px;
 }
 
 /* Portaled modal — explicit colors (not scoped --od-* alone) */
@@ -168,6 +182,18 @@
 
 .od-history-status-modal__label {
   color: #cbd5e1;
+}
+
+.od-history-status-modal__label--tip {
+  cursor: help;
+  border-bottom: 1px dotted rgba(203, 213, 225, 0.55);
+  outline: none;
+}
+
+.od-history-status-modal__label--tip:hover,
+.od-history-status-modal__label--tip:focus-visible {
+  color: #f1f5f9;
+  border-bottom-color: #94a3b8;
 }
 
 .od-history-status-modal__count {
