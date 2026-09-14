@@ -42,8 +42,8 @@ export const DISPLAY_STATUS_ORDER: DisplayOutcomeStatus[] = [
 
 export const DISPLAY_STATUS_LABELS: Record<DisplayOutcomeStatus, string> = {
   completed: 'Completed',
-  declined: 'Declined',
-  incomplete: 'Incomplete',
+  declined: '< 45 seconds',
+  incomplete: 'Incomplete ≥ 45 seconds',
   failed: 'Failed',
 };
 

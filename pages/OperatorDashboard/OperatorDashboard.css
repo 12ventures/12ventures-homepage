@@ -1168,3 +1168,31 @@
   border-color: var(--od-glass-border) !important;
   box-shadow: var(--od-glass-shadow);
 }
+
+/* Sonner portals to body — keep styles global and dashboard-aligned */
+.od-toast[data-sonner-toast] {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  font-size: 0.875rem;
+  color: #e2e8f0;
+  background: #161922;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.od-toast[data-sonner-toast] [data-title] {
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.od-toast[data-sonner-toast] [data-description] {
+  color: #94a3b8;
+}
+
+.od-toast[data-sonner-toast][data-type='success'] {
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.od-toast[data-sonner-toast][data-type='error'] {
+  border-color: rgba(248, 113, 113, 0.4);
+}
