@@ -345,6 +345,59 @@ export interface CostAnalytics extends AnalyticsRangeMeta {
   }[];
 }
 
+export interface BillingContract {
+  rate_per_minute: number;
+  monthly_allocation_minutes: number;
+  monthly_allocation_credits: number;
+  total_prepaid_credits: number;
+  term_months: number;
+  start_date: string;
+  term_end_date: string;
+  billing_cycle_type: string;
+}
+
+export interface BillingCycle {
+  cycle_index: number;
+  label: string;
+  cycle_start: string;
+  cycle_end: string;
+  is_current: boolean;
+  is_within_initial_term: boolean;
+  minutes_used: number;
+  minutes_allocated: number;
+  minutes_remaining: number;
+  credits_used: number;
+  credits_allocated: number;
+  credits_remaining: number;
+  is_over_allocation: boolean;
+}
+
+export interface BillingInitialTerm {
+  minutes_used: number;
+  minutes_allocated: number;
+  minutes_remaining: number;
+  credits_used: number;
+  credits_remaining: number;
+  total_prepaid_credits: number;
+  percent_used: number;
+  is_active: boolean;
+}
+
+export interface BillingLifetime {
+  minutes_used: number;
+  credits_used: number;
+}
+
+export interface BillingUsageCredits {
+  contract: BillingContract;
+  current_cycle: BillingCycle;
+  initial_term: BillingInitialTerm;
+  lifetime: BillingLifetime;
+  cycles: BillingCycle[];
+  tz: string;
+  generated_at: string;
+}
+
 export interface LabelCount {
   label: string;
   count: number;
@@ -540,6 +593,11 @@ class PoseidonService {
 
   async getCostDetail(filter: DashboardFilter, includeTestCalls = false): Promise<CostDetail> {
     return this.request(`/api/dashboard/analytics/costs/detail?${buildAnalyticsParams(filter, includeTestCalls).toString()}`);
+  }
+
+  async getBillingUsageCredits(): Promise<BillingUsageCredits> {
+    const params = new URLSearchParams({ tz: DASHBOARD_TZ });
+    return this.request(`/api/dashboard/billing/usage-credits?${params.toString()}`);
   }
 
   async getAnalyticsInsights(filter: DashboardFilter, includeTestCalls = false): Promise<AnalyticsInsights> {

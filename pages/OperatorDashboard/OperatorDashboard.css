@@ -484,6 +484,17 @@
   transform: translateY(-1px);
 }
 
+.od-metric-card--credits {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.od-metric-card--credits .od-metric-header {
+  align-items: center;
+  min-height: 22px;
+}
+
 .od-metric-header {
   display: flex;
   align-items: flex-start;
