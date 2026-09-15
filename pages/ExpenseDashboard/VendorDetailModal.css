@@ -1,0 +1,78 @@
+.exm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.exm-panel {
+  width: 100%;
+  max-width: 640px;
+  max-height: 86vh;
+  overflow: auto;
+  background: #12151d;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+}
+
+.exm-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.exm-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #f8fafc;
+}
+
+.exm-header p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.exm-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.07);
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.exm-body { padding: 16px 20px 22px; }
+
+.exm-total {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 14px;
+  color: #f8fafc;
+}
+
+.exm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+.exm-table th, .exm-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  text-align: left;
+}
+
+.exm-table .right, .exm-table th.right { text-align: right; font-variant-numeric: tabular-nums; }
+.exm-sku { color: #64748b; font-size: 11px; margin-top: 2px; }
+.exm-muted { color: #94a3b8; }

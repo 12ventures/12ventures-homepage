@@ -40,6 +40,7 @@ import HavenAdmin from './components/haven/HavenAdmin';
 import HavenStore from './components/haven/HavenStore';
 import HavenProductPage from './components/haven/HavenProductPage';
 import HavenRoomSetPage from './components/haven/HavenRoomSetPage';
+import ExpenseDashboard from './pages/ExpenseDashboard/ExpenseDashboard';
 
 // Brand shell for routed demos / landings
 const BrandLayout: React.FC<{ initialBrandId: string; children: React.ReactNode; showDevMenu?: boolean }> = ({ initialBrandId, children, showDevMenu = true }) => (
@@ -253,6 +254,16 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
                 <HavenProductPage />
+              </BrandLayout>
+            }
+          />
+
+          {/* Internal company expense ledger */}
+          <Route
+            path="/internal/expenses"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <ExpenseDashboard />
               </BrandLayout>
             }
           />
