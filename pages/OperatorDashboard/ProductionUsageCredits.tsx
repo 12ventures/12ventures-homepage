@@ -7,6 +7,7 @@ import {
   type BillingCycle,
   type BillingUsageCredits,
 } from '../../services/poseidonService';
+import AnimatedNumber from '../../components/common/AnimatedNumber';
 import './ProductionUsageCredits.css';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -18,8 +19,6 @@ const percentOneFmt = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
 });
-
-const SHOW_INITIAL_TERM = false;
 
 interface Props {
   data: BillingUsageCredits | null;
@@ -47,7 +46,7 @@ function cyclePeriodLabel(cycle: BillingCycle): string {
   if (cycle.cycle_start && cycle.cycle_end) {
     return termRangeLabel(cycle.cycle_start, cycle.cycle_end);
   }
-  return 'Current billing cycle';
+  return 'Current billing period';
 }
 
 function remainingCopy(
@@ -79,12 +78,14 @@ function UsageBar({
   remaining,
   overAllocation,
   kind,
+  delay = 0,
 }: {
   used: number;
   allocated: number;
   remaining: number;
   overAllocation: boolean;
   kind: 'minutes' | 'credits';
+  delay?: number;
 }) {
   const rawPct = allocated > 0 ? (used / allocated) * 100 : 0;
   const fillPct = Math.min(100, Math.max(0, rawPct));
@@ -94,22 +95,47 @@ function UsageBar({
     : `${usd.format(used)} / ${usd.format(allocated)}`;
 
   return (
-    <div className={`od-credits-usage${rem.overage ? ' is-over' : ''}`}>
+    <div
+      className={`od-credits-usage${rem.overage ? ' is-over' : ''}`}
+      style={{ '--od-credits-bar-delay': `${delay}ms` } as React.CSSProperties}
+    >
       <div className="od-credits-usage-head">
         <span className="od-credits-usage-kind">{kind === 'minutes' ? 'Minutes' : 'Credits'}</span>
-        <span className={`od-credits-remaining${rem.overage ? ' is-over' : ''}`}>{rem.text}</span>
+        <span className={`od-credits-usage-values${rem.overage ? ' is-over' : ''}`}>
+          {kind === 'minutes' ? (
+            <>
+              <AnimatedNumber value={used} delay={delay} duration={800} formatter={minutesFmt.format} />
+              {` / ${minutesFmt.format(allocated)} min`}
+            </>
+          ) : (
+            <>
+              <AnimatedNumber
+                value={used}
+                delay={delay}
+                duration={800}
+                decimals={2}
+                formatter={usd.format}
+              />
+              {` / ${usd.format(allocated)}`}
+            </>
+          )}
+        </span>
       </div>
-      <p className="od-credits-usage-values">{usedLabel}</p>
       <div
         className={`od-credits-bar${rem.overage ? ' is-over' : ''}`}
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={fillPct}
-        aria-label={`${percentOneFmt.format(rawPct)} percent of ${kind} used`}
+        aria-label={`${usedLabel} used`}
       >
-        <span className="od-credits-bar-fill" style={{ width: `${fillPct}%` }} />
-        <span className="od-credits-bar-label">{percentFmt.format(rawPct)}%</span>
+        <span
+          className="od-credits-bar-fill"
+          style={{ '--od-credits-fill': `${fillPct}%` } as React.CSSProperties}
+        />
+        <span className="od-credits-bar-label">
+          <AnimatedNumber value={rawPct} delay={delay} duration={800} suffix="%" />
+        </span>
       </div>
     </div>
   );
@@ -208,7 +234,7 @@ function CyclePeriodTip({ period }: { period: string }) {
         onBlur={hide}
         aria-describedby={open ? tipId : undefined}
       >
-        Minutes this cycle
+        Minutes this period
       </span>
       {open
         ? createPortal(
@@ -218,8 +244,68 @@ function CyclePeriodTip({ period }: { period: string }) {
               role="tooltip"
               style={{ top: pos.top, left: pos.left, width: 220, pointerEvents: 'none' }}
             >
-              <p className="od-status-popover__title">Billing cycle</p>
+              <p className="od-status-popover__title">Billing period</p>
               <p className="od-status-popover__line">{period}</p>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
+function TermUsageTip({
+  minutesLabel,
+  creditsLabel,
+  children,
+}: {
+  minutesLabel: string;
+  creditsLabel: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const tipId = useId();
+
+  const show = useCallback(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = 200;
+    const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+    setPos({ top: rect.bottom + 6, left });
+    setOpen(true);
+  }, []);
+
+  const hide = useCallback(() => setOpen(false), []);
+
+  return (
+    <>
+      <div
+        ref={wrapRef}
+        className="od-credits-term-foot-head"
+        tabIndex={0}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        aria-describedby={open ? tipId : undefined}
+      >
+        {children}
+      </div>
+      {open
+        ? createPortal(
+            <div
+              id={tipId}
+              className="od-status-popover"
+              role="tooltip"
+              style={{ top: pos.top, left: pos.left, width: 200, pointerEvents: 'none' }}
+            >
+              <p className="od-status-popover__title">Minutes</p>
+              <p className="od-status-popover__line">{minutesLabel}</p>
+              <p className="od-status-popover__title od-credits-tip-kicker">Credits</p>
+              <p className="od-status-popover__line">{creditsLabel}</p>
             </div>,
             document.body,
           )
@@ -238,7 +324,10 @@ function CreditsBreakdownModal({
   const titleId = useId();
   const backdropDismiss = useBackdropDismiss(onClose, true);
   const { contract, current_cycle: cycle, initial_term: term } = data;
-  const termOver = term.minutes_remaining < 0 || term.credits_remaining < 0;
+  const termPct = Math.max(0, Math.min(100, term.percent_used));
+  const termOver = term.percent_used > 100 || term.minutes_remaining < 0 || term.credits_remaining < 0;
+  const termMinutes = `${minutesFmt.format(term.minutes_used)} / ${minutesFmt.format(term.minutes_allocated)} min`;
+  const termCredits = `${usd.format(term.credits_used)} / ${usd.format(term.total_prepaid_credits)}`;
   const cyclesNewestFirst = useMemo(
     () =>
       [...data.cycles].sort((a, b) => {
@@ -282,8 +371,8 @@ function CreditsBreakdownModal({
           </button>
         </div>
 
-        <div className="od-credits-panel">
-          <p className="od-credits-kicker">This cycle</p>
+        <div className="od-credits-panel od-credits-panel--hero">
+          <p className="od-credits-kicker">This period</p>
           <p className="od-credits-range">{cycle.label}</p>
           <UsageBar
             kind="minutes"
@@ -291,6 +380,7 @@ function CreditsBreakdownModal({
             allocated={cycle.minutes_allocated}
             remaining={cycle.minutes_remaining}
             overAllocation={cycle.is_over_allocation || cycle.minutes_remaining < 0}
+            delay={90}
           />
           <UsageBar
             kind="credits"
@@ -298,40 +388,16 @@ function CreditsBreakdownModal({
             allocated={cycle.credits_allocated}
             remaining={cycle.credits_remaining}
             overAllocation={cycle.is_over_allocation || cycle.credits_remaining < 0}
+            delay={200}
           />
         </div>
 
-        {/* TEMP: initial term hidden */}
-        {SHOW_INITIAL_TERM && (
-          <div className="od-credits-panel">
-            <p className="od-credits-kicker">Initial {contract.term_months}-month term</p>
-            <p className="od-credits-range">
-              {termRangeLabel(contract.start_date, contract.term_end_date)}
-              {term.is_active ? null : ' · Term ended'}
-            </p>
-            <UsageBar
-              kind="minutes"
-              used={term.minutes_used}
-              allocated={term.minutes_allocated}
-              remaining={term.minutes_remaining}
-              overAllocation={termOver}
-            />
-            <UsageBar
-              kind="credits"
-              used={term.credits_used}
-              allocated={term.total_prepaid_credits}
-              remaining={term.credits_remaining}
-              overAllocation={termOver}
-            />
-          </div>
-        )}
-
         {cyclesNewestFirst.length > 0 ? (
-          <div className="od-credits-table-wrap">
+          <div className="od-credits-table-wrap od-credits-seq od-credits-seq--table">
             <table className="od-credits-table">
               <thead>
                 <tr>
-                  <th>Billing cycle</th>
+                  <th>Billing period</th>
                   <th>Minutes</th>
                   <th>Credits</th>
                 </tr>
@@ -344,6 +410,41 @@ function CreditsBreakdownModal({
             </table>
           </div>
         ) : null}
+
+        <div className="od-credits-term-foot od-credits-seq od-credits-seq--term">
+          <TermUsageTip minutesLabel={termMinutes} creditsLabel={termCredits}>
+            <p className="od-credits-term-foot-range">
+              {contract.term_months}-month · {termRangeLabel(contract.start_date, contract.term_end_date)}
+              {term.is_active ? null : ' · Ended'}
+            </p>
+            <span className={`od-credits-term-foot-values${termOver ? ' is-over' : ''}`}>
+              <AnimatedNumber
+                value={term.minutes_used}
+                delay={1160}
+                duration={800}
+                formatter={minutesFmt.format}
+              />
+              {` / ${minutesFmt.format(term.minutes_allocated)} min`}
+            </span>
+          </TermUsageTip>
+          <div
+            className={`od-credits-bar${termOver ? ' is-over' : ''}`}
+            style={{ '--od-credits-bar-delay': '1160ms' } as React.CSSProperties}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={termPct}
+            aria-label={`${percentOneFmt.format(term.percent_used)} percent of the ${contract.term_months}-month period used`}
+          >
+            <span
+              className="od-credits-bar-fill"
+              style={{ '--od-credits-fill': `${termPct}%` } as React.CSSProperties}
+            />
+            <span className="od-credits-bar-label">
+              <AnimatedNumber value={term.percent_used} delay={1160} duration={800} suffix="%" />
+            </span>
+          </div>
+        </div>
       </div>
     </div>,
     document.body,
@@ -365,7 +466,7 @@ const ProductionUsageCredits: React.FC<Props> = ({ data, error }) => {
         {cycle ? (
           <CyclePeriodTip period={period} />
         ) : (
-          <span className="od-metric-label">Minutes this cycle</span>
+          <span className="od-metric-label">Minutes this period</span>
         )}
         {cycle ? (
           <button

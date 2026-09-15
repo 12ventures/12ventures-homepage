@@ -139,6 +139,8 @@
   margin-bottom: 20px;
   gap: 16px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 6;
 }
 
 .od-header-left h1 {
@@ -452,7 +454,7 @@
 /* ── Key Metric Cards ────────────────────────── */
 .od-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 14px;
   margin-bottom: 28px;
   transition: opacity 0.2s;

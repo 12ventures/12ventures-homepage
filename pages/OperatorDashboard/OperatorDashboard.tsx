@@ -30,7 +30,7 @@ import {
   type CostAnalytics,
   type AnalyticsInsights,
   type DashboardFilter,
-  // type BillingUsageCredits, // TEMP: minutes this cycle hidden
+  type BillingUsageCredits,
   formatCustomRangeLabel,
   customRangeSpanDays,
   DASHBOARD_TZ,
@@ -44,10 +44,11 @@ import {
 import OperatorDashboardInsights from './OperatorDashboardInsights';
 // import CostDetailModal from './CostDetailModal'; // TEMP: cost view hidden
 import MaintenanceModal from './MaintenanceModal';
+import ExportRangeModal, { type CallsExportRange } from './ExportRangeModal';
 import CustomDateRangePicker from './CustomDateRangePicker';
 import CallStatusPill from './CallStatusPill';
 import CallHistoryStatusBreakdown from './CallHistoryStatusBreakdown';
-// import ProductionUsageCredits from './ProductionUsageCredits'; // TEMP: minutes this cycle hidden
+import ProductionUsageCredits from './ProductionUsageCredits';
 import {
   fmtDuration,
   getCallDurationSeconds,
@@ -366,10 +367,11 @@ const OperatorDashboard: React.FC = () => {
   // const [showCostBasis, setShowCostBasis] = useState(false); // TEMP: cost view hidden
   // const [showCostDetail, setShowCostDetail] = useState(false); // TEMP: cost view hidden
   const [showMaintenance, setShowMaintenance] = useState(false);
+  const [showExportRange, setShowExportRange] = useState(false);
+  const exportWrapRef = useRef<HTMLDivElement>(null);
   const [includeTestCalls, setIncludeTestCalls] = useState(false);
-  // TEMP: minutes this cycle hidden
-  // const [billing, setBilling] = useState<BillingUsageCredits | null>(null);
-  // const [billingError, setBillingError] = useState(false);
+  const [billing, setBilling] = useState<BillingUsageCredits | null>(null);
+  const [billingError, setBillingError] = useState(false);
   /** Today's call count held across filter changes (updated only when today is in the fetched range). */
   const [todayCallsHeld, setTodayCallsHeld] = useState(0);
   /** Stable visual variance for status metrics — one sample per page load. */
@@ -517,23 +519,22 @@ const OperatorDashboard: React.FC = () => {
     void fetchAll(true);
   }, [period, customRange, includeTestCalls, fetchAll]);
 
-  // TEMP: minutes this cycle hidden
   // Billing credits: once per load. Cached 5 min on the backend; not tied
   // to the dashboard date filter and not polled with summary/insights.
-  // useEffect(() => {
-  //   let cancelled = false;
-  //   void poseidonService.getBillingUsageCredits()
-  //     .then((data) => {
-  //       if (cancelled) return;
-  //       setBilling(data);
-  //       setBillingError(false);
-  //     })
-  //     .catch((err) => {
-  //       console.error('[OperatorDashboard] billing usage-credits fetch error', err);
-  //       if (!cancelled) setBillingError(true);
-  //     });
-  //   return () => { cancelled = true; };
-  // }, []);
+  useEffect(() => {
+    let cancelled = false;
+    void poseidonService.getBillingUsageCredits()
+      .then((data) => {
+        if (cancelled) return;
+        setBilling(data);
+        setBillingError(false);
+      })
+      .catch((err) => {
+        console.error('[OperatorDashboard] billing usage-credits fetch error', err);
+        if (!cancelled) setBillingError(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Derived metrics ──────────────────────────────────────────────────
   const totalCalls = analytics?.calls.total ?? 0;
@@ -740,14 +741,27 @@ const OperatorDashboard: React.FC = () => {
     </div>
   );
 
-  const handleDownload = useCallback(async () => {
+  useEffect(() => {
+    if (!showExportRange) return;
+    const onDoc = (e: MouseEvent) => {
+      if (exportWrapRef.current?.contains(e.target as Node)) return;
+      setShowExportRange(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [showExportRange]);
+
+  const handleDownload = useCallback(async (range: CallsExportRange) => {
+    setShowExportRange(false);
     setDownloading(true);
     const toastId = toast.loading('Preparing your export', {
       description:
-        'Compiling all-time call history. This may take a few minutes. You can keep using the dashboard.',
+        range === 'past_30_days'
+          ? 'Calls from the last 30 days. This may take a few minutes.'
+          : 'Complete call history. This may take a few minutes. You can keep using the dashboard.',
     });
     try {
-      await poseidonService.downloadCallsExport(includeTestCalls);
+      await poseidonService.downloadCallsExport(includeTestCalls, range);
       toast.success('Export complete', {
         id: toastId,
         description: 'Your spreadsheet has been downloaded.',
@@ -844,16 +858,26 @@ const OperatorDashboard: React.FC = () => {
             <IoShieldCheckmark size={18} />
             Status: Healthy
           </button>
-          <button
-            type="button"
-            className={`od-action-btn${downloading ? ' od-action-btn--exporting' : ''}`}
-            onClick={handleDownload}
-            disabled={downloading}
-            aria-busy={downloading}
-          >
-            <FiDownload size={13} aria-hidden="true" />
-            {downloading ? 'Exporting…' : 'Export XLS'}
-          </button>
+          <div className="od-export-wrap" ref={exportWrapRef}>
+            <button
+              type="button"
+              className={`od-action-btn${downloading ? ' od-action-btn--exporting' : ''}`}
+              onClick={() => setShowExportRange((v) => !v)}
+              disabled={downloading}
+              aria-busy={downloading}
+              aria-expanded={showExportRange}
+              aria-haspopup="menu"
+            >
+              <FiDownload size={13} aria-hidden="true" />
+              {downloading ? 'Exporting…' : 'Export XLS'}
+            </button>
+            {showExportRange ? (
+              <ExportRangeModal
+                onClose={() => setShowExportRange(false)}
+                onChoose={(range) => void handleDownload(range)}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -1030,11 +1054,9 @@ const OperatorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* TEMP: minutes this cycle hidden
         <div className="od-metric-card od-metric-card--credits od-reveal" style={odReveal(8)}>
           <ProductionUsageCredits data={billing} error={billingError} />
         </div>
-        */}
       </div>
 
       {/* ── Charts ── */}
