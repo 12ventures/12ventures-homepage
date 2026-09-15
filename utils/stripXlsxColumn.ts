@@ -194,17 +194,144 @@ function sanitizeSheetXml(xml: string): string {
   return stripColumnFromSheetXml(withStatuses);
 }
 
+function normalizeSheetName(name: string): string {
+  return decodeXmlText(name).replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function attr(tag: string, key: string): string | null {
+  const m = tag.match(new RegExp(`\\b${key}="([^"]*)"`));
+  return m ? m[1] : null;
+}
+
+function worksheetZipPath(target: string): string {
+  const cleaned = target.replace(/^\//, '');
+  if (cleaned.startsWith('xl/')) return cleaned;
+  if (cleaned.startsWith('worksheets/')) return `xl/${cleaned}`;
+  const base = cleaned.split('/').pop() ?? cleaned;
+  return `xl/worksheets/${base}`;
+}
+
+/**
+ * Keep only named worksheets (e.g. Summary + Past 30 Days). If any requested
+ * name is missing, the workbook is left unchanged.
+ */
+function keepOnlyNamedSheets(
+  files: Record<string, Uint8Array>,
+  keepNames: string[],
+): boolean {
+  const want = keepNames.map(normalizeSheetName);
+  const wbPath = Object.keys(files).find((n) => n.replace(/\\/g, '/') === 'xl/workbook.xml');
+  const relsPath = Object.keys(files).find((n) => n.replace(/\\/g, '/') === 'xl/_rels/workbook.xml.rels');
+  if (!wbPath || !relsPath) return false;
+
+  const workbook = strFromU8(files[wbPath]);
+  const sheetsBlock = workbook.match(/<sheets\b[^>]*>[\s\S]*?<\/sheets>/);
+  if (!sheetsBlock) return false;
+
+  const sheetTags = [...sheetsBlock[0].matchAll(/<sheet\b[^>]*\/?>/g)].map((m) => m[0]);
+  const keptTags: string[] = [];
+  const keptRels = new Set<string>();
+  const keptNormalized = new Set<string>();
+
+  for (const tag of sheetTags) {
+    const name = attr(tag, 'name');
+    const rid = attr(tag, 'r:id');
+    if (!name || !rid) continue;
+    const key = normalizeSheetName(name);
+    if (!want.includes(key)) continue;
+    keptTags.push(tag);
+    keptRels.add(rid);
+    keptNormalized.add(key);
+  }
+
+  if (want.some((name) => !keptNormalized.has(name)) || keptTags.length === 0) return false;
+
+  let nextWorkbook = workbook.replace(
+    /<sheets\b[^>]*>[\s\S]*?<\/sheets>/,
+    `<sheets>${keptTags.join('')}</sheets>`,
+  );
+  nextWorkbook = nextWorkbook.replace(/\bactiveTab="\d+"/, 'activeTab="0"');
+  files[wbPath] = strToU8(nextWorkbook);
+
+  const relsXml = strFromU8(files[relsPath]);
+  const relTags = [...relsXml.matchAll(/<Relationship\b[^>]*\/?>/g)].map((m) => m[0]);
+  const droppedTargets: string[] = [];
+  const nextRelTags: string[] = [];
+
+  for (const tag of relTags) {
+    const id = attr(tag, 'Id');
+    const type = attr(tag, 'Type') ?? '';
+    const target = attr(tag, 'Target');
+    const isWorksheet = type.includes('/worksheet');
+    if (isWorksheet) {
+      if (id && keptRels.has(id)) {
+        nextRelTags.push(tag);
+      } else if (target) {
+        droppedTargets.push(target);
+      }
+      continue;
+    }
+    nextRelTags.push(tag);
+  }
+
+  const relsOpen = relsXml.match(/^<Relationships\b[^>]*>/);
+  if (!relsOpen) return false;
+  files[relsPath] = strToU8(`${relsOpen[0]}${nextRelTags.join('')}</Relationships>`);
+
+  for (const target of droppedTargets) {
+    const path = worksheetZipPath(target);
+    delete files[path];
+  }
+
+  const ctPath = Object.keys(files).find((n) => n.replace(/\\/g, '/') === '[Content_Types].xml');
+  if (ctPath) {
+    let types = strFromU8(files[ctPath]);
+    for (const target of droppedTargets) {
+      const base = worksheetZipPath(target).split('/').pop();
+      if (!base) continue;
+      types = types.replace(
+        new RegExp(`<Override\\b[^>]*PartName="/xl/worksheets/${base}"[^>]*/>`, 'g'),
+        '',
+      );
+    }
+    files[ctPath] = strToU8(types);
+  }
+
+  return true;
+}
+
+export type CallsExportRange = 'past_30_days' | 'all_time';
+
+/** Sheets kept when the operator asks for a past-30-days export. */
+export const PAST_30_DAYS_EXPORT_SHEETS = ['Summary', 'Past 30 Days'];
+
+export interface SanitizeExportOptions {
+  keepSheetNames?: string[];
+}
+
 /**
  * Align Outcome Status wording with the dashboard, then drop Report File Path
- * from every worksheet that still has it. If a sheet's structure doesn't match
- * (column already gone, label renamed, not an xlsx), that sheet / file is left
- * unchanged rather than half-edited.
+ * from every worksheet that still has it. Optionally drop extra tabs. If a
+ * sheet's structure doesn't match (column already gone, label renamed, not an
+ * xlsx), that sheet / file is left unchanged rather than half-edited.
  */
-export function sanitizeCallsExportXlsx(xlsx: ArrayBuffer): Uint8Array {
+export function sanitizeCallsExportXlsx(
+  xlsx: ArrayBuffer,
+  options: SanitizeExportOptions = {},
+): Uint8Array {
   try {
     const original = new Uint8Array(xlsx);
     const files = unzipSync(original);
     let changed = false;
+
+    if (options.keepSheetNames?.length) {
+      const kept = keepOnlyNamedSheets(files, options.keepSheetNames);
+      if (!kept) {
+        console.warn('[sanitizeCallsExportXlsx] could not keep requested sheets; leaving tabs unchanged');
+      }
+      changed = kept || changed;
+    }
+
     for (const name of Object.keys(files)) {
       if (!/^xl\/worksheets\/[^/]+\.xml$/.test(name)) continue;
       const xml = strFromU8(files[name]);

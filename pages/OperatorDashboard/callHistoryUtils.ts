@@ -42,7 +42,7 @@ export const DISPLAY_STATUS_ORDER: DisplayOutcomeStatus[] = [
 
 export const DISPLAY_STATUS_LABELS: Record<DisplayOutcomeStatus, string> = {
   completed: 'Completed',
-  declined: '< 45 seconds',
+  declined: 'Declined <45 seconds',
   incomplete: 'Incomplete ≥ 45 seconds',
   failed: 'Failed',
 };
@@ -70,7 +70,15 @@ export function getDisplayOutcomeLabelFromFields(fields: {
   endedAt?: string | null;
 }): string | null {
   const lowered = fields.outcomeStatus.trim().toLowerCase();
-  if (lowered === 'declined' || lowered === '< 45 seconds') {
+  if (
+    lowered === '< 45 seconds' ||
+    lowered === '<45 seconds' ||
+    lowered === 'declined <45 seconds' ||
+    lowered === 'declined < 45 seconds'
+  ) {
+    return DISPLAY_STATUS_LABELS.declined;
+  }
+  if (lowered === 'declined') {
     const duration = fields.durationSeconds;
     const agent = fields.finalAgent?.trim().toLowerCase() ?? '';
     const reason = fields.outcomeReason?.trim() ?? '';

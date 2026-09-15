@@ -190,16 +190,13 @@ export function countWeekdaysInRange(dateFrom: string, dateTo: string): number {
 }
 
 /**
- * Divisor for daily call averages: every calendar day in the range.
- *
- * Previously weekdays only (unless the period was exclusively weekend). Restore
- * that behavior by returning `weekdays > 0 ? weekdays : total` instead of `total`.
+ * Divisor for daily call averages: weekdays only, unless the period is
+ * exclusively weekend day(s) (e.g. Sat–Sun or a single Saturday).
  */
 export function getDailyAverageDivisorDays(dateFrom: string, dateTo: string): number {
   const total = customRangeSpanDays(dateFrom, dateTo);
-  // const weekdays = countWeekdaysInRange(dateFrom, dateTo);
-  // return weekdays > 0 ? weekdays : total;
-  return total;
+  const weekdays = countWeekdaysInRange(dateFrom, dateTo);
+  return weekdays > 0 ? weekdays : total;
 }
 
 /** Per-day call counts (hospital TZ) for an inclusive YYYY-MM-DD range. */
@@ -222,7 +219,7 @@ export function buildDailyCallCounts(
   return counts;
 }
 
-/** Days with more than this many calls count toward the daily average. */
+/** Days with this many calls or more count toward the daily average. */
 export const DAILY_AVERAGE_MIN_CALLS = 2;
 
 export interface DailyAverageResult {
@@ -232,8 +229,8 @@ export interface DailyAverageResult {
 }
 
 /**
- * Daily average over every calendar day in the range (weekends and low-volume
- * days included). Previously skipped weekends and days with < DAILY_AVERAGE_MIN_CALLS.
+ * Daily average over active days: weekdays with at least
+ * `minCallsPerDay` calls. If the range is weekend-only, weekends are used.
  */
 export function computeDailyAverage(
   dateFrom: string,
@@ -241,22 +238,21 @@ export function computeDailyAverage(
   dailyCounts: Record<string, number>,
   minCallsPerDay = DAILY_AVERAGE_MIN_CALLS,
 ): DailyAverageResult | null {
-  void minCallsPerDay; // unused while the low-volume-day filter below is commented out
-  // const weekdays = countWeekdaysInRange(dateFrom, dateTo);
-  // const useWeekdaysOnly = weekdays > 0;
+  const weekdays = countWeekdaysInRange(dateFrom, dateTo);
+  const useWeekdaysOnly = weekdays > 0;
 
   let qualifyingCalls = 0;
   let divisorDays = 0;
   let cursor = dateFrom;
   while (cursor <= dateTo) {
-    // const dow = calendarDayOfWeek(cursor);
-    // const isWeekend = dow === 0 || dow === 6;
-    // const dayEligible = useWeekdaysOnly ? !isWeekend : true;
+    const dow = calendarDayOfWeek(cursor);
+    const isWeekend = dow === 0 || dow === 6;
+    const dayEligible = useWeekdaysOnly ? !isWeekend : true;
     const count = dailyCounts[cursor] ?? 0;
-    // if (dayEligible && count >= minCallsPerDay) {
-    qualifyingCalls += count;
-    divisorDays++;
-    // }
+    if (dayEligible && count >= minCallsPerDay) {
+      qualifyingCalls += count;
+      divisorDays++;
+    }
     cursor = addCalendarDays(cursor, 1);
   }
 
@@ -636,7 +632,10 @@ class PoseidonService {
     return `${this.baseUrl}/api/dashboard/files/fax/${direction}/${filename}`;
   }
 
-  async downloadCallsExport(includeTestCalls = false): Promise<void> {
+  async downloadCallsExport(
+    includeTestCalls = false,
+    range: 'all_time' | 'past_30_days' = 'all_time',
+  ): Promise<void> {
     const params = new URLSearchParams({ tabs: 'true', tz: DASHBOARD_TZ });
     if (includeTestCalls) params.set('include_test_calls', 'true');
     // Same call set as Key Metrics / call history (every non-test call).
@@ -646,8 +645,10 @@ class PoseidonService {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Export failed: ${response.statusText}`);
     const raw = await response.arrayBuffer();
-    const { sanitizeCallsExportXlsx } = await import('../utils/stripXlsxColumn');
-    const stripped = sanitizeCallsExportXlsx(raw);
+    const { sanitizeCallsExportXlsx, PAST_30_DAYS_EXPORT_SHEETS } = await import('../utils/stripXlsxColumn');
+    const stripped = sanitizeCallsExportXlsx(raw, {
+      keepSheetNames: range === 'past_30_days' ? PAST_30_DAYS_EXPORT_SHEETS : undefined,
+    });
     const blob = new Blob([stripped], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
@@ -655,7 +656,8 @@ class PoseidonService {
     const a = document.createElement('a');
     a.href = objectUrl;
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    a.download = `calls_summary_${ts}.xlsx`;
+    const rangeTag = range === 'past_30_days' ? 'past_30_days' : 'all_time';
+    a.download = `calls_summary_${rangeTag}_${ts}.xlsx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
