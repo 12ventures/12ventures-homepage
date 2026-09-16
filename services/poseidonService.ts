@@ -634,9 +634,9 @@ class PoseidonService {
 
   async downloadCallsExport(
     includeTestCalls = false,
-    range: 'all_time' | 'past_30_days' = 'all_time',
+    range: 'all_time' | 'this_month' | 'last_month' = 'all_time',
   ): Promise<void> {
-    const params = new URLSearchParams({ tabs: 'true', tz: DASHBOARD_TZ });
+    const params = new URLSearchParams({ tabs: 'true', tz: DASHBOARD_TZ, scope: range });
     if (includeTestCalls) params.set('include_test_calls', 'true');
     // Same call set as Key Metrics / call history (every non-test call).
     // Restore to drop triage-never-left and <60s calls:
@@ -645,10 +645,8 @@ class PoseidonService {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Export failed: ${response.statusText}`);
     const raw = await response.arrayBuffer();
-    const { sanitizeCallsExportXlsx, PAST_30_DAYS_EXPORT_SHEETS } = await import('../utils/stripXlsxColumn');
-    const stripped = sanitizeCallsExportXlsx(raw, {
-      keepSheetNames: range === 'past_30_days' ? PAST_30_DAYS_EXPORT_SHEETS : undefined,
-    });
+    const { sanitizeCallsExportXlsx } = await import('../utils/stripXlsxColumn');
+    const stripped = sanitizeCallsExportXlsx(raw);
     const blob = new Blob([stripped], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
@@ -656,8 +654,7 @@ class PoseidonService {
     const a = document.createElement('a');
     a.href = objectUrl;
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const rangeTag = range === 'past_30_days' ? 'past_30_days' : 'all_time';
-    a.download = `calls_summary_${rangeTag}_${ts}.xlsx`;
+    a.download = `calls_summary_${range}_${ts}.xlsx`;
     document.body.appendChild(a);
     a.click();
     a.remove();

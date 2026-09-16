@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import './ExportRangeModal.css';
 
-export type CallsExportRange = 'past_30_days' | 'all_time';
+export type CallsExportRange = 'this_month' | 'last_month' | 'all_time';
 
 interface Props {
   onClose: () => void;
@@ -23,10 +23,19 @@ const ExportRangeModal: React.FC<Props> = ({ onClose, onChoose }) => {
         type="button"
         className="od-export-choice"
         role="menuitem"
-        onClick={() => onChoose('past_30_days')}
+        onClick={() => onChoose('this_month')}
       >
-        <span className="od-export-choice__label">Past 30 days</span>
-        <span className="od-export-choice__hint">Calls from the last 30 days</span>
+        <span className="od-export-choice__label">This month</span>
+        <span className="od-export-choice__hint">Calendar month so far — smaller file</span>
+      </button>
+      <button
+        type="button"
+        className="od-export-choice"
+        role="menuitem"
+        onClick={() => onChoose('last_month')}
+      >
+        <span className="od-export-choice__label">Last month</span>
+        <span className="od-export-choice__hint">Previous calendar month — smaller file</span>
       </button>
       <button
         type="button"
@@ -34,8 +43,8 @@ const ExportRangeModal: React.FC<Props> = ({ onClose, onChoose }) => {
         role="menuitem"
         onClick={() => onChoose('all_time')}
       >
-        <span className="od-export-choice__label">All time</span>
-        <span className="od-export-choice__hint">Complete call history</span>
+        <span className="od-export-choice__label">All Time</span>
+        <span className="od-export-choice__hint">Complete call history — largest file</span>
       </button>
     </div>
   );

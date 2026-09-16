@@ -300,10 +300,7 @@ function keepOnlyNamedSheets(
   return true;
 }
 
-export type CallsExportRange = 'past_30_days' | 'all_time';
-
-/** Sheets kept when the operator asks for a past-30-days export. */
-export const PAST_30_DAYS_EXPORT_SHEETS = ['Summary', 'Past 30 Days'];
+export type CallsExportRange = 'this_month' | 'last_month' | 'all_time';
 
 export interface SanitizeExportOptions {
   keepSheetNames?: string[];
