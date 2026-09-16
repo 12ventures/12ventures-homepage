@@ -756,9 +756,11 @@ const OperatorDashboard: React.FC = () => {
     setDownloading(true);
     const toastId = toast.loading('Preparing your export', {
       description:
-        range === 'past_30_days'
-          ? 'Calls from the last 30 days. This may take a few minutes.'
-          : 'Complete call history. This may take a few minutes. You can keep using the dashboard.',
+        range === 'this_month'
+          ? 'This calendar month. Usually a smaller file.'
+          : range === 'last_month'
+            ? 'Last calendar month. Usually a smaller file.'
+            : 'Complete call history. This may take a few minutes. You can keep using the dashboard.',
     });
     try {
       await poseidonService.downloadCallsExport(includeTestCalls, range);
