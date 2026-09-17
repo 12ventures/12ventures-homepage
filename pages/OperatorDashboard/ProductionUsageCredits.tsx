@@ -11,7 +11,7 @@ import AnimatedNumber from '../../components/common/AnimatedNumber';
 import './ProductionUsageCredits.css';
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-const minutesFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const minutesFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 const percentFmt = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
@@ -115,6 +115,7 @@ function UsageBar({
   delay?: number;
 }) {
   const rawPct = allocated > 0 ? (used / allocated) * 100 : 0;
+  const pctLabel = Math.round(rawPct * 10) / 10;
   const fillPct = Math.min(100, Math.max(0, rawPct));
   const rem = remainingCopy(remaining, overAllocation, kind);
   const usedLabel = kind === 'minutes'
@@ -131,7 +132,7 @@ function UsageBar({
         <span className={`od-credits-usage-values${rem.overage ? ' is-over' : ''}`}>
           {kind === 'minutes' ? (
             <>
-              <AnimatedNumber value={used} delay={delay} duration={800} formatter={minutesFmt.format} />
+              <AnimatedNumber value={used} delay={delay} duration={800} decimals={1} formatter={minutesFmt.format} />
               {` / ${minutesFmt.format(allocated)} min`}
             </>
           ) : (
@@ -161,7 +162,7 @@ function UsageBar({
           style={{ '--od-credits-fill': `${fillPct}%` } as React.CSSProperties}
         />
         <span className="od-credits-bar-label">
-          <AnimatedNumber value={rawPct} delay={delay} duration={800} suffix="%" />
+          <AnimatedNumber value={pctLabel} delay={delay} duration={800} decimals={1} suffix="%" />
         </span>
       </div>
     </div>
@@ -449,6 +450,7 @@ function CreditsBreakdownModal({
                 value={term.minutes_used}
                 delay={1160}
                 duration={800}
+                decimals={1}
                 formatter={minutesFmt.format}
               />
               {` / ${minutesFmt.format(term.minutes_allocated)} min`}
@@ -468,7 +470,13 @@ function CreditsBreakdownModal({
               style={{ '--od-credits-fill': `${termPct}%` } as React.CSSProperties}
             />
             <span className="od-credits-bar-label">
-              <AnimatedNumber value={term.percent_used} delay={1160} duration={800} suffix="%" />
+              <AnimatedNumber
+                value={Math.round(term.percent_used * 10) / 10}
+                delay={1160}
+                duration={800}
+                decimals={1}
+                suffix="%"
+              />
             </span>
           </div>
         </div>

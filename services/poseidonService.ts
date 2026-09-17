@@ -274,6 +274,7 @@ export interface AnalyticsSummary extends AnalyticsRangeMeta {
     success_rate: number;
     avg_duration_seconds: number;
     peak_concurrent?: number;
+    peak_concurrent_at?: string | null;
   };
   global_peak_concurrent?: {
     count: number;
