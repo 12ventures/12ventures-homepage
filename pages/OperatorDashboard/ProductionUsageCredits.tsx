@@ -36,9 +36,36 @@ function formatUtcDay(dateKey: string, withYear = false): string {
   });
 }
 
+function formatUtcDayLong(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  if (!y || !m || !d) return dateKey;
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+function inclusiveCalendarMonths(startDate: string, inclusiveEnd: string): number {
+  const [sy, sm] = startDate.split('-').map(Number);
+  const [ey, em] = inclusiveEnd.split('-').map(Number);
+  if (!sy || !sm || !ey || !em) return 0;
+  return (ey - sy) * 12 + (em - sm) + 1;
+}
+
 function termRangeLabel(startDate: string, exclusiveEnd: string): string {
   const lastDay = addCalendarDays(exclusiveEnd, -1);
   return `${formatUtcDay(startDate)} – ${formatUtcDay(lastDay, true)}`;
+}
+
+function termUpToLabel(startDate: string, exclusiveEnd: string, termMonths?: number): string {
+  const lastDay = addCalendarDays(exclusiveEnd, -1);
+  const months = termMonths && termMonths > 0
+    ? termMonths
+    : Math.max(1, inclusiveCalendarMonths(startDate, lastDay));
+  const unit = months === 1 ? 'month' : 'months';
+  return `${months} ${unit} up to ${formatUtcDayLong(lastDay)}`;
 }
 
 function cyclePeriodLabel(cycle: BillingCycle): string {
@@ -399,7 +426,7 @@ function CreditsBreakdownModal({
                 <tr>
                   <th>Billing period</th>
                   <th>Minutes</th>
-                  <th>Credits</th>
+                  <th>Credits used</th>
                 </tr>
               </thead>
               <tbody>
@@ -414,7 +441,7 @@ function CreditsBreakdownModal({
         <div className="od-credits-term-foot od-credits-seq od-credits-seq--term">
           <TermUsageTip minutesLabel={termMinutes} creditsLabel={termCredits}>
             <p className="od-credits-term-foot-range">
-              {contract.term_months}-month · {termRangeLabel(contract.start_date, contract.term_end_date)}
+              {termUpToLabel(contract.start_date, contract.term_end_date, contract.term_months)}
               {term.is_active ? null : ' · Ended'}
             </p>
             <span className={`od-credits-term-foot-values${termOver ? ' is-over' : ''}`}>
