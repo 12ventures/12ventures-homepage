@@ -4,6 +4,12 @@ function easeOutCubic(t: number): number {
   return 1 - (1 - t) ** 3;
 }
 
+function snapToDecimals(value: number, decimals: number): number {
+  if (!Number.isFinite(value)) return value;
+  const f = 10 ** Math.max(0, decimals);
+  return Math.round(value * f) / f;
+}
+
 function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -40,9 +46,11 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   const isFirstRef = useRef(true);
 
   useEffect(() => {
+    const snapped = snapToDecimals(value, decimals);
+
     if (prefersReducedMotion()) {
-      setDisplay(value);
-      displayedRef.current = value;
+      setDisplay(snapped);
+      displayedRef.current = snapped;
       isFirstRef.current = false;
       return;
     }
@@ -52,10 +60,10 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
 
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
 
-    const diff = value - startVal;
+    const diff = snapped - startVal;
     if (Math.abs(diff) < 1e-9) {
-      setDisplay(value);
-      displayedRef.current = value;
+      setDisplay(snapped);
+      displayedRef.current = snapped;
       return;
     }
 
@@ -70,10 +78,7 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
       const elapsed = now - startAt;
       const progress = Math.min(elapsed / duration, 1);
       const current = startVal + diff * easeOutCubic(progress);
-      const rounded =
-        decimals > 0
-          ? Math.round(current * 10 ** decimals) / 10 ** decimals
-          : Math.round(current);
+      const rounded = snapToDecimals(current, decimals);
 
       setDisplay(rounded);
       displayedRef.current = rounded;
@@ -81,8 +86,8 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
       if (progress < 1) {
         frameRef.current = requestAnimationFrame(tick);
       } else {
-        setDisplay(value);
-        displayedRef.current = value;
+        setDisplay(snapped);
+        displayedRef.current = snapped;
         frameRef.current = null;
       }
     };
