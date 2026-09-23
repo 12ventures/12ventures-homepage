@@ -434,6 +434,15 @@ export interface PhoneAttemptBreakdown {
   count: number;
 }
 
+export interface PeakConcurrentByDay {
+  date: string;
+  count: number;
+  achieved_at: string | null;
+  window_start: string | null;
+  window_end: string | null;
+  window_mid: string | null;
+}
+
 export interface AnalyticsInsights extends AnalyticsRangeMeta {
   total_calls: number;
   unique_callers: number;
@@ -444,6 +453,7 @@ export interface AnalyticsInsights extends AnalyticsRangeMeta {
   agent_paths: LabelCount[];
   duration_buckets: LabelCount[];
   calls_by_hour: HourCount[];
+  peak_concurrent_by_day?: PeakConcurrentByDay[];
   phone_attempt_breakdown: PhoneAttemptBreakdown[];
 }
 
