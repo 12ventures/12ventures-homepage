@@ -29,6 +29,7 @@ import NociHubPage from './components/noci/NociHubPage';
 import NociTechnicalAssessmentPage from './components/noci/NociReadinessPage';
 import NociExecutiveSummaryPage from './components/noci/NociExecutiveSummaryPage';
 import NociExecutionRoadmapPage from './components/noci/NociExecutionRoadmapPage';
+import ComplianceReviewPage from './components/compliance-review/ComplianceReviewPage';
 import Ai2pLandingPage from './components/ai2p/Ai2pLandingPage';
 import Ai2pLandingPageV2 from './components/ai2p-v2/Ai2pLandingPage';
 import HealthSystemsLandingPage from './components/healthsystems/HealthSystemsLandingPage';
@@ -278,6 +279,8 @@ const App: React.FC = () => {
           <Route path="/noci/executive-summary" element={<NociExecutiveSummaryPage />} />
           <Route path="/noci/technical-assessment" element={<NociTechnicalAssessmentPage />} />
           <Route path="/noci/execution-roadmap" element={<NociExecutionRoadmapPage />} />
+
+          <Route path="/compliance-review" element={<ComplianceReviewPage />} />
 
           {/* AI 2 Production (working name) */}
           <Route
