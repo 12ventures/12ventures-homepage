@@ -35,7 +35,7 @@ const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
     <div
       className="min-h-screen flex items-center justify-center"
       style={{
-        background: '#151219',
+        background: '#0b1220',
         fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
         WebkitFontSmoothing: 'antialiased',
       }}
@@ -43,9 +43,9 @@ const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
       <div
         className={`relative w-full max-w-sm rounded-3xl px-6 py-5 ${shaking ? 'animate-[compliance-shake_0.4s_ease]' : ''}`}
         style={{
-          background: '#1D1A23',
-          border: '1px solid #312A38',
-          boxShadow: '0 1px 2px #0000003a, 0 10px 34px #00000040',
+          background: '#121b2b',
+          border: '1px solid #24344a',
+          boxShadow: '0 1px 2px #0000003a, 0 10px 34px #06101866',
         }}
       >
         <div className="flex items-center justify-between gap-4 mb-5">
@@ -58,18 +58,18 @@ const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
                 letterSpacing: '0.18em',
               }}
             >
-              Hospital compliance
+              The Joint Commission
             </p>
             <h1
               className="text-xl leading-tight"
               style={{
-                color: '#ECE6EE',
+                color: '#e7eef8',
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 fontWeight: 600,
                 letterSpacing: '-0.015em',
               }}
             >
-              Score preview
+              Live Assessment
             </h1>
           </div>
           <div
@@ -95,9 +95,9 @@ const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
             }}
             className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none"
             style={{
-              color: '#ECE6EE',
-              background: error ? '#E36A6220' : '#241F2B',
-              border: error ? '1px solid #E36A6266' : '1px solid #3E3646',
+              color: '#e7eef8',
+              background: error ? '#E36A6220' : '#182536',
+              border: error ? '1px solid #E36A6266' : '1px solid #34506e',
               transition: 'background 0.2s, border 0.2s',
             }}
           />
@@ -111,7 +111,7 @@ const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
             className="w-full font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
             style={{
               background: '#8EBFEE',
-              color: '#151219',
+              color: '#0b1220',
             }}
           >
             <span>Enter</span>

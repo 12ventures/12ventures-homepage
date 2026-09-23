@@ -4,32 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Illustrative hospital compliance scorecard. Sliders show what each score would mean. They are not MLKCH's live results.">
-<title>Hospital compliance — score preview</title>
+<title>Joint Commission Live Assessment</title>
 <style>
   :root {
-    --paper:#F4F1F0; --surface:#FBFAF9; --surface-2:#EFEAEC;
-    --ink:#1B1720; --ink-soft:#4C4451; --ink-faint:#877D8E;
-    --line:#E4DDE0; --line-strong:#D3C9CE;
-    --accent:#1E5A9A; --accent-soft:#4E86C4;
-    --crit:#AF352E; --crit-bg:#AF352E1A;
-    --warn:#9C6C18; --warn-bg:#B07A2220;
-    --low:#4F6473; --low-bg:#566A7818;
-    --good:#3C7A57; --good-bg:#3C7A5718;
-    --shadow:0 1px 2px #1b17200f, 0 8px 30px #1b172010;
+    color-scheme: dark;
+    --paper:#0b1220; --surface:#121b2b; --surface-2:#182536;
+    --ink:#e7eef8; --ink-soft:#a8b8ce; --ink-faint:#6d829c;
+    --line:#24344a; --line-strong:#34506e;
+    --accent:#8EBFEE; --accent-soft:#5C94C9;
+    --crit:#E36A62; --crit-bg:#E36A6220;
+    --warn:#D8A84A; --warn-bg:#D8A84A1E;
+    --low:#8FA3B1; --low-bg:#8FA3B119;
+    --good:#71BB8E; --good-bg:#71BB8E1C;
+    --shadow:0 1px 2px #0000003a, 0 10px 34px #06101866;
     --maxw:1140px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper:#151219; --surface:#1D1A23; --surface-2:#241F2B;
-      --ink:#ECE6EE; --ink-soft:#B7AEBE; --ink-faint:#7E7488;
-      --line:#312A38; --line-strong:#3E3646;
-      --accent:#8EBFEE; --accent-soft:#5C94C9;
-      --crit:#E36A62; --crit-bg:#E36A6220;
-      --warn:#D8A84A; --warn-bg:#D8A84A1E;
-      --low:#8FA3B1; --low-bg:#8FA3B119;
-      --good:#71BB8E; --good-bg:#71BB8E1C;
-      --shadow:0 1px 2px #0000003a, 0 10px 34px #00000040;
-    }
   }
   * { box-sizing:border-box; }
   html { scroll-behavior:smooth; }
@@ -155,15 +143,22 @@
   .src.note { color:var(--ink-soft); }
 
   dialog { width:min(760px, calc(100vw - 32px)); max-height:min(82vh, 860px); padding:0; border:1px solid var(--line-strong);
-    border-radius:16px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
-  dialog::backdrop { background:#1b172066; }
-  .dialog-bar { display:flex; justify-content:space-between; gap:16px; align-items:flex-start;
-    padding:18px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface); }
+    border-radius:16px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow);
+    overflow:hidden; }
+  dialog[open] { display:flex; flex-direction:column; }
+  dialog::backdrop { background:#070e18cc; }
+  html.dialog-open, html.dialog-open body { overflow:hidden; }
+  .dialog-bar { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex:0 0 auto;
+    padding:18px 20px; border-bottom:1px solid var(--line); background:var(--surface); }
   .dialog-bar h2 { font-family:Georgia,serif; font-size:1.45rem; margin:4px 0 0; }
   .dialog-file { font-family:ui-monospace,monospace; font-size:11px; color:var(--ink-faint); }
   .dialog-close { font:inherit; font-size:13px; font-weight:650; border:1px solid var(--line-strong); background:var(--surface-2);
     color:var(--ink); border-radius:999px; padding:7px 12px; cursor:pointer; }
-  .dialog-body { padding:18px 22px 26px; overflow:auto; max-height:calc(82vh - 92px); }
+  .dialog-body { padding:18px 22px 26px; overflow:auto; flex:1 1 auto; min-height:0; overscroll-behavior:contain;
+    scrollbar-width:thin; scrollbar-color:#34506e transparent; }
+  .dialog-body::-webkit-scrollbar { width:8px; }
+  .dialog-body::-webkit-scrollbar-track { background:transparent; }
+  .dialog-body::-webkit-scrollbar-thumb { background:#34506e; border-radius:99px; }
   .req { margin:0 0 16px; padding:12px 14px; border-radius:10px; background:color-mix(in srgb, var(--accent) 14%, var(--surface));
     border-left:3px solid var(--accent); }
   .req-label { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
@@ -176,6 +171,53 @@
   .md-body code { font-family:ui-monospace,monospace; font-size:.92em; }
   .mark { background:color-mix(in srgb, var(--warn) 28%, transparent); border-radius:3px; padding:0 2px; }
 
+  .source-link { font:inherit; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:999px;
+    padding:5px 9px; cursor:pointer; white-space:nowrap; }
+  .source-link:hover { background:color-mix(in srgb, var(--accent) 20%, transparent); }
+  .feed-lead { margin:0 0 16px; color:var(--ink-soft); font-size:14px; max-width:68ch; }
+  .feed { border:1px solid var(--line); border-radius:12px; padding:14px 16px 16px; margin:0 0 12px; background:var(--surface-2); }
+  .feed:last-child { margin-bottom:0; }
+  .feed-where { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:700; }
+  .feed h3 { font-family:Georgia,serif; font-size:1.15rem; margin:4px 0 6px; display:flex; align-items:center; gap:8px; }
+  .feed h3 a { color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line-strong); }
+  .feed h3 a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+  .feed-info { width:18px; height:18px; padding:0; border-radius:50%; border:1px solid var(--line-strong);
+    background:transparent; color:var(--ink-faint); display:inline-flex; align-items:center; justify-content:center;
+    cursor:pointer; flex:0 0 auto; }
+  .feed-info:hover, .feed-info[aria-expanded="true"] { color:var(--accent); border-color:var(--accent);
+    background:color-mix(in srgb, var(--accent) 14%, transparent); }
+  .feed-about { margin:0 0 10px; padding:10px 12px; border-radius:10px; background:var(--surface); border:1px solid var(--line); }
+  .feed-about-type { margin:0 0 4px; font-size:13.5px; font-weight:650; color:var(--ink); }
+  .feed-about-text { margin:0; font-size:13px; color:var(--ink-soft); }
+  .feed-about-scope { margin:8px 0 0; font-size:12.5px; color:var(--ink-soft); }
+  .feed-about-scope span { display:block; font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em;
+    text-transform:uppercase; font-weight:700; color:var(--ink-faint); margin-bottom:3px; }
+  .feed-status { display:inline-block; margin:0 0 8px; font-family:ui-monospace,monospace; font-size:10px;
+    letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:3px 8px; border-radius:999px; }
+  .feed-status--yes { color:var(--good); background:var(--good-bg); }
+  .feed-status--named { color:var(--warn); background:var(--warn-bg); }
+  .feed-status--example { color:var(--low); background:var(--low-bg); }
+  .feed-find { margin:0 0 12px; color:var(--ink-soft); font-size:14px; }
+  .feed-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 12px; }
+  .feed-cell { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .feed-k { display:block; font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:4px; }
+  .feed-v { font-size:14px; font-weight:650; }
+  .feed-chip { display:inline-block; font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; }
+  .feed-chip--yes { color:var(--good); background:var(--good-bg); }
+  .feed-chip--no { color:var(--crit); background:var(--crit-bg); }
+  .feed-chip--file { color:var(--warn); background:var(--warn-bg); }
+  .feed-chip--unknown { color:var(--low); background:var(--low-bg); }
+  .feed-chip--w, .feed-chip--f { color:var(--good); background:var(--good-bg); }
+  .feed-chip--m { color:var(--warn); background:var(--warn-bg); }
+  .feed-chip--p { color:var(--crit); background:var(--crit-bg); }
+  .feed-note { margin:0; color:var(--ink-soft); font-size:13.5px; }
+  .feed-note + .feed-note { margin-top:8px; }
+  .feed-note strong { color:var(--ink); }
+  @media (max-width:640px) { .feed-grid { grid-template-columns:1fr; } }
   .source-details { border-top:1px solid var(--line); background:color-mix(in srgb,var(--surface-2) 52%,var(--surface)); }
   .source-details summary { cursor:pointer; padding:15px 22px; font-family:ui-monospace,monospace; font-size:10px;
     letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:700; list-style:none; }
@@ -214,10 +256,10 @@
 <header class="masthead">
   <div class="masthead-inner">
     <div class="top-row">
-      <span class="eyebrow">Hospital compliance · score preview</span>
+      <span class="eyebrow">The Joint Commission</span>
       <span class="pill"><span class="dot"></span>Illustrative · not a live score</span>
     </div>
-    <h1>Where a hospital has to be ready</h1>
+    <h1>Joint Commission Live Assessment</h1>
     <p class="dek">Eight areas, taken from the 2015 Joint Commission requirements. Each line starts at a random score so you can see the shape of the page. Move a slider to read what that score would mean. Nothing here is MLKCH’s actual result.</p>
     <div class="kpis">
       <div class="kpi"><span class="k-num accent num" id="kpi-avg">–</span><span class="k-label">preview average</span><span class="k-sub">changes as you move the sliders</span></div>
@@ -817,8 +859,12 @@ const srcBody = document.getElementById("src-body");
 
 function openDialog() {
   if (!dialog.open) dialog.showModal();
+  document.documentElement.classList.add("dialog-open");
   srcBody.scrollTop = 0;
 }
+dialog.addEventListener("close", () => {
+  document.documentElement.classList.remove("dialog-open");
+});
 
 function openStandard(code) {
   const item = SOURCE_DATA.standards[code];
@@ -855,6 +901,290 @@ function openDoc(name, focusCode) {
   }
 }
 
+const API_LABEL = { yes: "Yes", no: "No", file: "File only", unknown: "Unknown" };
+const CLASS_LABEL = { w: "Workforce", f: "Facility", m: "Mixed", p: "Patient" };
+const KNOWN_LABEL = {
+  yes: "Confirmed",
+  named: "Not confirmed",
+  example: "Market example",
+};
+
+const EHR_ABOUT = {
+  kind: "Electronic health record",
+  about: "The hospital chart for orders, results, documentation, and medication administration.",
+  scope: "Information Technology and Health Information Management · Hospital-wide",
+};
+
+const FEEDS = {
+  "Staff qualifications and competence": [
+    { name: "SnapSkill", href: "https://snapskill.ai", known: "yes", api: "yes", klass: "w",
+      kind: "Learning management system",
+      about: "Records assigned training, completion, and expiration for the workforce.",
+      scope: "Education or Staff Development · Hospital-wide",
+      ask: "A read export of training completions: person, course, completed date, and expiration. Staff already sign in here with MLK credentials.",
+      gate: "Workforce only. Confidentiality, and SOC 2 if they require it of vendors. Not a HIPAA agreement unless a course contains a patient case." },
+    { name: "Dossier", href: "https://www.dossier.com", known: "named", api: "no", klass: "w",
+      kind: "Competency system",
+      about: "Records a demonstrated skill, who assessed it, and when it expires.",
+      scope: "Nursing Education or Staff Development · Clinical departments",
+      ask: "A scheduled file from Dossier: person, skill, result, assessor, and expiration. No public API was found, so ask for the export, not an API key.",
+      gate: "Workforce. Same as SnapSkill. Do not assume an API." },
+    { name: "Workday", href: "https://www.workday.com/", known: "example", api: "unknown", klass: "w",
+      kind: "Human resources system",
+      about: "Holds job, professional license, and performance review for employees.",
+      scope: "Human Resources · Hospital-wide",
+      ask: "Whoever holds licenses and performance reviews. Ask HR for a report of license, verification date, job, and last evaluation. Payroll is not needed. If they do not use Workday, ask which HR system does.",
+      gate: "Workforce confidentiality. Not HIPAA." },
+  ],
+  "Nursing leadership and staffing plan": [
+    { name: "The staffing-plan file", known: "example", api: "file", klass: "f",
+      kind: "Staffing plan",
+      about: "The written nurse staffing plan and the nurse executive’s credentials.",
+      scope: "Nursing Administration · Hospital nursing",
+      ask: "The current nurse staffing plan and the nurse executive’s credentials, as a PDF or from the share where nursing leadership keeps them. Ask the CNO’s office who owns that file.",
+      gate: "A document. No HIPAA agreement if it does not name patients." },
+    { name: "UKG", href: "https://www.ukg.com/", known: "example", api: "unknown", klass: "w",
+      kind: "Workforce management system",
+      about: "Schedules staff and can report hours or headcount by unit.",
+      scope: "Nursing and the staffing office · Hospital-wide, used most by nursing",
+      ask: "If they want live ratios, not just the written plan: read access or a report from the nurse scheduling system, counts by unit only. UKG is a common one. Ask which product they actually run.",
+      gate: "Workforce. A board that names patients would be patient data. Do not ask for that." },
+  ],
+  "Medical staff credentialing and privileging": [
+    { name: "symplr", href: "https://www.symplr.com/", known: "example", api: "unknown", klass: "p",
+      kind: "Credentialing system",
+      about: "Tracks appointment, clinical privileges, and expiration for physicians and other privileged practitioners.",
+      scope: "Medical Staff Services · Hospital-wide for privileged practitioners",
+      ask: "The medical staff office, for appointment, privilege set, and expiration only. symplr is a common credentialing system. Ask which one they use, or for the folder if it is still PDFs.",
+      gate: "Do not ask for peer-review writeups or NPDB reports. Not a first request." },
+  ],
+  "Medication control": [
+    { name: "Pharmacy policy folder", known: "example", api: "file", klass: "f",
+      kind: "Pharmacy policy set",
+      about: "Approved medication-management policies, including high-alert and look-alike lists.",
+      scope: "Pharmacy · Department",
+      ask: "Pharmacy, for the medication-management policies and the hospital high-alert and look-alike lists. A current PDF is enough.",
+      gate: "Facility document. Not HIPAA." },
+    { name: "SmartSense", href: "https://www.smartsense.co/", known: "example", api: "unknown", klass: "f",
+      kind: "Environmental monitoring",
+      about: "Logs temperature and expiration for medication storage.",
+      scope: "Pharmacy · Medication storage areas",
+      ask: "Whoever logs medication-room temperature and expiration. Ask for the log or the sensor export: location, reading, date. SmartSense is one vendor hospitals use. A spreadsheet is just as likely.",
+      gate: "Facility, as long as the log never names a patient." },
+  ],
+  "Medication use": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "The CTO’s office, for a read-only Oracle Health (Cerner) app on their tenant, or a scheduled report of order, review, and administration rates. They went live on Cerner. FHIR exists. Their tenant still has to turn an app on.",
+      gate: "Patient data. HIPAA business associate agreement and SOC 2 Type II before any named record is stored." },
+    { name: "BD Pyxis", href: "https://www.bd.com/en-us/products-and-solutions/products/product-families/pyxis-medstation-es-system", known: "example", api: "unknown", klass: "p",
+      kind: "Automated dispensing cabinet",
+      about: "Locked cabinets on units that record which medication was removed.",
+      scope: "Pharmacy, used by Nursing · Point of care",
+      ask: "Do not start with the cabinet vendor. Ask whether dispense and administration already land in Oracle Health. Pyxis and Omnicell are the usual cabinets. A direct cabinet API is a second project.",
+      gate: "Patient data, same agreement as the chart. Prefer the EHR interface they already have." },
+  ],
+  "Identification, medications, alarms, and critical results": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "The same Oracle Health access as medication use: two-identifier documentation, transfusion match, critical-result timing, and medication reconciliation, as rates.",
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
+    { name: "Audit spreadsheet or form", known: "example", api: "file", klass: "m",
+      kind: "Quality audit record",
+      about: "Observation rounds for practices that are not already in the chart, such as time-out or patient identification.",
+      scope: "Quality, often with Nursing · Unit level",
+      ask: "Quality, for the observation rounds that are not in the chart. Ask who keeps the time-out or identifier audit, and for unit, pass/fail, and date. No patient names.",
+      gate: "Stays off HIPAA if the sheet has no patient sticker." },
+  ],
+  "Infection steps, suicide risk, and procedures": [
+    { name: "BioVigil", href: "https://www.biovigil.com/", known: "example", api: "unknown", klass: "f",
+      kind: "Hand-hygiene monitoring",
+      about: "Records whether people clean their hands, usually as a unit pass rate.",
+      scope: "Infection Prevention · Clinical areas",
+      ask: "Infection prevention, for hand-hygiene observation results: unit and pass rate. BioVigil is one app hospitals use. Paper rounds are common. Ask which they have.",
+      gate: "Facility, if no patient or staff names are in the file." },
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Oracle Health, for suicide-risk screening, line and catheter bundles, and the procedure time-out, as a rate. Not the note.",
+      gate: "Patient data, and tighter than a general quality view. Do not pull suicide-risk narrative into a broad login." },
+  ],
+  "Infection prevention program": [
+    { name: "Infection plan documents", known: "example", api: "file", klass: "f",
+      kind: "Infection prevention plan",
+      about: "The risk assessment, the prevention plan, and who is accountable.",
+      scope: "Infection Prevention · Hospital-wide program",
+      ask: "The infection prevention owner, for the risk assessment, the plan, and who is accountable. A PDF.",
+      gate: "Facility. Not the line list of infected patients." },
+    { name: "NHSN", href: "https://www.cdc.gov/nhsn/", known: "example", api: "no", klass: "m",
+      kind: "National infection reporting",
+      about: "The federal system hospitals use to submit infection rates.",
+      scope: "Infection Prevention · External reporting, not the internal chart",
+      ask: "Infection prevention, for the monthly rates they already report. NHSN is where Medicare hospitals file. It is not a practical read API. A local tool such as VigiLanz may hold the list. Ask for the rate, not the list.",
+      gate: "The list is patient data. The rate can stay mixed if it cannot be tied back to a person." },
+  ],
+  "Waived testing": [
+    { name: "CLIA certificate and competency", known: "named", api: "file", klass: "w",
+      kind: "Laboratory certificate",
+      about: "The federal testing certificate and the list of people allowed to perform waived tests.",
+      scope: "Laboratory · Department",
+      ask: "The lab director named on the CLIA certificate, for the certificate PDF, plus who is allowed to run waived tests from Dossier or SnapSkill.",
+      gate: "Facility and workforce. Not HIPAA." },
+    { name: "Telcor", href: "https://www.telcor.com/", known: "example", api: "unknown", klass: "m",
+      kind: "Point-of-care middleware",
+      about: "Connects bedside test devices and their quality-control results.",
+      scope: "Laboratory point-of-care · Nursing units",
+      ask: "Whoever runs glucometer quality control. Ask for device, pass/fail, and date. Telcor (RALS) is a common middleware into the EHR. A paper log is possible. Do not ask for the patient result.",
+      gate: "Device QC can stay facility. A result on a patient account is patient data." },
+  ],
+  "Tissue and organ responsibilities": [
+    { name: "OPO and tissue-bank agreements", known: "example", api: "file", klass: "f",
+      kind: "Donation agreements",
+      about: "Contracts with the organ procurement organization and tissue banks.",
+      scope: "Organ-donation coordinator or Medical Staff Services · Hospital-wide",
+      ask: "The organ-donation coordinator or medical staff office, for the agreements with the organ procurement organization and the tissue banks.",
+      gate: "A contract. Not a patient." },
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "example", api: "unknown", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Only if they implant tissue: ask perioperative services which system traces an implant to a patient. Often it is the EHR or a log. Confirm they implant before asking.",
+      gate: "Patient data. HIPAA agreement. Not a first request." },
+  ],
+  "Medical record": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Health information management and the CTO, for Oracle Health rates: signed entries, verbal-order sign-off, operative notes, and discharge information. A pointer back to the chart, not a copy of the note.",
+      gate: "Highest sensitivity. HIPAA agreement and SOC 2 Type II. Ask for this after the non-chart sources, not first." },
+  ],
+  "Patient rights": [
+    { name: "PolicyStat", href: "https://www.policystat.com/", known: "example", api: "file", klass: "f",
+      kind: "Policy management system",
+      about: "Stores the current approved policy, its version, and the approval date.",
+      scope: "Quality, Risk, or Administration · Hospital-wide",
+      ask: "Whoever owns policies, for the consent, grievance, and patient-rights policies: current version and approval date. PolicyStat is a common policy system. SharePoint or a shared drive is just as likely. Ask where theirs live.",
+      gate: "The policy is a document. The signed consent image in the chart is patient data. Do not ask for the image." },
+    { name: "RLDatix", href: "https://www.rldatix.com/", known: "example", api: "file", klass: "m",
+      kind: "Safety and risk system",
+      about: "Records grievances, incidents, and claims.",
+      scope: "Patient Relations and Risk Management · Hospital-wide",
+      ask: "Patient relations or risk, for a monthly count of grievances. RLDatix is a common risk system. A spreadsheet is common too. Do not ask for the grievance file.",
+      gate: "The file is patient data. The count can stay mixed." },
+  ],
+  "Provision of care, treatment, and services": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "example", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Not yet. The workbook is missing. When it exists, ask for the same Oracle Health read as the medical record: assessment, orders carried out, restraint, and discharge coordination, as rates. Policies from the policy owner.",
+      gate: "Patient data. Same HIPAA agreement. Do not ask until the chapter is in scope." },
+  ],
+  "Leadership and governance": [
+    { name: "Board and leadership files", known: "example", api: "file", klass: "f",
+      kind: "Governance record",
+      about: "Minutes, organization chart, budget approval, and the contract list.",
+      scope: "Chief Executive’s office or the board clerk · Hospital-wide",
+      ask: "The CEO’s office or the board clerk, for twelve months of governing-body minutes, the org chart, the budget approval, and the contract list. Ask where those files live.",
+      gate: "Documents. If a minute names a patient or a peer-review case, ask them to redact it before sending." },
+  ],
+  "Performance improvement": [
+    { name: "Press Ganey", href: "https://www.pressganey.com/", known: "example", api: "file", klass: "m",
+      kind: "Experience and quality reporting",
+      about: "Collects survey results and the performance measures shown to surveyors.",
+      scope: "Quality · Hospital-wide",
+      ask: "Quality, for twelve months of the performance measures they already show surveyors, including ORYX or Accelerate PI if they use it. Press Ganey is a common survey vendor, not necessarily theirs. Ask for the rate and what it measures.",
+      gate: "Mixed. Do not ask for patient-level event rows." },
+  ],
+  "Accreditation participation": [
+    { name: "Accreditation file", known: "example", api: "file", klass: "f",
+      kind: "Accreditation record",
+      about: "The Joint Commission application and how patients and staff report a concern.",
+      scope: "Accreditation or Quality · Hospital-wide",
+      ask: "The accreditation or quality lead, for the current Joint Commission application and the path patients and staff use to report a concern.",
+      gate: "Documents. No chart." },
+  ],
+  "Life safety": [
+    { name: "Facilities inspection files", known: "example", api: "file", klass: "f",
+      kind: "Life-safety inspection record",
+      about: "Fire-alarm, sprinkler, extinguisher, and life-safety drawing inspections.",
+      scope: "Facilities · Building-wide",
+      ask: "Facilities, for fire-alarm, sprinkler, extinguisher, and life-safety drawing records: what was inspected, the date, the next due date, and the PDF. These usually arrive from the inspection vendor by email.",
+      gate: "Facility. No HIPAA agreement. A good early ask, with environment of care." },
+  ],
+  "Environment of care": [
+    { name: "Nuvolo", href: "https://www.nuvolo.com/", known: "example", api: "file", klass: "f",
+      kind: "Maintenance management system",
+      about: "Work orders for equipment maintenance, fire drills, generator tests, and medical-gas inspections.",
+      scope: "Facilities and Biomedical Engineering · Hospital-wide",
+      ask: "Facilities or biomedical engineering, for fire drills, generator tests, medical-equipment maintenance, and medical-gas inspections. Nuvolo is one CMMS hospitals use. Ask what they use, or for the spreadsheets if that is still the record.",
+      gate: "Facility. Do not ask for incident reports that name a person." },
+  ],
+  "Emergency management": [
+    { name: "Veoci", href: "https://www.veoci.com/", known: "example", api: "file", klass: "f",
+      kind: "Emergency management system",
+      about: "Holds the hazard analysis, the emergency plan, and exercise write-ups.",
+      scope: "Emergency Management · Hospital-wide",
+      ask: "Emergency management, for the hazard vulnerability analysis, the emergency operations plan, and the last exercise write-up. Veoci is one product hospitals buy. Word on a share drive is common. Ask which they have.",
+      gate: "Facility. Do not ask for a real-event log that tracks patients." },
+  ],
+  "Information privacy, security, and continuity": [
+    { name: "Information-management policies", known: "example", api: "file", klass: "f",
+      kind: "Privacy and security policies",
+      about: "Approved policies for privacy, security, downtime, and retrieving records.",
+      scope: "Privacy Officer and Information Security · Hospital-wide",
+      ask: "The privacy or information-security officer, for the policies on privacy, security, downtime, and retrieving records. Not the access log of who opened a chart.",
+      gate: "The policy is a document. The access log is for the privacy officer and is not part of this score." },
+  ],
+};
+
+function feedChip(kind, text) {
+  return '<span class="feed-chip feed-chip--' + kind + '">' + escapeHtml(text) + "</span>";
+}
+
+function feedTitle(feed) {
+  const label = escapeHtml(feed.name);
+  const name = feed.href
+    ? '<a href="' + feed.href + '" target="_blank" rel="noopener noreferrer">' + label + "</a>"
+    : "<span>" + label + "</span>";
+  if (!feed.kind) return name;
+  return name +
+    '<button type="button" class="feed-info" aria-expanded="false" aria-label="What this kind of system is">' +
+    '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.25"></circle><circle cx="8" cy="5.1" r="0.85" fill="currentColor"></circle><path d="M8 7.3v4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"></path></svg>' +
+    "</button>";
+}
+
+function feedAbout(feed) {
+  if (!feed.kind) return "";
+  return '<div class="feed-about" hidden>' +
+    '<p class="feed-about-type">' + escapeHtml(feed.kind) + "</p>" +
+    '<p class="feed-about-text">' + escapeHtml(feed.about) + "</p>" +
+    '<p class="feed-about-scope"><span>Sits with</span>' + escapeHtml(feed.scope) + "</p>" +
+    "</div>";
+}
+
+function openFeed(title) {
+  const feeds = FEEDS[title];
+  srcFile.textContent = "Required access";
+  srcTitle.textContent = title;
+  if (!feeds) {
+    srcBody.innerHTML = "<p>No access note for this topic yet.</p>";
+    openDialog();
+    return;
+  }
+  srcBody.innerHTML =
+    '<p class="feed-lead">Systems required to produce a live score for this topic.</p>' +
+    feeds.map(feed =>
+      '<article class="feed">' +
+      '<div class="feed-where">Required access</div>' +
+      "<h3>" + feedTitle(feed) + "</h3>" +
+      feedAbout(feed) +
+      '<p class="feed-status feed-status--' + feed.known + '">' + escapeHtml(KNOWN_LABEL[feed.known] || "") + "</p>" +
+      '<p class="feed-find">' + escapeHtml(feed.ask) + "</p>" +
+      '<div class="feed-grid">' +
+      '<div class="feed-cell"><span class="feed-k">API</span><span class="feed-v">' + feedChip(feed.api, API_LABEL[feed.api]) + "</span></div>" +
+      '<div class="feed-cell"><span class="feed-k">Sensitivity</span><span class="feed-v">' + feedChip(feed.klass, CLASS_LABEL[feed.klass]) + "</span></div>" +
+      "</div>" +
+      '<p class="feed-note"><strong>What has to be in place.</strong> ' + escapeHtml(feed.gate) + "</p>" +
+      "</article>"
+    ).join("");
+  openDialog();
+}
+
 CATEGORIES.forEach(cat => {
   const article = document.createElement("article");
   article.className = "category";
@@ -871,6 +1201,7 @@ CATEGORIES.forEach(cat => {
     block.dataset.levels = area.levels.join("||");
     block.innerHTML =
       '<div class="area-top"><h4>' + area.title + '</h4><div class="area-badges">' +
+      '<button type="button" class="source-link">Data source</button>' +
       '<span class="score-pill"></span>' +
       '<div class="meter" role="slider" tabindex="0" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" aria-label="Preview score for ' + area.title + '">' +
       '<div class="meter-fill"></div><div class="meter-thumb"></div></div>' +
@@ -890,6 +1221,7 @@ CATEGORIES.forEach(cat => {
       btn.addEventListener("click", () => SOURCE_DATA.standards[code] ? openStandard(code) : openNote(code));
       evidence.appendChild(btn);
     });
+    block.querySelector(".source-link").addEventListener("click", () => openFeed(area.title));
     block.appendChild(evidence);
     article.appendChild(block);
   });
@@ -941,6 +1273,16 @@ document.addEventListener("click", event => {
   if (!link) return;
   event.preventDefault();
   openDoc(link.getAttribute("data-doc"));
+});
+
+srcBody.addEventListener("click", event => {
+  const btn = event.target.closest(".feed-info");
+  if (!btn) return;
+  const about = btn.closest(".feed").querySelector(".feed-about");
+  if (!about) return;
+  const show = about.hidden;
+  about.hidden = !show;
+  btn.setAttribute("aria-expanded", show ? "true" : "false");
 });
 
 document.getElementById("src-close").addEventListener("click", () => dialog.close());
