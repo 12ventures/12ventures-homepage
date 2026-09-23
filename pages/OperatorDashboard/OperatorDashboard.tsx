@@ -21,7 +21,6 @@ import {
   FiArrowUp,
   FiDownload,
   FiTrendingUp,
-  FiCalendar,
 } from 'react-icons/fi';
 import { IoShieldCheckmark } from 'react-icons/io5';
 import {
@@ -51,6 +50,7 @@ import CustomDateRangePicker from './CustomDateRangePicker';
 import CallStatusPill from './CallStatusPill';
 import CallHistoryStatusBreakdown from './CallHistoryStatusBreakdown';
 import ProductionUsageCredits from './ProductionUsageCredits';
+import PeakConcurrentModal from './PeakConcurrentModal';
 import {
   fmtDuration,
   getCallDurationSeconds,
@@ -187,89 +187,77 @@ function fmtDateTime(iso: string): string {
   });
 }
 
-/** Peak timestamp in hospital TZ. Date-only strings stay on that calendar day. */
-function formatPeakAt(iso: string | null | undefined, long = false): string | null {
+/** Peak timestamp in hospital TZ, e.g. "Jul 27, 2026". */
+function formatPeakDay(iso: string | null | undefined): string | null {
   if (!iso) return null;
-  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(iso);
-  let at: Date;
-  if (dateOnly) {
-    const [y, m, d] = iso.split('-').map(Number);
-    if (!y || !m || !d) return null;
-    at = new Date(Date.UTC(y, m - 1, d));
-  } else {
-    at = new Date(iso);
-  }
+  const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return null;
   return at.toLocaleDateString('en-US', {
-    month: long ? 'long' : 'short',
+    month: 'short',
     day: 'numeric',
     year: 'numeric',
-    timeZone: dateOnly ? 'UTC' : DASHBOARD_TZ,
+    timeZone: DASHBOARD_TZ,
   });
 }
 
-function PeakConcurrentDatePill({ iso, count }: { iso: string; count: number }) {
+function PeakStat({
+  label,
+  value,
+  delay,
+  date,
+  good = false,
+}: {
+  label: string;
+  value: number;
+  delay: number;
+  date: string | null;
+  good?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
-  const pillRef = useRef<HTMLButtonElement>(null);
+  const statRef = useRef<HTMLSpanElement>(null);
   const tipId = useId();
-  const shortDate = formatPeakAt(iso);
-  const longDate = formatPeakAt(iso, true);
 
   const show = useCallback(() => {
-    const el = pillRef.current;
-    if (!el) return;
+    const el = statRef.current;
+    if (!el || !date) return;
     const rect = el.getBoundingClientRect();
-    const width = 260;
+    const width = 168;
     const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
     setPos({ top: rect.bottom + 6, left });
     setOpen(true);
-  }, []);
+  }, [date]);
 
   const hide = useCallback(() => setOpen(false), []);
 
-  if (!shortDate || !longDate) return null;
-
-  const n = new Intl.NumberFormat('en-US').format(count);
-  const callers = count === 1 ? 'caller' : 'callers';
-  const tip = `On ${longDate}, there was a peak of ${n} simultaneous ${callers} successfully handled by agents.`;
-
   return (
-    <>
-      <button
-        ref={pillRef}
-        type="button"
-        className="od-metric-peak-pill"
-        tabIndex={0}
-        onMouseEnter={show}
-        onMouseLeave={hide}
-        onFocus={show}
-        onBlur={hide}
-        aria-describedby={open ? tipId : undefined}
-      >
-        {shortDate}
-      </button>
-      {open
+    <span
+      ref={statRef}
+      className="od-metric-peak-stat"
+      onMouseEnter={show}
+      onMouseLeave={hide}
+    >
+      <span className="od-metric-peak-kicker">{label}</span>
+      <span className="od-metric-peak-value">
+        <AnimatedNumber value={value} delay={delay} />
+        {good ? <FiArrowUp className="od-metric-peak-up" size={14} aria-hidden="true" /> : null}
+      </span>
+      {open && date
         ? createPortal(
             <div
               id={tipId}
               className="od-status-popover"
               role="tooltip"
-              style={{ top: pos.top, left: pos.left, width: 260, pointerEvents: 'none' }}
+              style={{ top: pos.top, left: pos.left, width: 168, pointerEvents: 'none' }}
             >
-              <p className="od-status-popover__title">Peak concurrent</p>
-              <p className="od-status-popover__line">{tip}</p>
+              <p className="od-status-popover__title">{label}</p>
+              <p className="od-status-popover__line">{date}</p>
             </div>,
             document.body,
           )
         : null}
-    </>
+    </span>
   );
-}
-
-function peakAtDateKey(iso: string): string | null {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
-  return toZonedDateKey(iso, DASHBOARD_TZ) || null;
 }
 
 type DateKeyRange = { dateFrom: string; dateTo: string };
@@ -485,6 +473,7 @@ const OperatorDashboard: React.FC = () => {
   const { effectiveTheme } = useTheme();
   const chartTheme = useMemo(() => getOdChartTheme(effectiveTheme), [effectiveTheme]);
   const [revealed, setRevealed] = useState(false);
+  const [peakModalOpen, setPeakModalOpen] = useState(false);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setRevealed(true));
@@ -716,27 +705,13 @@ const OperatorDashboard: React.FC = () => {
 
     return fromHistory;
   }, [isSingleDay, insights, chartCalls, periodRange, analytics]);
-  // Marketing demo: show all-time global peak everywhere, capped at period total calls.
-  const { peakConcurrentCalls, peakConcurrentAt } = useMemo(() => {
-    const total = analytics?.calls.total ?? 0;
-    const globalPeak = analytics?.global_peak_concurrent?.count ?? 0;
-    const periodPeak = analytics?.calls.peak_concurrent ?? 0;
-    const useGlobal = globalPeak > 0;
-    const rawPeak = useGlobal ? globalPeak : periodPeak;
-    const at = useGlobal
-      ? analytics?.global_peak_concurrent?.achieved_at
-      : analytics?.calls.peak_concurrent_at;
-    return {
-      peakConcurrentCalls: Math.min(total, rawPeak),
-      peakConcurrentAt: at ?? null,
-    };
-  }, [analytics]);
-  const peakDayKey = peakConcurrentAt ? peakAtDateKey(peakConcurrentAt) : null;
-  const viewingPeakDay = Boolean(
-    peakDayKey
-    && customRange?.dateFrom === peakDayKey
-    && customRange?.dateTo === peakDayKey,
-  );
+  const periodPeakCalls = analytics?.calls.peak_concurrent ?? 0;
+  const periodPeakDay = formatPeakDay(analytics?.calls.peak_concurrent_at);
+  const allTimePeakCalls = analytics?.global_peak_concurrent?.count ?? 0;
+  const allTimePeakDay = formatPeakDay(analytics?.global_peak_concurrent?.achieved_at);
+  const peakDays = insightsAvailable && insights
+    ? (insights.peak_concurrent_by_day ?? [])
+    : null;
   // TEMP: cost view hidden
   // const callsCost = costAnalytics?.breakdown?.calls?.cost ?? 0;
   // const costChartData = useMemo(
@@ -1144,35 +1119,42 @@ const OperatorDashboard: React.FC = () => {
         </div>
 
         {/* Peak Concurrent Calls */}
-        <div className="od-metric-card od-metric-card--peak od-reveal" style={odReveal(8)}>
+        <button
+          type="button"
+          className="od-metric-card od-metric-card--peak od-reveal"
+          style={odReveal(8)}
+          onClick={() => setPeakModalOpen(true)}
+          aria-label={`Open peak concurrent calls for ${filterLabel}`}
+        >
           <div className="od-metric-header">
             <span className="od-metric-label">Peak Concurrent Calls</span>
             <div className="od-metric-icon od-metric-icon--purple">
               <FiTrendingUp size={16} />
             </div>
           </div>
-          <div className="od-metric-peak-body">
-            <div className="od-metric-value">
-              <AnimatedNumber value={peakConcurrentCalls} delay={countAnimDelay(8)} />
-            </div>
-            {peakConcurrentAt ? (
-              <div className="od-metric-peak-meta">
-                <PeakConcurrentDatePill iso={peakConcurrentAt} count={peakConcurrentCalls} />
-                {peakDayKey && !viewingPeakDay ? (
-                  <button
-                    type="button"
-                    className="od-metric-peak-jump"
-                    onClick={() => handleCustomRangeApply(peakDayKey, peakDayKey)}
-                    aria-label={`View calls from ${formatPeakAt(peakConcurrentAt, true) ?? peakDayKey}`}
-                  >
-                    <FiCalendar size={11} aria-hidden="true" />
-                    View day
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+          <div className="od-metric-peak-stats">
+            <PeakStat
+              label="This period"
+              value={periodPeakCalls}
+              delay={countAnimDelay(8)}
+              date={periodPeakDay}
+            />
+            <PeakStat
+              label="All time"
+              value={allTimePeakCalls}
+              delay={countAnimDelay(8) + 80}
+              date={allTimePeakDay}
+              good
+            />
           </div>
-        </div>
+        </button>
+        {peakModalOpen ? (
+          <PeakConcurrentModal
+            periodLabel={filterLabel}
+            days={peakDays}
+            onClose={() => setPeakModalOpen(false)}
+          />
+        ) : null}
 
         <div className="od-metric-card od-metric-card--credits od-reveal" style={odReveal(8)}>
           <ProductionUsageCredits data={billing} error={billingError} />
