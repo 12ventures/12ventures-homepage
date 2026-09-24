@@ -89,7 +89,7 @@
   .radar-shape { fill:color-mix(in srgb, var(--accent) 16%, transparent); stroke:none; }
   .radar-edge { fill:none; stroke-width:1.15; stroke-linecap:round; stroke-linejoin:round; }
   .radar-node { stroke:none; }
-  .radar-label { fill:var(--ink); font-size:13.5px; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .radar-label { fill:#fff; font-size:13.5px; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
   /* Bar overview, kept if we switch back. Not used while the radar is on.
   .ov-row { display:grid; grid-template-columns:32px minmax(150px,1.15fr) minmax(120px,1.6fr) auto;
     grid-template-areas:"num name bar score"; gap:12px; align-items:center;
@@ -110,13 +110,13 @@
     background:var(--surface-2); border-bottom:1px solid var(--line); }
   .category-title { display:flex; align-items:baseline; gap:12px; }
   .cat-num { font-family:ui-monospace,monospace; font-size:11px; color:var(--accent); }
-  .category-title h3 { font-family:Georgia,serif; font-size:1.25rem; margin:0; }
+  .category-title h3 { font-family:Georgia,serif; font-size:1.25rem; margin:0; color:#fff; }
   .count { font-family:ui-monospace,monospace; font-size:10px; color:var(--ink-faint); white-space:nowrap; text-align:right; }
   .cat-avg { display:block; margin-top:4px; color:var(--ink); font-size:12px; letter-spacing:0; text-transform:none; font-family:ui-monospace,monospace; }
   .area { padding:20px 22px; border-bottom:1px solid var(--line); }
   .area:last-child { border-bottom:none; }
   .area-top { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:12px; }
-  .area-top h4 { font-size:1.04rem; margin:0; flex:1; min-width:0; }
+  .area-top h4 { font-size:1.04rem; margin:0; flex:1; min-width:0; color:#e6edf5; }
   .area-badges { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:10px; position:relative; z-index:1; flex:0 0 auto; }
   .score-pill { font-family:ui-monospace,monospace; font-size:10px; font-weight:700; letter-spacing:.04em;
     padding:5px 9px; border-radius:999px; white-space:nowrap; background:var(--surface-2); border:1px solid var(--line); }
@@ -136,6 +136,10 @@
   .meter.s3 .meter-thumb { border:3px solid var(--warn); }
   .meter.s4 .meter-thumb, .meter.s5 .meter-thumb { border:3px solid var(--good); }
   .area-copy p { margin:0; color:var(--ink-soft); font-size:14.5px; max-width:85ch; }
+  .area-copy p.is-streaming::after { content:""; display:inline-block; width:1px; height:.85em; margin-left:1px;
+    background:currentColor; vertical-align:-1px; animation:caret .7s steps(1) infinite; }
+  @keyframes caret { 50% { opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { .area-copy p.is-streaming::after { display:none; } }
   .evidence { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:baseline; margin-top:12px; }
   .evidence-label { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; color:var(--ink-faint); }
   .src { font-family:ui-monospace,monospace; font-size:11px; color:var(--accent); background:none; border:0;
@@ -144,7 +148,7 @@
 
   dialog { width:min(760px, calc(100vw - 32px)); max-height:min(82vh, 860px); padding:0; border:1px solid var(--line-strong);
     border-radius:16px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow);
-    overflow:hidden; }
+    overflow:visible; }
   dialog[open] { display:flex; flex-direction:column; }
   dialog::backdrop { background:#070e18cc; }
   html.dialog-open, html.dialog-open body { overflow:hidden; }
@@ -152,6 +156,7 @@
     padding:18px 20px; border-bottom:1px solid var(--line); background:var(--surface); }
   .dialog-bar h2 { font-family:Georgia,serif; font-size:1.45rem; margin:4px 0 0; }
   .dialog-file { font-family:ui-monospace,monospace; font-size:11px; color:var(--ink-faint); }
+  .dialog-actions { display:flex; gap:8px; align-items:flex-start; flex:0 0 auto; }
   .dialog-close { font:inherit; font-size:13px; font-weight:650; border:1px solid var(--line-strong); background:var(--surface-2);
     color:var(--ink); border-radius:999px; padding:7px 12px; cursor:pointer; }
   .dialog-body { padding:18px 22px 26px; overflow:auto; flex:1 1 auto; min-height:0; overscroll-behavior:contain;
@@ -160,15 +165,33 @@
   .dialog-body::-webkit-scrollbar-track { background:transparent; }
   .dialog-body::-webkit-scrollbar-thumb { background:#34506e; border-radius:99px; }
   .req { margin:0 0 16px; padding:12px 14px; border-radius:10px; background:color-mix(in srgb, var(--accent) 14%, var(--surface));
-    border-left:3px solid var(--accent); }
+    border-left:3px solid var(--accent); color:var(--ink); }
   .req-label { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--accent); font-weight:700; display:block; margin-bottom:6px; }
-  .ep { margin:0 0 12px; padding-bottom:12px; border-bottom:1px solid var(--line); color:var(--ink-soft); font-size:14px; }
-  .ep b { color:var(--ink); font-family:ui-monospace,monospace; font-size:12px; margin-right:6px; }
+  .src-row { padding:12px 0 14px; border-bottom:1px solid var(--line); }
+  .src-row:last-of-type { border-bottom:0; }
+  .src-row p { margin:0; color:var(--ink-soft); font-size:14.5px; }
+  .src-cite { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .src-k { font-size:12px; color:var(--ink-faint); }
+  .src-pill { display:inline-flex; align-items:center; gap:5px; font-family:ui-monospace,monospace; font-size:11px; font-weight:650;
+    color:var(--ink); background:color-mix(in srgb, var(--accent) 10%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius:999px; padding:3px 8px 3px 6px; }
   .clip-note { color:var(--ink-faint); font-size:12px; margin:8px 0 0; }
-  .md-body h2, .md-body h3, .md-body h4 { font-family:Georgia,serif; margin:1.1em 0 .35em; }
-  .md-body p { color:var(--ink-soft); font-size:14.5px; }
-  .md-body code { font-family:ui-monospace,monospace; font-size:.92em; }
+  .md-body h2, .md-body h3, .md-body h4 { font-family:Georgia,serif; margin:1.1em 0 .35em; color:var(--ink); }
+  .md-body h2:first-child, .md-body h3:first-child { margin-top:0; }
+  .md-body p, .md-body li { color:var(--ink-soft); font-size:14.5px; }
+  .md-body p { margin:0 0 12px; }
+  .md-body ul, .md-body ol { margin:0 0 14px; padding-left:1.25em; }
+  .md-body li { margin:0 0 6px; }
+  .md-body strong { color:var(--ink); }
+  .md-body a { text-decoration:underline; text-underline-offset:2px; }
+  .md-body hr { border:0; border-top:1px solid var(--line); margin:1.15em 0; }
+  .md-body code { font-family:ui-monospace,monospace; font-size:.92em; color:var(--ink); }
+  .md-table { overflow:auto; margin:0 0 16px; border:1px solid var(--line); border-radius:10px; }
+  .md-body table { width:100%; border-collapse:collapse; font-size:13.5px; min-width:640px; }
+  .md-body th, .md-body td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft); }
+  .md-body th { color:var(--ink); font-weight:650; background:var(--surface-2); }
+  .md-body tr:last-child td { border-bottom:0; }
   .mark { background:color-mix(in srgb, var(--warn) 28%, transparent); border-radius:3px; padding:0 2px; }
 
   .source-link { font:inherit; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
@@ -186,16 +209,20 @@
   .feed h3 a:hover { color:var(--accent); border-bottom-color:var(--accent); }
   .feed-info { width:18px; height:18px; padding:0; border-radius:50%; border:1px solid var(--line-strong);
     background:transparent; color:var(--ink-faint); display:inline-flex; align-items:center; justify-content:center;
-    cursor:pointer; flex:0 0 auto; }
-  .feed-info:hover, .feed-info[aria-expanded="true"] { color:var(--accent); border-color:var(--accent);
+    cursor:help; flex:0 0 auto; }
+  .feed-info:hover { color:var(--accent); border-color:var(--accent);
     background:color-mix(in srgb, var(--accent) 14%, transparent); }
-  .feed-about { margin:0 0 10px; padding:10px 12px; border-radius:10px; background:var(--surface); border:1px solid var(--line); }
-  .feed-about-type { margin:0 0 4px; font-size:13.5px; font-weight:650; color:var(--ink); }
-  .feed-about-text { margin:0; font-size:13px; color:var(--ink-soft); }
-  .feed-about-scope { margin:8px 0 0; font-size:12.5px; color:var(--ink-soft); }
-  .feed-about-scope span { display:block; font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em;
-    text-transform:uppercase; font-weight:700; color:var(--ink-faint); margin-bottom:3px; }
-  .feed-status { display:inline-block; margin:0 0 8px; font-family:ui-monospace,monospace; font-size:10px;
+  .feed-cell--tip { cursor:help; }
+  .tip { position:fixed; z-index:5; width:min(280px, calc(100vw - 24px)); padding:10px 12px; border-radius:10px;
+    background:#182536; border:1px solid #34506e; box-shadow:0 10px 28px #061018aa; pointer-events:none; }
+  .tip[hidden] { display:none; }
+  .tip-k { display:block; font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; margin:0 0 3px; }
+  .tip-k + .tip-v { margin-bottom:8px; }
+  .tip-v { margin:0; font-size:13px; line-height:1.4; color:var(--ink); }
+  .tip-v strong { font-weight:650; }
+  .feed-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .feed-status { display:inline-block; margin:2px 0 0; flex:0 0 auto; font-family:ui-monospace,monospace; font-size:10px;
     letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:3px 8px; border-radius:999px; }
   .feed-status--yes { color:var(--good); background:var(--good-bg); }
   .feed-status--named { color:var(--warn); background:var(--warn-bg); }
@@ -214,9 +241,6 @@
   .feed-chip--w, .feed-chip--f { color:var(--good); background:var(--good-bg); }
   .feed-chip--m { color:var(--warn); background:var(--warn-bg); }
   .feed-chip--p { color:var(--crit); background:var(--crit-bg); }
-  .feed-note { margin:0; color:var(--ink-soft); font-size:13.5px; }
-  .feed-note + .feed-note { margin-top:8px; }
-  .feed-note strong { color:var(--ink); }
   @media (max-width:640px) { .feed-grid { grid-template-columns:1fr; } }
   .source-details { border-top:1px solid var(--line); background:color-mix(in srgb,var(--surface-2) 52%,var(--surface)); }
   .source-details summary { cursor:pointer; padding:15px 22px; font-family:ui-monospace,monospace; font-size:10px;
@@ -324,12 +348,16 @@
       <div class="dialog-file" id="src-file"></div>
       <h2 id="src-title"></h2>
     </div>
-    <button class="dialog-close" type="button" id="src-close">Close</button>
+    <div class="dialog-actions">
+      <button class="dialog-close" type="button" id="src-back" hidden>Back</button>
+      <button class="dialog-close" type="button" id="src-close">Close</button>
+    </div>
   </div>
   <div class="dialog-body" id="src-body"></div>
 </dialog>
 
 <script src="sources-data.js"></script>
+<script src="markdown-view.js"></script>
 <script>
 const LABELS = ["", "Not in place", "Major gaps", "Partly in place", "Mostly in place", "Survey ready"];
 
@@ -727,6 +755,46 @@ overview.innerHTML = CATEGORIES.map(cat =>
 */
 buildRadar();
 
+function reserveCopyHeights() {
+  document.querySelectorAll(".area").forEach(area => {
+    const copy = area.querySelector(".area-copy p");
+    const shown = copy.textContent;
+    let max = 0;
+    area.dataset.levels.split("||").forEach(text => {
+      copy.textContent = text;
+      max = Math.max(max, copy.offsetHeight);
+    });
+    copy.style.minHeight = max + "px";
+    copy.textContent = shown;
+  });
+}
+
+function streamCopy(el, text) {
+  if (el.dataset.full === text) return;
+  if (el._stream) clearTimeout(el._stream);
+  el.dataset.full = text;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!el.textContent || reduce) {
+    el.textContent = text;
+    el.classList.remove("is-streaming");
+    el._stream = null;
+    return;
+  }
+  let i = 0;
+  el.classList.add("is-streaming");
+  const tick = () => {
+    i += 1;
+    el.textContent = text.slice(0, i);
+    if (i < text.length) el._stream = setTimeout(tick, 11);
+    else {
+      el._stream = null;
+      el.classList.remove("is-streaming");
+    }
+  };
+  el.textContent = "";
+  tick();
+}
+
 function paint(areaEl, score) {
   const pill = areaEl.querySelector(".score-pill");
   const meter = areaEl.querySelector(".meter");
@@ -738,7 +806,7 @@ function paint(areaEl, score) {
   meter.dataset.score = score;
   meter.setAttribute("aria-valuenow", score);
   meter.setAttribute("aria-valuetext", score + " of 5, " + LABELS[score]);
-  copy.textContent = areaEl.dataset.levels.split("||")[score - 1];
+  streamCopy(copy, areaEl.dataset.levels.split("||")[score - 1]);
 }
 
 function scoreFromPointer(meter, event) {
@@ -825,45 +893,27 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
-function renderMarkdown(md) {
-  const lines = md.replace(/\r/g, "").split("\n");
-  let html = "";
-  let para = [];
-  const flush = () => {
-    if (!para.length) return;
-    html += "<p>" + para.join(" ") + "</p>";
-    para = [];
-  };
-  for (const line of lines) {
-    if (!line.trim()) { flush(); continue; }
-    const heading = line.match(/^(#{1,4})\s+(.*)/);
-    if (heading) {
-      flush();
-      const tag = "h" + Math.min(heading[1].length + 1, 4);
-      html += "<" + tag + ' id="' + escapeHtml(heading[2].toLowerCase().replace(/[^a-z0-9]+/g, "-")) + '">' +
-        escapeHtml(heading[2]) + "</" + tag + ">";
-      continue;
-    }
-    let text = escapeHtml(line);
-    text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code>$1</code>");
-    para.push(text);
-  }
-  flush();
-  return html;
-}
-
 const dialog = document.getElementById("source-dialog");
 const srcFile = document.getElementById("src-file");
 const srcTitle = document.getElementById("src-title");
 const srcBody = document.getElementById("src-body");
+const srcBack = document.getElementById("src-back");
+const docStack = [];
+
+function syncBack() {
+  srcBack.hidden = docStack.length === 0;
+}
 
 function openDialog() {
   if (!dialog.open) dialog.showModal();
   document.documentElement.classList.add("dialog-open");
   srcBody.scrollTop = 0;
+  syncBack();
 }
 dialog.addEventListener("close", () => {
   document.documentElement.classList.remove("dialog-open");
+  docStack.length = 0;
+  syncBack();
 });
 
 function openStandard(code) {
@@ -871,13 +921,19 @@ function openStandard(code) {
   if (!item) return openNote(code);
   srcFile.textContent = item.file;
   srcTitle.textContent = item.code;
-  const eps = item.eps.map(ep =>
-    '<p class="ep"><b>' + ep.n + '</b>' + escapeHtml(ep.text) + "</p>"
-  ).join("");
+  const docIcon = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.25" d="M4.25 2.25h5.1L12 4.9v8.85H4.25V2.25z"/><path fill="none" stroke="currentColor" stroke-width="1.25" d="M9.1 2.4V5.1H11.8"/></svg>';
+  const rows = item.eps.map(ep => {
+    const text = String(ep.text).replace(/^\s*\d+\s*[.)]?\s*/, "");
+    return '<div class="src-row"><p>' + escapeHtml(text) + '</p><p class="src-cite"><span class="src-k">sources</span><span class="src-pill">' +
+      docIcon + escapeHtml(item.code) + " Part " + escapeHtml(ep.n) + "</span></p></div>";
+  }).join("");
+  const requirement = item.requirement
+    ? '<p class="req"><span class="req-label">What the standard requires</span>' + escapeHtml(item.requirement) + "</p>"
+    : "";
   srcBody.innerHTML =
-    '<p class="req"><span class="req-label">What the standard requires</span>' + escapeHtml(item.requirement) + "</p>" +
-    eps +
-    '<p class="clip-note">From the 2015 workbook named above. Longer cells are shortened in the middle of a sentence.</p>';
+    requirement +
+    rows +
+    '<p class="clip-note">Cell text from that workbook. Longer cells are shortened in the middle of a sentence.</p>';
   openDialog();
 }
 
@@ -888,9 +944,7 @@ function openNote(text) {
   openDialog();
 }
 
-function openDoc(name, focusCode) {
-  const md = SOURCE_DATA.docs[name];
-  if (!md) return;
+function showDoc(name, md, focusCode) {
   srcFile.textContent = name;
   srcTitle.textContent = name.replace(/\.md$/, "").replace(/^\d+-/, "").replace(/-/g, " ");
   srcBody.innerHTML = '<div class="md-body">' + renderMarkdown(md) + "</div>";
@@ -899,6 +953,31 @@ function openDoc(name, focusCode) {
     const hit = [...srcBody.querySelectorAll(".mark")].find(el => el.textContent === focusCode);
     if (hit) hit.scrollIntoView({ block: "center" });
   }
+}
+
+function openDoc(name, focusCode) {
+  if (!/^[\w.-]+\.md$/.test(name)) return;
+  const cached = SOURCE_DATA.docs[name];
+  if (cached) {
+    showDoc(name, cached, focusCode);
+    return;
+  }
+  srcFile.textContent = name;
+  srcTitle.textContent = name.replace(/\.md$/, "").replace(/^\d+-/, "").replace(/-/g, " ");
+  srcBody.innerHTML = "<p>Opening this document.</p>";
+  openDialog();
+  fetch(name)
+    .then(response => {
+      if (!response.ok) throw new Error("missing");
+      return response.text();
+    })
+    .then(md => {
+      SOURCE_DATA.docs[name] = md;
+      if (srcFile.textContent === name) showDoc(name, md, focusCode);
+    })
+    .catch(() => {
+      if (srcFile.textContent === name) srcBody.innerHTML = "<p>This document is not available.</p>";
+    });
 }
 
 const API_LABEL = { yes: "Yes", no: "No", file: "File only", unknown: "Unknown" };
@@ -913,6 +992,8 @@ const EHR_ABOUT = {
   kind: "Electronic health record",
   about: "The hospital chart for orders, results, documentation, and medication administration.",
   scope: "Information Technology and Health Information Management · Hospital-wide",
+  link: "Read-only app, or a rates report",
+  how: "There is no login to their database. The hospital approves an app on their own chart, or their analysts send a scheduled file of rates. The app asks for records when it needs them. It is not a live stream. Training completions, inspection logs, and board minutes are not in the chart.",
 };
 
 const FEEDS = {
@@ -921,68 +1002,86 @@ const FEEDS = {
       kind: "Learning management system",
       about: "Records assigned training, completion, and expiration for the workforce.",
       scope: "Education or Staff Development · Hospital-wide",
+      link: "Scheduled export",
+      how: "Completions can be exported: person, course, date, and expiration. This system does not read the chart. A completed course is not the same as someone being observed doing the skill.",
       ask: "A read export of training completions: person, course, completed date, and expiration. Staff already sign in here with MLK credentials.",
-      gate: "Workforce only. Confidentiality, and SOC 2 if they require it of vendors. Not a HIPAA agreement unless a course contains a patient case." },
+      gate: "Workforce confidentiality. SOC 2 if required of vendors." },
     { name: "Dossier", href: "https://www.dossier.com", known: "named", api: "no", klass: "w",
       kind: "Competency system",
       about: "Records a demonstrated skill, who assessed it, and when it expires.",
       scope: "Nursing Education or Staff Development · Clinical departments",
+      link: "Scheduled file",
+      how: "No public interface was found. The practical path is a file the vendor already gives customers: person, skill, result, assessor, and expiration. A live connection waits until their tenant is confirmed.",
       ask: "A scheduled file from Dossier: person, skill, result, assessor, and expiration. No public API was found, so ask for the export, not an API key.",
-      gate: "Workforce. Same as SnapSkill. Do not assume an API." },
+      gate: "Workforce confidentiality. SOC 2 if required of vendors." },
     { name: "Workday", href: "https://www.workday.com/", known: "example", api: "unknown", klass: "w",
       kind: "Human resources system",
       about: "Holds job, professional license, and performance review for employees.",
       scope: "Human Resources · Hospital-wide",
+      link: "Report or file",
+      how: "A report of license, job, and last evaluation is enough. Payroll is not part of the score. The product they actually use is still unnamed.",
       ask: "Whoever holds licenses and performance reviews. Ask HR for a report of license, verification date, job, and last evaluation. Payroll is not needed. If they do not use Workday, ask which HR system does.",
-      gate: "Workforce confidentiality. Not HIPAA." },
+      gate: "Workforce confidentiality." },
   ],
   "Nursing leadership and staffing plan": [
     { name: "The staffing-plan file", known: "example", api: "file", klass: "f",
       kind: "Staffing plan",
       about: "The written nurse staffing plan and the nurse executive’s credentials.",
       scope: "Nursing Administration · Hospital nursing",
+      link: "Document drop",
+      how: "A current PDF from nursing leadership. There is nothing to connect. The written plan is separate from a live scheduling system.",
       ask: "The current nurse staffing plan and the nurse executive’s credentials, as a PDF or from the share where nursing leadership keeps them. Ask the CNO’s office who owns that file.",
-      gate: "A document. No HIPAA agreement if it does not name patients." },
+      gate: "Facility document." },
     { name: "UKG", href: "https://www.ukg.com/", known: "example", api: "unknown", klass: "w",
       kind: "Workforce management system",
       about: "Schedules staff and can report hours or headcount by unit.",
       scope: "Nursing and the staffing office · Hospital-wide, used most by nursing",
+      link: "Unit report",
+      how: "A report of hours or headcount by unit is enough for live ratios. Whether a connection exists is unknown until they name the product.",
       ask: "If they want live ratios, not just the written plan: read access or a report from the nurse scheduling system, counts by unit only. UKG is a common one. Ask which product they actually run.",
-      gate: "Workforce. A board that names patients would be patient data. Do not ask for that." },
+      gate: "Workforce." },
   ],
   "Medical staff credentialing and privileging": [
     { name: "symplr", href: "https://www.symplr.com/", known: "example", api: "unknown", klass: "p",
       kind: "Credentialing system",
       about: "Tracks appointment, clinical privileges, and expiration for physicians and other privileged practitioners.",
       scope: "Medical Staff Services · Hospital-wide for privileged practitioners",
+      link: "Limited export",
+      how: "The useful extract is practitioner, privileges, and expiration. Peer-review notes and practitioner databank reports stay out even if the product has an interface. A folder of PDFs is a common substitute.",
       ask: "The medical staff office, for appointment, privilege set, and expiration only. symplr is a common credentialing system. Ask which one they use, or for the folder if it is still PDFs.",
-      gate: "Do not ask for peer-review writeups or NPDB reports. Not a first request." },
+      gate: "Privileged-practitioner records." },
   ],
   "Medication control": [
     { name: "Pharmacy policy folder", known: "example", api: "file", klass: "f",
       kind: "Pharmacy policy set",
       about: "Approved medication-management policies, including high-alert and look-alike lists.",
       scope: "Pharmacy · Department",
+      link: "Document drop",
+      how: "Current policy PDFs. The score needs the version and the approval date, not a new pharmacy system.",
       ask: "Pharmacy, for the medication-management policies and the hospital high-alert and look-alike lists. A current PDF is enough.",
-      gate: "Facility document. Not HIPAA." },
+      gate: "Facility document." },
     { name: "SmartSense", href: "https://www.smartsense.co/", known: "example", api: "unknown", klass: "f",
       kind: "Environmental monitoring",
       about: "Logs temperature and expiration for medication storage.",
       scope: "Pharmacy · Medication storage areas",
+      link: "Sensor export or a log",
+      how: "A file of location, reading, and date. Sensors can be current. A clipboard is only as fresh as the last check. A spreadsheet is as likely as a vendor connection.",
       ask: "Whoever logs medication-room temperature and expiration. Ask for the log or the sensor export: location, reading, date. SmartSense is one vendor hospitals use. A spreadsheet is just as likely.",
-      gate: "Facility, as long as the log never names a patient." },
+      gate: "Facility." },
   ],
   "Medication use": [
     { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
       ...EHR_ABOUT,
       ask: "The CTO’s office, for a read-only Oracle Health (Cerner) app on their tenant, or a scheduled report of order, review, and administration rates. They went live on Cerner. FHIR exists. Their tenant still has to turn an app on.",
-      gate: "Patient data. HIPAA business associate agreement and SOC 2 Type II before any named record is stored." },
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
     { name: "BD Pyxis", href: "https://www.bd.com/en-us/products-and-solutions/products/product-families/pyxis-medstation-es-system", known: "example", api: "unknown", klass: "p",
       kind: "Automated dispensing cabinet",
       about: "Locked cabinets on units that record which medication was removed.",
       scope: "Pharmacy, used by Nursing · Point of care",
-      ask: "Do not start with the cabinet vendor. Ask whether dispense and administration already land in Oracle Health. Pyxis and Omnicell are the usual cabinets. A direct cabinet API is a second project.",
-      gate: "Patient data, same agreement as the chart. Prefer the EHR interface they already have." },
+      link: "Through the chart",
+      how: "Cabinets usually already send what was removed into the electronic health record. Read those events from the chart. A direct connection to the cabinet vendor is a separate, slower project.",
+      ask: "Ask whether dispense and administration already land in Oracle Health. Pyxis and Omnicell are the usual cabinets.",
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
   ],
   "Identification, medications, alarms, and critical results": [
     { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
@@ -993,142 +1092,174 @@ const FEEDS = {
       kind: "Quality audit record",
       about: "Observation rounds for practices that are not already in the chart, such as time-out or patient identification.",
       scope: "Quality, often with Nursing · Unit level",
+      link: "A form, not a system",
+      how: "Someone records unit, pass or fail, and date. There is no product to connect. Leave patient names off the sheet and the result stays a rate.",
       ask: "Quality, for the observation rounds that are not in the chart. Ask who keeps the time-out or identifier audit, and for unit, pass/fail, and date. No patient names.",
-      gate: "Stays off HIPAA if the sheet has no patient sticker." },
+      gate: "Mixed. Unit and result only." },
   ],
   "Infection steps, suicide risk, and procedures": [
     { name: "BioVigil", href: "https://www.biovigil.com/", known: "example", api: "unknown", klass: "f",
       kind: "Hand-hygiene monitoring",
       about: "Records whether people clean their hands, usually as a unit pass rate.",
       scope: "Infection Prevention · Clinical areas",
+      link: "Export or paper rounds",
+      how: "Apps in this category usually export a unit pass rate. Paper rounds have no interface. The score only needs the rate.",
       ask: "Infection prevention, for hand-hygiene observation results: unit and pass rate. BioVigil is one app hospitals use. Paper rounds are common. Ask which they have.",
-      gate: "Facility, if no patient or staff names are in the file." },
+      gate: "Facility." },
     { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
       ...EHR_ABOUT,
       ask: "Oracle Health, for suicide-risk screening, line and catheter bundles, and the procedure time-out, as a rate. Not the note.",
-      gate: "Patient data, and tighter than a general quality view. Do not pull suicide-risk narrative into a broad login." },
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
   ],
   "Infection prevention program": [
     { name: "Infection plan documents", known: "example", api: "file", klass: "f",
       kind: "Infection prevention plan",
       about: "The risk assessment, the prevention plan, and who is accountable.",
       scope: "Infection Prevention · Hospital-wide program",
+      link: "Document drop",
+      how: "The risk assessment and the plan, as PDFs. Surveillance rates are a separate request and are not in these documents.",
       ask: "The infection prevention owner, for the risk assessment, the plan, and who is accountable. A PDF.",
-      gate: "Facility. Not the line list of infected patients." },
+      gate: "Facility." },
     { name: "NHSN", href: "https://www.cdc.gov/nhsn/", known: "example", api: "no", klass: "m",
       kind: "National infection reporting",
       about: "The federal system hospitals use to submit infection rates.",
       scope: "Infection Prevention · External reporting, not the internal chart",
+      link: "The rates they already file",
+      how: "Hospitals submit infection rates into this federal system. It is not a practical system to read back from. Ask infection prevention for the monthly rates they already file.",
       ask: "Infection prevention, for the monthly rates they already report. NHSN is where Medicare hospitals file. It is not a practical read API. A local tool such as VigiLanz may hold the list. Ask for the rate, not the list.",
-      gate: "The list is patient data. The rate can stay mixed if it cannot be tied back to a person." },
+      gate: "Mixed. Rates only." },
   ],
   "Waived testing": [
     { name: "CLIA certificate and competency", known: "named", api: "file", klass: "w",
       kind: "Laboratory certificate",
       about: "The federal testing certificate and the list of people allowed to perform waived tests.",
       scope: "Laboratory · Department",
+      link: "Certificate plus a competency export",
+      how: "The certificate is a PDF. Who may perform the test comes from the learning or competency export, not from a laboratory interface.",
       ask: "The lab director named on the CLIA certificate, for the certificate PDF, plus who is allowed to run waived tests from Dossier or SnapSkill.",
-      gate: "Facility and workforce. Not HIPAA." },
+      gate: "Facility and workforce." },
     { name: "Telcor", href: "https://www.telcor.com/", known: "example", api: "unknown", klass: "m",
       kind: "Point-of-care middleware",
       about: "Connects bedside test devices and their quality-control results.",
       scope: "Laboratory point-of-care · Nursing units",
-      ask: "Whoever runs glucometer quality control. Ask for device, pass/fail, and date. Telcor (RALS) is a common middleware into the EHR. A paper log is possible. Do not ask for the patient result.",
-      gate: "Device QC can stay facility. A result on a patient account is patient data." },
+      link: "Through the chart, or a device log",
+      how: "Bedside devices often pass quality-control results into the chart. That path is the one to use. A paper log is possible. The patient result is a separate request.",
+      ask: "Whoever runs glucometer quality control. Ask for device, pass/fail, and date. Telcor (RALS) is a common middleware into the EHR. A paper log is possible.",
+      gate: "Facility. Device quality control." },
   ],
   "Tissue and organ responsibilities": [
     { name: "OPO and tissue-bank agreements", known: "example", api: "file", klass: "f",
       kind: "Donation agreements",
       about: "Contracts with the organ procurement organization and tissue banks.",
       scope: "Organ-donation coordinator or Medical Staff Services · Hospital-wide",
+      link: "Document drop",
+      how: "Contract PDFs. They are renewed over years, not a live feed.",
       ask: "The organ-donation coordinator or medical staff office, for the agreements with the organ procurement organization and the tissue banks.",
-      gate: "A contract. Not a patient." },
+      gate: "A contract." },
     { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "example", api: "unknown", klass: "p",
       ...EHR_ABOUT,
       ask: "Only if they implant tissue: ask perioperative services which system traces an implant to a patient. Often it is the EHR or a log. Confirm they implant before asking.",
-      gate: "Patient data. HIPAA agreement. Not a first request." },
+      gate: "Patient data. HIPAA agreement." },
   ],
   "Medical record": [
     { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
       ...EHR_ABOUT,
       ask: "Health information management and the CTO, for Oracle Health rates: signed entries, verbal-order sign-off, operative notes, and discharge information. A pointer back to the chart, not a copy of the note.",
-      gate: "Highest sensitivity. HIPAA agreement and SOC 2 Type II. Ask for this after the non-chart sources, not first." },
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
   ],
   "Patient rights": [
     { name: "PolicyStat", href: "https://www.policystat.com/", known: "example", api: "file", klass: "f",
       kind: "Policy management system",
       about: "Stores the current approved policy, its version, and the approval date.",
       scope: "Quality, Risk, or Administration · Hospital-wide",
+      link: "Version and approval date",
+      how: "An export or a shared folder of the current PDF is enough. The policy editor does not need to be rebuilt. The signed consent in the chart is separate.",
       ask: "Whoever owns policies, for the consent, grievance, and patient-rights policies: current version and approval date. PolicyStat is a common policy system. SharePoint or a shared drive is just as likely. Ask where theirs live.",
-      gate: "The policy is a document. The signed consent image in the chart is patient data. Do not ask for the image." },
+      gate: "A policy document." },
     { name: "RLDatix", href: "https://www.rldatix.com/", known: "example", api: "file", klass: "m",
       kind: "Safety and risk system",
       about: "Records grievances, incidents, and claims.",
       scope: "Patient Relations and Risk Management · Hospital-wide",
-      ask: "Patient relations or risk, for a monthly count of grievances. RLDatix is a common risk system. A spreadsheet is common too. Do not ask for the grievance file.",
-      gate: "The file is patient data. The count can stay mixed." },
+      link: "A monthly count",
+      how: "The case file names patients. The score uses a count by month. A spreadsheet is as common as a risk system, and either one can be a file.",
+      ask: "Patient relations or risk, for a monthly count of grievances. RLDatix is a common risk system. A spreadsheet is common too.",
+      gate: "Mixed. A monthly count." },
   ],
   "Provision of care, treatment, and services": [
     { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "example", api: "yes", klass: "p",
       ...EHR_ABOUT,
       ask: "Not yet. The workbook is missing. When it exists, ask for the same Oracle Health read as the medical record: assessment, orders carried out, restraint, and discharge coordination, as rates. Policies from the policy owner.",
-      gate: "Patient data. Same HIPAA agreement. Do not ask until the chapter is in scope." },
+      gate: "Patient data. HIPAA agreement." },
   ],
   "Leadership and governance": [
     { name: "Board and leadership files", known: "example", api: "file", klass: "f",
       kind: "Governance record",
       about: "Minutes, organization chart, budget approval, and the contract list.",
       scope: "Chief Executive’s office or the board clerk · Hospital-wide",
+      link: "Document drop",
+      how: "Minutes, the organization chart, budget approval, and the contract list, as files. Redact any minute that names a patient or a peer-review case before it is sent.",
       ask: "The CEO’s office or the board clerk, for twelve months of governing-body minutes, the org chart, the budget approval, and the contract list. Ask where those files live.",
-      gate: "Documents. If a minute names a patient or a peer-review case, ask them to redact it before sending." },
+      gate: "Documents." },
   ],
   "Performance improvement": [
     { name: "Press Ganey", href: "https://www.pressganey.com/", known: "example", api: "file", klass: "m",
       kind: "Experience and quality reporting",
       about: "Collects survey results and the performance measures shown to surveyors.",
       scope: "Quality · Hospital-wide",
+      link: "The report they already show",
+      how: "A copy of the rates they already give surveyors is a file or a login. It is not a connection into the surveyor’s system.",
       ask: "Quality, for twelve months of the performance measures they already show surveyors, including ORYX or Accelerate PI if they use it. Press Ganey is a common survey vendor, not necessarily theirs. Ask for the rate and what it measures.",
-      gate: "Mixed. Do not ask for patient-level event rows." },
+      gate: "Mixed. Rates only." },
   ],
   "Accreditation participation": [
     { name: "Accreditation file", known: "example", api: "file", klass: "f",
       kind: "Accreditation record",
       about: "The Joint Commission application and how patients and staff report a concern.",
       scope: "Accreditation or Quality · Hospital-wide",
+      link: "Document drop",
+      how: "The application and the concern-reporting path, as documents. Nothing to connect.",
       ask: "The accreditation or quality lead, for the current Joint Commission application and the path patients and staff use to report a concern.",
-      gate: "Documents. No chart." },
+      gate: "Documents." },
   ],
   "Life safety": [
     { name: "Facilities inspection files", known: "example", api: "file", klass: "f",
       kind: "Life-safety inspection record",
       about: "Fire-alarm, sprinkler, extinguisher, and life-safety drawing inspections.",
       scope: "Facilities · Building-wide",
+      link: "Filed PDFs",
+      how: "Inspection companies usually email the report. Their portals rarely offer a connection the hospital can hand over. The useful record is what was inspected, the date, the next due date, and the file.",
       ask: "Facilities, for fire-alarm, sprinkler, extinguisher, and life-safety drawing records: what was inspected, the date, the next due date, and the PDF. These usually arrive from the inspection vendor by email.",
-      gate: "Facility. No HIPAA agreement. A good early ask, with environment of care." },
+      gate: "Facility." },
   ],
   "Environment of care": [
     { name: "Nuvolo", href: "https://www.nuvolo.com/", known: "example", api: "file", klass: "f",
       kind: "Maintenance management system",
       about: "Work orders for equipment maintenance, fire drills, generator tests, and medical-gas inspections.",
       scope: "Facilities and Biomedical Engineering · Hospital-wide",
+      link: "Report or spreadsheet",
+      how: "A maintenance system can usually export work orders and due dates. If the record is still a spreadsheet, that file is the interface. The fire-alarm vendor does not need to be replaced.",
       ask: "Facilities or biomedical engineering, for fire drills, generator tests, medical-equipment maintenance, and medical-gas inspections. Nuvolo is one CMMS hospitals use. Ask what they use, or for the spreadsheets if that is still the record.",
-      gate: "Facility. Do not ask for incident reports that name a person." },
+      gate: "Facility." },
   ],
   "Emergency management": [
     { name: "Veoci", href: "https://www.veoci.com/", known: "example", api: "file", klass: "f",
       kind: "Emergency management system",
       about: "Holds the hazard analysis, the emergency plan, and exercise write-ups.",
       scope: "Emergency Management · Hospital-wide",
+      link: "Export or the plan file",
+      how: "Products in this category have an admin export. A Word file on a shared drive does not. The plan changes on a cycle of years, so a file is enough.",
       ask: "Emergency management, for the hazard vulnerability analysis, the emergency operations plan, and the last exercise write-up. Veoci is one product hospitals buy. Word on a share drive is common. Ask which they have.",
-      gate: "Facility. Do not ask for a real-event log that tracks patients." },
+      gate: "Facility." },
   ],
   "Information privacy, security, and continuity": [
     { name: "Information-management policies", known: "example", api: "file", klass: "f",
       kind: "Privacy and security policies",
       about: "Approved policies for privacy, security, downtime, and retrieving records.",
       scope: "Privacy Officer and Information Security · Hospital-wide",
+      link: "Document drop",
+      how: "The policies are documents. The log of who opened a chart is a different system and is not part of this score.",
       ask: "The privacy or information-security officer, for the policies on privacy, security, downtime, and retrieving records. Not the access log of who opened a chart.",
-      gate: "The policy is a document. The access log is for the privacy officer and is not part of this score." },
+      gate: "A policy document." },
   ],
 };
 
@@ -1143,23 +1274,16 @@ function feedTitle(feed) {
     : "<span>" + label + "</span>";
   if (!feed.kind) return name;
   return name +
-    '<button type="button" class="feed-info" aria-expanded="false" aria-label="What this kind of system is">' +
+    '<button type="button" class="feed-info" aria-label="About this kind of system"' +
+    ' data-what="' + escapeHtml(feed.kind + ". " + feed.about) + '"' +
+    ' data-who="' + escapeHtml(feed.scope) + '">' +
     '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.25"></circle><circle cx="8" cy="5.1" r="0.85" fill="currentColor"></circle><path d="M8 7.3v4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"></path></svg>' +
     "</button>";
 }
 
-function feedAbout(feed) {
-  if (!feed.kind) return "";
-  return '<div class="feed-about" hidden>' +
-    '<p class="feed-about-type">' + escapeHtml(feed.kind) + "</p>" +
-    '<p class="feed-about-text">' + escapeHtml(feed.about) + "</p>" +
-    '<p class="feed-about-scope"><span>Sits with</span>' + escapeHtml(feed.scope) + "</p>" +
-    "</div>";
-}
-
 function openFeed(title) {
   const feeds = FEEDS[title];
-  srcFile.textContent = "Required access";
+  srcFile.textContent = "Required systems access";
   srcTitle.textContent = title;
   if (!feeds) {
     srcBody.innerHTML = "<p>No access note for this topic yet.</p>";
@@ -1167,19 +1291,20 @@ function openFeed(title) {
     return;
   }
   srcBody.innerHTML =
-    '<p class="feed-lead">Systems required to produce a live score for this topic.</p>' +
     feeds.map(feed =>
       '<article class="feed">' +
+      '<div class="feed-top"><div>' +
       '<div class="feed-where">Required access</div>' +
       "<h3>" + feedTitle(feed) + "</h3>" +
-      feedAbout(feed) +
-      '<p class="feed-status feed-status--' + feed.known + '">' + escapeHtml(KNOWN_LABEL[feed.known] || "") + "</p>" +
+      "</div>" +
+      '<p class="feed-status feed-status--' + feed.known + '">' + escapeHtml(KNOWN_LABEL[feed.known] || "") + "</p></div>" +
       '<p class="feed-find">' + escapeHtml(feed.ask) + "</p>" +
       '<div class="feed-grid">' +
-      '<div class="feed-cell"><span class="feed-k">API</span><span class="feed-v">' + feedChip(feed.api, API_LABEL[feed.api]) + "</span></div>" +
-      '<div class="feed-cell"><span class="feed-k">Sensitivity</span><span class="feed-v">' + feedChip(feed.klass, CLASS_LABEL[feed.klass]) + "</span></div>" +
+      '<div class="feed-cell feed-cell--tip" data-link="' + escapeHtml(feed.link || "") + '" data-how="' + escapeHtml(feed.how || "") + '">' +
+      '<span class="feed-k">API</span><span class="feed-v">' + feedChip(feed.api, API_LABEL[feed.api]) + "</span></div>" +
+      '<div class="feed-cell feed-cell--tip" data-gate="' + escapeHtml(feed.gate || "") + '">' +
+      '<span class="feed-k">Sensitivity</span><span class="feed-v">' + feedChip(feed.klass, CLASS_LABEL[feed.klass]) + "</span></div>" +
       "</div>" +
-      '<p class="feed-note"><strong>What has to be in place.</strong> ' + escapeHtml(feed.gate) + "</p>" +
       "</article>"
     ).join("");
   openDialog();
@@ -1272,22 +1397,82 @@ document.addEventListener("click", event => {
   const link = event.target.closest("[data-doc]");
   if (!link) return;
   event.preventDefault();
-  openDoc(link.getAttribute("data-doc"));
+  const next = link.getAttribute("data-doc");
+  if (dialog.open && srcBody.querySelector(".md-body") && srcFile.textContent && srcFile.textContent !== next) {
+    docStack.push({ name: srcFile.textContent, scroll: srcBody.scrollTop });
+  }
+  openDoc(next);
 });
 
-srcBody.addEventListener("click", event => {
-  const btn = event.target.closest(".feed-info");
-  if (!btn) return;
-  const about = btn.closest(".feed").querySelector(".feed-about");
-  if (!about) return;
-  const show = about.hidden;
-  about.hidden = !show;
-  btn.setAttribute("aria-expanded", show ? "true" : "false");
+srcBack.addEventListener("click", () => {
+  const prev = docStack.pop();
+  if (!prev || !SOURCE_DATA.docs[prev.name]) {
+    syncBack();
+    return;
+  }
+  showDoc(prev.name, SOURCE_DATA.docs[prev.name]);
+  srcBody.scrollTop = prev.scroll;
 });
+
+const tip = document.createElement("div");
+tip.className = "tip";
+tip.hidden = true;
+dialog.appendChild(tip);
+
+function placeTip(anchor, html) {
+  tip.innerHTML = html;
+  tip.hidden = false;
+  const rect = anchor.getBoundingClientRect();
+  const width = tip.offsetWidth;
+  const height = tip.offsetHeight;
+  let left = Math.min(rect.left, window.innerWidth - width - 12);
+  let top = rect.bottom + 8;
+  if (left < 12) left = 12;
+  if (top + height > window.innerHeight - 12) top = Math.max(12, rect.top - height - 8);
+  tip.style.left = left + "px";
+  tip.style.top = top + "px";
+}
+
+function hideTip() {
+  tip.hidden = true;
+  tip.innerHTML = "";
+}
+
+srcBody.addEventListener("mouseover", event => {
+  const info = event.target.closest(".feed-info");
+  if (info) {
+    placeTip(info,
+      '<span class="tip-k">What</span><p class="tip-v">' + info.dataset.what + "</p>" +
+      '<span class="tip-k">Who</span><p class="tip-v">' + info.dataset.who + "</p>");
+    return;
+  }
+  const cell = event.target.closest(".feed-cell--tip");
+  if (!cell) return;
+  if (cell.dataset.gate) {
+    placeTip(cell, '<span class="tip-k">Requires</span><p class="tip-v">' + cell.dataset.gate + "</p>");
+    return;
+  }
+  placeTip(cell,
+    '<span class="tip-k">How</span><p class="tip-v"><strong>' + cell.dataset.link + "</strong> " + cell.dataset.how + "</p>");
+});
+srcBody.addEventListener("mouseout", event => {
+  const from = event.target.closest(".feed-info, .feed-cell--tip");
+  if (!from) return;
+  const next = event.relatedTarget && event.relatedTarget.closest && event.relatedTarget.closest(".feed-info, .feed-cell--tip");
+  if (next === from) return;
+  hideTip();
+});
+dialog.addEventListener("close", hideTip);
 
 document.getElementById("src-close").addEventListener("click", () => dialog.close());
 document.getElementById("reshuffle").addEventListener("click", () => assign(true));
 assign(true);
+reserveCopyHeights();
+let copyResize;
+window.addEventListener("resize", () => {
+  clearTimeout(copyResize);
+  copyResize = setTimeout(reserveCopyHeights, 120);
+});
 </script>
 </body>
 </html>
