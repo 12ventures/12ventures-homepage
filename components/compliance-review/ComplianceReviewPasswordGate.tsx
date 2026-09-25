@@ -7,9 +7,15 @@ const SESSION_KEY = 'mlkch_auth';
 
 interface Props {
   children: React.ReactNode;
+  kicker?: string;
+  heading?: string;
 }
 
-const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
+const ComplianceReviewPasswordGate: React.FC<Props> = ({
+  children,
+  kicker = 'The Joint Commission',
+  heading = 'Live Assessment',
+}) => {
   const [unlocked, setUnlocked] = useState(
     () => sessionStorage.getItem(SESSION_KEY) === 'true',
   );
@@ -58,7 +64,7 @@ const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
                 letterSpacing: '0.18em',
               }}
             >
-              The Joint Commission
+              {kicker}
             </p>
             <h1
               className="text-xl leading-tight"
@@ -69,7 +75,7 @@ const ComplianceReviewPasswordGate: React.FC<Props> = ({ children }) => {
                 letterSpacing: '-0.015em',
               }}
             >
-              Live Assessment
+              {heading}
             </h1>
           </div>
           <div
