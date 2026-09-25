@@ -1,4 +1,4 @@
-# Hospital compliance category map
+# How we chose the categories
 
 This is the category breakdown. Eight areas. The readiness topics under each one are the things the hospital has to be on top of. The evidence line is the 2015 Joint Commission standard that defines that topic.
 

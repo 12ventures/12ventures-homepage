@@ -1,0 +1,1926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Illustrative hospital compliance scorecard. Sliders show what each score would mean. They are not MLKCH's live results.">
+<title>Joint Commission Live Assessment · MLKCH</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --paper:#0b1220; --surface:#121b2b; --surface-2:#182536;
+    --ink:#e7eef8; --ink-soft:#a8b8ce; --ink-faint:#6d829c;
+    --line:#24344a; --line-strong:#34506e;
+    --accent:#8EBFEE; --accent-soft:#5C94C9;
+    --crit:#E36A62; --crit-bg:#E36A6220;
+    --warn:#D8A84A; --warn-bg:#D8A84A1E;
+    --low:#8FA3B1; --low-bg:#8FA3B119;
+    --good:#71BB8E; --good-bg:#71BB8E1C;
+    --shadow:0 1px 2px #0000003a, 0 10px 34px #06101866;
+    --maxw:1320px;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased; font-size:16px;
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(ellipse 80% 70% at 100% 0%, #3a86ff1a, transparent 58%),
+      radial-gradient(ellipse 80% 70% at 0% 100%, #3a86ff14, transparent 58%);
+    background-attachment:fixed; }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 24px; }
+  .mono { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  .eyebrow { font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; }
+  .num { font-variant-numeric:tabular-nums; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+
+  .masthead { border-bottom:1px solid var(--line-strong); position:relative;
+    background:linear-gradient(180deg, #121b2b55, #121b2b99); }
+  .masthead::before { content:""; position:absolute; inset:0 0 auto; height:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-soft) 55%,transparent); }
+  .masthead-inner { padding:28px 32px 20px; max-width:var(--maxw); margin:0 auto; }
+  .top-row { display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap; }
+  .pill { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; font-family:ui-monospace,monospace;
+    font-size:11.5px; color:var(--warn); background:var(--warn-bg); border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);
+    padding:6px 12px; border-radius:999px; font-weight:700; }
+  .pill .dot { width:7px; height:7px; border-radius:50%; background:var(--warn); }
+  h1 { font-family:Georgia,serif; font-weight:600; letter-spacing:-.015em; font-size:clamp(1.9rem,3.2vw,2.7rem);
+    line-height:1.05; margin:.28em 0 .2em; max-width:16ch; text-wrap:balance; }
+  .dek { color:var(--ink-soft); font-size:13.5px; line-height:1.45; max-width:none; margin:0; }
+  .scoreboard { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(380px,.95fr); gap:16px 28px;
+    align-items:center; margin-top:18px; padding:18px 20px;
+    background:color-mix(in srgb, #121b2b 38%, transparent);
+    border:1px solid color-mix(in srgb, #fff 14%, transparent); border-radius:16px;
+    box-shadow:inset 0 1px 0 #ffffff18, 0 16px 40px #06101855;
+    backdrop-filter:blur(18px) saturate(1.35); -webkit-backdrop-filter:blur(18px) saturate(1.35);
+    animation:rise .75s cubic-bezier(.2,.7,.2,1) both; }
+  .scoreboard-stats { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:14px; min-width:0; }
+  .kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; width:100%;
+    background:color-mix(in srgb, #fff 12%, transparent); border:1px solid color-mix(in srgb, #fff 10%, transparent); border-radius:12px; overflow:hidden; }
+  .kpi { background:color-mix(in srgb, #182436 28%, transparent); padding:16px 14px 14px; }
+  .kpi .k-num { display:block; font-family:Georgia,serif; font-size:clamp(1.7rem,2.4vw,2.35rem); line-height:1; }
+  .kpi .accent { color:var(--accent); }
+  .kpi .k-label { display:block; margin-top:8px; font-size:12.5px; color:var(--ink-soft); }
+  .scoreboard-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .scoreboard-stats .reshuffle { margin:0; }
+  .reshuffle.is-on { border-color:var(--accent); color:var(--accent); }
+  .views { display:flex; gap:4px; margin-top:18px; padding:4px; width:max-content; max-width:100%;
+    background:color-mix(in srgb, #0b1220 40%, transparent); border:1px solid color-mix(in srgb, #fff 12%, transparent); border-radius:999px;
+    backdrop-filter:blur(14px) saturate(1.3); -webkit-backdrop-filter:blur(14px) saturate(1.3); }
+  .views button { font:inherit; font-size:13.5px; font-weight:650; color:var(--ink-soft); background:transparent;
+    border:0; border-radius:999px; padding:8px 16px; cursor:pointer; }
+  .views button[aria-selected="true"] { color:var(--ink); background:var(--surface-2); }
+  .views button:hover { color:var(--ink); }
+  .view[hidden] { display:none; }
+  .connector-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .connector-grid .feed { margin:0; padding:18px 18px 16px; border-radius:14px;
+    background:linear-gradient(180deg, color-mix(in srgb, #8eb4e0 8%, var(--surface-2)), var(--surface) 82%);
+    border:1px solid color-mix(in srgb, #fff 10%, var(--line));
+    box-shadow:inset 0 1px 0 #ffffff16, 0 14px 32px #06101855; }
+  .connector-grid .feed h3 { display:flex; align-items:center; gap:8px; }
+  .connector-grid .feed-topics li { background:color-mix(in srgb, #0b1220 50%, transparent);
+    border-color:color-mix(in srgb, #fff 12%, var(--line)); }
+  .feed-topics { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 0; padding:0; list-style:none; }
+  .feed-topics li { font-size:12px; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px 8px; }
+  .feed-topics li.feed-topics-more { background:none; border:0; padding:0; }
+  .feed-more { font:inherit; font-size:12px; font-weight:650; color:var(--ink); cursor:pointer;
+    background:color-mix(in srgb, #8eb4e0 16%, var(--surface)); border:1px solid color-mix(in srgb, #8eb4e0 28%, var(--line));
+    border-radius:999px; padding:3px 10px; }
+  .feed-more:hover { background:color-mix(in srgb, #8eb4e0 26%, var(--surface)); }
+
+  section { padding:52px 0; border-bottom:1px solid var(--line); }
+  .sec-head { display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+  .sec-head h2 { font-family:Georgia,serif; font-weight:600; font-size:1.7rem; margin:0; letter-spacing:-.01em; }
+  .sec-title { display:flex; align-items:baseline; gap:14px; }
+  .sec-head .idx { font-size:12px; color:var(--ink-faint); }
+  .body-copy { color:var(--ink-soft); max-width:76ch; }
+
+  .scale { display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line);
+    border-radius:13px; overflow:hidden; box-shadow:var(--shadow); }
+  .scale-item { background:var(--surface); padding:16px 12px; min-height:110px; }
+  .scale-item .score { display:block; font-family:Georgia,serif; font-size:1.8rem; line-height:1; margin-bottom:9px; }
+  .scale-item .label { display:block; font-weight:700; font-size:13px; margin-bottom:6px; }
+  .scale-item .hint { display:block; color:var(--ink-soft); font-size:12px; }
+  .s1 .score, .score-pill.s1 { color:var(--crit); }
+  .s2 .score, .score-pill.s2 { color:var(--crit); }
+  .s3 .score, .score-pill.s3 { color:var(--warn); }
+  .s4 .score, .score-pill.s4, .s5 .score, .score-pill.s5 { color:var(--good); }
+
+  .reshuffle { font:inherit; font-size:13px; font-weight:650; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line-strong); border-radius:999px; padding:8px 14px; cursor:pointer; }
+  .reshuffle:hover { border-color:var(--accent); color:var(--accent); }
+
+  .overview { min-width:0; margin:0; display:flex; align-items:center; justify-content:center; }
+  .overview svg { display:block; width:auto; height:min(340px,40vh); max-width:100%; overflow:hidden; pointer-events:none; }
+  .overview a, .radar-ideal-hit { pointer-events:auto; cursor:pointer; }
+  .radar-ring, .radar-spoke { fill:none; stroke:var(--line-strong); stroke-width:1; }
+  .radar-shape { fill:color-mix(in srgb, var(--accent) 16%, transparent); stroke:none; }
+  .radar-ideal { fill:none; stroke:#8ea4bc; stroke-width:1.25; stroke-dasharray:2.5 3.5; opacity:.7; pointer-events:none; }
+  .radar-ideal-hit { fill:none; stroke:transparent; stroke-width:18; pointer-events:stroke; cursor:help; }
+  .radar-edge { fill:none; stroke-width:1.15; stroke-linecap:round; stroke-linejoin:round; }
+  .radar-node { stroke:none; }
+  .radar-label { fill:#fff; font-size:13.5px; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    opacity:0; animation:rise .6s ease .4s forwards; }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion:reduce) {
+    .scoreboard, .radar-label { animation:none; opacity:1; }
+  }
+  /* Bar overview, kept if we switch back. Not used while the radar is on.
+  .ov-row { display:grid; grid-template-columns:32px minmax(150px,1.15fr) minmax(120px,1.6fr) auto;
+    grid-template-areas:"num name bar score"; gap:12px; align-items:center;
+    padding:10px 12px; border-radius:10px; color:inherit; text-decoration:none; }
+  .ov-row:hover { background:var(--surface-2); }
+  .ov-num { grid-area:num; font-family:ui-monospace,monospace; font-size:11px; color:var(--accent); }
+  .ov-name { grid-area:name; font-size:14.5px; }
+  .ov-track { grid-area:bar; height:10px; background:var(--line); border-radius:999px; overflow:hidden; }
+  .ov-fill { display:block; height:100%; width:0; border-radius:inherit; }
+  .ov-fill.s1, .ov-fill.s2 { background:var(--crit); }
+  .ov-fill.s3 { background:var(--warn); }
+  .ov-fill.s4, .ov-fill.s5 { background:var(--good); }
+  .ov-score { grid-area:score; font-family:ui-monospace,monospace; font-size:12px; text-align:right; white-space:nowrap; }
+  */
+  .categories { display:flex; flex-direction:column; gap:18px; }
+  .category { background:var(--surface); border:1px solid var(--line); border-radius:15px; overflow:hidden; box-shadow:var(--shadow); scroll-margin-top:16px; }
+  .category-head { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:18px 22px;
+    background:var(--surface-2); border-bottom:1px solid var(--line); }
+  .category-title { display:flex; align-items:baseline; gap:12px; }
+  .cat-num { font-family:ui-monospace,monospace; font-size:11px; color:var(--accent); }
+  .category-title h3 { font-family:Georgia,serif; font-size:1.25rem; margin:0; color:#fff; }
+  .count { font-family:ui-monospace,monospace; font-size:10px; color:var(--ink-faint); white-space:nowrap; text-align:right; }
+  .cat-avg { display:block; margin-top:4px; color:var(--ink); font-size:12px; letter-spacing:0; text-transform:none; font-family:ui-monospace,monospace; }
+  .area { padding:20px 22px; border-bottom:1px solid var(--line); }
+  .area:last-child { border-bottom:none; }
+  .area-top { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:12px; }
+  .area-top h4 { font-size:1.04rem; margin:0; flex:1; min-width:0; color:#e6edf5; }
+  .area-badges { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:10px; position:relative; z-index:1; flex:0 0 auto; }
+  .score-pill { font-family:ui-monospace,monospace; font-size:10px; font-weight:700; letter-spacing:.04em;
+    padding:5px 9px; border-radius:999px; white-space:nowrap; background:var(--surface-2); border:1px solid var(--line); }
+  .meter { --score:3; position:relative; width:168px; height:14px; border-radius:999px; background:var(--line);
+    cursor:grab; touch-action:none; flex:0 0 auto; user-select:none; z-index:1; }
+  .meter::after { content:""; position:absolute; left:-6px; right:-6px; top:-14px; bottom:-14px; }
+  .meter:active { cursor:grabbing; }
+  .meter-fill { position:absolute; left:0; top:0; bottom:0; border-radius:inherit; pointer-events:none;
+    width:calc(9px + (var(--score) - 1) / 4 * (100% - 18px)); }
+  .meter.s1 .meter-fill, .meter.s2 .meter-fill { background:linear-gradient(90deg, var(--crit), #ef5c54); }
+  .meter.s3 .meter-fill { background:linear-gradient(90deg, var(--warn), #e6ae32); }
+  .meter.s4 .meter-fill, .meter.s5 .meter-fill { background:linear-gradient(90deg, var(--good), #4fca8c); }
+  .meter-thumb { position:absolute; top:50%; width:18px; height:18px; border-radius:50%; pointer-events:auto;
+    transform:translate(-50%,-50%); background:var(--surface); box-shadow:0 1px 4px #1b172033;
+    left:calc(9px + (var(--score) - 1) / 4 * (100% - 18px)); }
+  .meter.s1 .meter-thumb, .meter.s2 .meter-thumb { border:3px solid var(--crit); }
+  .meter.s3 .meter-thumb { border:3px solid var(--warn); }
+  .meter.s4 .meter-thumb, .meter.s5 .meter-thumb { border:3px solid var(--good); }
+  .area-copy p { margin:0; color:var(--ink-soft); font-size:14.5px; max-width:85ch; }
+  .area-copy p.is-streaming::after { content:""; display:inline-block; width:1px; height:.85em; margin-left:1px;
+    background:currentColor; vertical-align:-1px; animation:caret .7s steps(1) infinite; }
+  .category:has(.gap-note) { overflow:visible; }
+  .area.has-gap { position:relative; }
+  .gap-note { position:absolute; z-index:2; top:18px; right:0; transform:translate(calc(100% + 14px), 0);
+    display:flex; align-items:center; gap:8px; padding:8px 12px 8px 10px; cursor:pointer;
+    font:inherit; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#3a86ff;
+    background:color-mix(in srgb, #10192a 62%, transparent); border:1px solid color-mix(in srgb, #3a86ff 45%, transparent); border-radius:12px;
+    box-shadow:inset 0 1px 0 #ffffff14, 0 10px 28px #06101888;
+    backdrop-filter:blur(16px) saturate(1.3); -webkit-backdrop-filter:blur(16px) saturate(1.3); }
+  .gap-note::before { content:""; position:absolute; left:-7px; top:50%; transform:translateY(-50%);
+    border-width:6px 7px 6px 0; border-style:solid; border-color:transparent color-mix(in srgb, #3a86ff 55%, var(--line)) transparent transparent; }
+  .gap-note::after { content:""; position:absolute; left:-5px; top:50%; transform:translateY(-50%);
+    border-width:5px 6px 5px 0; border-style:solid; border-color:transparent #10192a transparent transparent; }
+  .gap-note:hover { border-color:#3a86ff; }
+  .gap-note svg { display:block; flex:0 0 auto; color:var(--warn); }
+  .gap-dot { width:7px; height:7px; border-radius:50%; background:var(--warn); flex:0 0 auto;
+    box-shadow:0 0 6px color-mix(in srgb, var(--warn) 80%, transparent); animation:gap-pulse 2.4s ease-out infinite; }
+  @keyframes gap-pulse {
+    0% { box-shadow:0 0 0 0 color-mix(in srgb, var(--warn) 70%, transparent); }
+    70% { box-shadow:0 0 0 7px transparent; }
+    100% { box-shadow:0 0 0 0 transparent; }
+  }
+  @media (prefers-reduced-motion:reduce) { .gap-dot { animation:none; } }
+  @media (max-width:1100px) {
+    .gap-note { top:auto; bottom:14px; right:16px; transform:none; }
+    .gap-note::before, .gap-note::after { display:none; }
+  }
+  .gap-dialog { width:min(520px, calc(100vw - 32px)); }
+  .gap-block { margin:0 0 16px; }
+  .gap-block p { margin:0; color:var(--ink-soft); font-size:14.5px; line-height:1.5; }
+  .gap-lift { display:flex; align-items:center; justify-content:space-between; gap:16px;
+    margin-top:4px; padding:10px 10px 10px 16px; border-radius:14px;
+    background:color-mix(in srgb, #fff 6%, transparent); border:1px solid color-mix(in srgb, #fff 12%, transparent); }
+  .gap-lift-scores { display:flex; align-items:center; gap:12px; }
+  .gap-lift .k { display:block; font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); font-weight:700; }
+  .gap-lift strong { display:block; margin-top:2px; font-family:Georgia,serif; font-size:1.55rem; line-height:1; font-weight:600; }
+  .gap-lift .now strong { color:var(--warn); }
+  .gap-lift .next strong { color:var(--good); }
+  .gap-arrow { color:var(--ink-faint); font-size:16px; }
+  .gap-act { display:flex; align-items:center; gap:10px; }
+  .gap-agents { display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+  .gap-faces { display:flex; align-items:center; }
+  .gap-faces img { width:28px; height:28px; border-radius:50%; object-fit:cover; background:#fff; border:2px solid var(--surface-2); }
+  .gap-faces img + img { margin-left:-8px; }
+  .gap-go { position:relative; overflow:hidden; display:inline-flex; align-items:center; font-size:13px; font-weight:700; color:#fff; background:#3a86ff;
+    border-radius:999px; padding:10px 16px; text-decoration:none; }
+  .gap-go::after { content:""; position:absolute; inset:0; background:linear-gradient(110deg, transparent 32%, #ffffff80 50%, transparent 68%);
+    transform:translateX(-130%); animation:gap-shimmer 2.8s ease-in-out infinite; }
+  @keyframes gap-shimmer { 0%, 58% { transform:translateX(-130%); } 100% { transform:translateX(130%); } }
+  .gap-go:hover { text-decoration:none; filter:brightness(1.08); }
+  @media (prefers-reduced-motion:reduce) { .gap-go::after { animation:none; } }
+  @keyframes caret { 50% { opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { .area-copy p.is-streaming::after { display:none; } }
+  .evidence { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:baseline; margin-top:12px; }
+  .evidence-label { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; color:var(--ink-faint); }
+  .src { font-family:ui-monospace,monospace; font-size:11px; color:var(--accent); background:none; border:0;
+    padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:2px; text-align:left; }
+  .src.note { color:var(--ink-soft); }
+
+  dialog { width:min(760px, calc(100vw - 32px)); max-height:min(82vh, 860px); padding:0;
+    border:1px solid color-mix(in srgb, #fff 16%, transparent); border-radius:16px;
+    background:color-mix(in srgb, #121b2b 52%, transparent); color:var(--ink);
+    box-shadow:inset 0 1px 0 #ffffff18, 0 24px 60px #061018cc;
+    backdrop-filter:blur(22px) saturate(1.4); -webkit-backdrop-filter:blur(22px) saturate(1.4);
+    overflow:visible; }
+  dialog[open] { display:flex; flex-direction:column; }
+  dialog::backdrop { background:#070e1880; }
+  html.dialog-open, html.dialog-open body { overflow:hidden; }
+  .dialog-bar { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex:0 0 auto;
+    padding:18px 20px; border-bottom:1px solid color-mix(in srgb, #fff 10%, transparent); background:transparent;
+    border-top-left-radius:15px; border-top-right-radius:15px; }
+  .dialog-bar h2 { font-family:Georgia,serif; font-size:1.45rem; margin:4px 0 0; }
+  .dialog-file { font-family:ui-monospace,monospace; font-size:11px; color:var(--ink-faint); }
+  .dialog-actions { display:flex; gap:8px; align-items:flex-start; flex:0 0 auto; }
+  .dialog-close { font:inherit; font-size:13px; font-weight:650; border:1px solid color-mix(in srgb, #fff 16%, transparent);
+    background:color-mix(in srgb, #fff 8%, transparent); color:var(--ink); border-radius:999px; padding:7px 12px; cursor:pointer; }
+  .dialog-body { padding:18px 22px 26px; overflow:auto; flex:1 1 auto; min-height:0; overscroll-behavior:contain;
+    scrollbar-width:thin; scrollbar-color:#34506e transparent;
+    border-bottom-left-radius:15px; border-bottom-right-radius:15px; }
+  .dialog-body::-webkit-scrollbar { width:8px; }
+  .dialog-body::-webkit-scrollbar-track { background:transparent; }
+  .dialog-body::-webkit-scrollbar-thumb { background:#34506e; border-radius:99px; }
+  .req { margin:0 0 16px; padding:12px 14px; border-radius:10px; background:color-mix(in srgb, var(--accent) 14%, var(--surface));
+    border-left:3px solid var(--accent); color:var(--ink); }
+  .req-label { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; display:block; margin-bottom:6px; }
+  .src-row { padding:12px 0 14px; border-bottom:1px solid var(--line); }
+  .src-row:last-of-type { border-bottom:0; }
+  .src-row p { margin:0; color:var(--ink-soft); font-size:14.5px; }
+  .src-cite { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .src-k { font-size:12px; color:var(--ink-faint); }
+  .src-pill { display:inline-flex; align-items:center; gap:5px; font-family:ui-monospace,monospace; font-size:11px; font-weight:650;
+    color:var(--ink); background:color-mix(in srgb, var(--accent) 10%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius:999px; padding:3px 8px 3px 6px; }
+  .clip-note { color:var(--ink-faint); font-size:12px; margin:8px 0 0; }
+  .md-body h2, .md-body h3, .md-body h4 { font-family:Georgia,serif; margin:1.1em 0 .35em; color:var(--ink); }
+  dialog.is-doc .dialog-file, dialog.is-doc #src-title { display:none; }
+  .md-body h2:first-child { font-size:1.45rem; color:#fff; margin-top:0; }
+  .md-body p, .md-body li { color:var(--ink-soft); font-size:14.5px; }
+  .md-body p { margin:0 0 12px; }
+  .md-body ul, .md-body ol { margin:0 0 14px; padding-left:1.25em; }
+  .md-body li { margin:0 0 6px; }
+  .md-body strong { color:var(--ink); }
+  .md-body a { text-decoration:underline; text-underline-offset:2px; }
+  .md-body hr { border:0; border-top:1px solid var(--line); margin:1.15em 0; }
+  .md-body code { font-family:ui-monospace,monospace; font-size:.92em; color:var(--ink); }
+  .md-table { overflow:auto; margin:0 0 16px; border:1px solid var(--line); border-radius:10px; }
+  .md-body table { width:100%; border-collapse:collapse; font-size:13.5px; min-width:640px; }
+  .md-body th, .md-body td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); color:var(--ink-soft); }
+  .md-body th { color:var(--ink); font-weight:650; background:var(--surface-2); }
+  .md-body tr:last-child td { border-bottom:0; }
+  .mark { background:color-mix(in srgb, var(--warn) 28%, transparent); border-radius:3px; padding:0 2px; }
+
+  .source-link { font:inherit; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:999px;
+    padding:5px 9px; cursor:pointer; white-space:nowrap; }
+  .source-link:hover { background:color-mix(in srgb, var(--accent) 20%, transparent); }
+  .feed-lead { margin:0 0 16px; color:var(--ink-soft); font-size:14px; max-width:68ch; }
+  .feed { border:1px solid var(--line); border-radius:12px; padding:14px 16px 16px; margin:0 0 12px; background:var(--surface-2); }
+  .feed:last-child { margin-bottom:0; }
+  .feed-where { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:700; }
+  .feed h3 { font-family:Georgia,serif; font-size:1.15rem; margin:4px 0 0; }
+  .feed-product { display:flex; align-items:center; gap:8px; margin:8px 0 0; font-size:14px; color:var(--ink); }
+  .feed-product a { color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line-strong); }
+  .feed-product a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+  .feed-logo { width:28px; height:28px; border-radius:6px; object-fit:contain; background:#fff; flex:0 0 auto; }
+  .feed-sources { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:8px; }
+  .feed-source { display:flex; align-items:center; gap:10px; }
+  .feed-source-name { flex:1; min-width:0; display:flex; flex-direction:column; font-size:14px; color:var(--ink); }
+  .feed-source-name a { color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line-strong); }
+  .feed-source-name a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+  .feed-source .feed-status { margin:0; }
+  .feed-source-note { margin:2px 0 0; color:var(--ink-soft); font-size:13px; line-height:1.4; }
+  .feed-cell--tip { cursor:help; }
+  .tip { position:fixed; z-index:5; width:min(280px, calc(100vw - 24px)); padding:10px 12px; border-radius:10px;
+    background:#182536; border:1px solid #34506e; box-shadow:0 10px 28px #061018aa; pointer-events:none; }
+  .tip[hidden] { display:none; }
+  .tip-k { display:block; font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; margin:0 0 3px; }
+  .tip-k + .tip-v { margin-bottom:8px; }
+  .tip-v { margin:0; font-size:13px; line-height:1.4; color:var(--ink); }
+  .tip-v strong { font-weight:650; }
+  .feed-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px; }
+  .feed-status { display:inline-flex; align-items:center; gap:6px; margin:2px 0 0; flex:0 0 auto; font-family:ui-monospace,monospace; font-size:10px;
+    letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:3px 8px 3px 7px; border-radius:999px; }
+  .feed-status--yes { color:var(--good); background:var(--good-bg); }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--good); flex:0 0 auto;
+    box-shadow:0 0 6px color-mix(in srgb, var(--good) 80%, transparent);
+    animation:live-pulse 2.4s ease-out infinite; }
+  @keyframes live-pulse {
+    0% { box-shadow:0 0 0 0 color-mix(in srgb, var(--good) 65%, transparent); }
+    70% { box-shadow:0 0 0 7px transparent; }
+    100% { box-shadow:0 0 0 0 transparent; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .live-dot { animation:none; box-shadow:0 0 6px var(--good); }
+  }
+  .feed-status--named { color:var(--warn); background:var(--warn-bg); }
+  .feed-status--example { color:var(--low); background:var(--low-bg); }
+  .feed-status--file { color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); }
+  .feed-facts { display:grid; gap:10px; }
+  .feed-fact { margin:0; color:var(--ink-soft); font-size:14px; line-height:1.45; }
+  .feed-cell { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .feed-k { display:block; font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:4px; }
+  .feed-v { font-size:14px; font-weight:650; }
+  .feed-chip { display:inline-block; font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; }
+  .feed-chip--yes { color:var(--good); background:var(--good-bg); }
+  .feed-chip--no { color:var(--crit); background:var(--crit-bg); }
+  .feed-chip--file { color:var(--warn); background:var(--warn-bg); }
+  .feed-chip--unknown { color:var(--low); background:var(--low-bg); }
+  .feed-chip--w, .feed-chip--f { color:var(--good); background:var(--good-bg); }
+  .feed-chip--m { color:var(--warn); background:var(--warn-bg); }
+  .feed-chip--p { color:var(--crit); background:var(--crit-bg); }
+  .source-details { border-top:1px solid color-mix(in srgb, #fff 10%, transparent); background:transparent; }
+  .source-details summary { cursor:pointer; padding:15px 22px; font-family:ui-monospace,monospace; font-size:10px;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:700; list-style:none; }
+  .source-details summary::-webkit-details-marker { display:none; }
+  .source-details summary::before { content:"+"; display:inline-block; width:18px; color:var(--accent); }
+  .source-details[open] summary::before { content:"−"; }
+  .source-detail-body { padding:0 22px 20px 40px; max-width:100ch; }
+  .source-detail-body p { margin:0 0 11px; color:var(--ink-soft); font-size:13.5px; }
+  .source-detail-body p:last-child { margin-bottom:0; }
+
+  .doc-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .doc { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .doc h3 { font-family:Georgia,serif; font-size:1.05rem; margin:0 0 6px; }
+  .doc p { color:var(--ink-soft); font-size:13.5px; margin:0; }
+  footer { padding:40px 0 64px; }
+  .foot-note { color:var(--ink-faint); font-size:12px; margin:0; max-width:85ch; }
+
+  @media (max-width:820px) {
+    .doc-grid, .connector-grid { grid-template-columns:1fr; }
+    .scoreboard { grid-template-columns:1fr; gap:8px; padding:16px; }
+    .overview { order:-1; }
+    .overview svg { height:min(240px,34vh); }
+    .scale { grid-template-columns:1fr; }
+    .scale-item { min-height:0; }
+  }
+  @media (max-width:560px) {
+    .masthead-inner { padding-top:40px; }
+    .connector-grid, .doc-grid { grid-template-columns:1fr; }
+    .category-head, .area-top { align-items:flex-start; flex-direction:column; }
+    .area-badges { justify-content:flex-start; }
+    .count { text-align:left; }
+    /* .ov-row { grid-template-columns:28px 1fr auto; grid-template-areas:"num name score" "num bar bar"; } */
+  }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="top-row">
+      <span class="eyebrow">MLKCH · The Joint Commission</span>
+      <span class="pill" id="live-pill"><span class="dot"></span>MLKCH Connected View</span>
+    </div>
+    <h1>Joint Commission Live Assessment</h1>
+    <nav class="views" aria-label="Views">
+      <button type="button" data-view="live" aria-selected="true">Live assessment</button>
+      <button type="button" data-view="method" aria-selected="false">Methodology</button>
+      <button type="button" data-view="connectors" aria-selected="false">Connectors</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="view" id="view-live">
+    <div class="scoreboard">
+      <div class="scoreboard-stats">
+        <div class="kpis">
+          <div class="kpi"><span class="k-num accent num" id="kpi-avg">0</span><span class="k-label" id="kpi-label">MLK average</span></div>
+          <div class="kpi"><span class="k-num num" id="kpi-areas">0</span><span class="k-label">areas</span></div>
+          <div class="kpi"><span class="k-num num" id="kpi-reqs">0</span><span class="k-label">specific requirements</span></div>
+        </div>
+        <p class="dek">A sample of MLKCH as if the scorecard were connected. The picture is decent, not perfect. Shuffle replaces it with a random preview. Nothing here is the hospital’s actual result.</p>
+        <div class="scoreboard-actions">
+          <button class="reshuffle" type="button" id="reshuffle">Shuffle preview scores</button>
+          <button class="reshuffle is-on" type="button" id="mlk-stats">MLK stats</button>
+        </div>
+      </div>
+      <div class="overview" id="overview" aria-label="Overview of the eight areas"></div>
+    </div>
+    <section id="assessment">
+      <div class="sec-head"><div class="sec-title"><span class="idx mono">01</span><h2>Compliance scorecard</h2></div></div>
+      <div class="categories" id="categories"></div>
+    </section>
+  </div>
+
+  <div class="view" id="view-method" hidden>
+    <section id="scale">
+      <div class="sec-head">
+        <div class="sec-title"><span class="idx mono">01</span><h2>How to read a score</h2></div>
+      </div>
+      <p class="body-copy">A score describes how ready that topic would look if surveyors arrived tomorrow. It is not a grade of the paperwork in the folder. The folder lists the rules. The score is filled in only after someone checks the hospital against those rules.</p>
+      <div class="scale" aria-label="Score meanings from one to five">
+        <div class="scale-item s1"><span class="score">1</span><span class="label">Not in place</span><span class="hint">A surveyor could not be shown this.</span></div>
+        <div class="scale-item s2"><span class="score">2</span><span class="label">Major gaps</span><span class="hint">Something is written down. Daily proof is missing.</span></div>
+        <div class="scale-item s3"><span class="score">3</span><span class="label">Partly in place</span><span class="hint">Some of it would pass. Some would be cited.</span></div>
+        <div class="scale-item s4"><span class="score">4</span><span class="label">Mostly in place</span><span class="hint">Most of it can be shown. A few holes remain.</span></div>
+        <div class="scale-item s5"><span class="score">5</span><span class="label">Survey ready</span><span class="hint">The requirement is met and easy to pull up.</span></div>
+      </div>
+    </section>
+    <section id="docs">
+      <div class="sec-head"><div class="sec-title"><span class="idx mono">02</span><h2>Under the hood</h2></div></div>
+      <div class="doc-grid">
+        <article class="doc"><h3><a href="09-What-We-Need-Access-To.md" data-doc="09-What-We-Need-Access-To.md">Access required for a live score</a></h3><p>The few systems these twenty topics actually sit in, and which ones involve employee data versus patient data.</p></article>
+        <article class="doc"><h3><a href="08-Hospital-Category-Map.md" data-doc="08-Hospital-Category-Map.md">How we chose the categories</a></h3><p>The same eight areas and twenty topics, in writing, with the standards named under each one.</p></article>
+        <article class="doc"><h3><a href="03-Compliance-Scorecard.md" data-doc="03-Compliance-Scorecard.md">Scorecard Methodology</a></h3><p>Every standard in the workbooks, how a future real score would be calculated, and which topics a survey presses hardest.</p></article>
+        <article class="doc"><h3><a href="02-How-Hospital-Audits-Work.md" data-doc="02-How-Hospital-Audits-Work.md">How a hospital accreditation survey actually works</a></h3><p>What happens when surveyors arrive, why the preparation feels long, and what the hospital has to hand them.</p></article>
+      </div>
+    </section>
+  </div>
+
+  <div class="view" id="view-connectors" hidden>
+    <section>
+      <div class="sec-head"><div class="sec-title"><span class="idx mono">01</span><h2>Connectors</h2></div></div>
+      <p class="body-copy">The systems this score reads. A green light is connected. Each card lists the topics that use it.</p>
+      <div class="connector-grid" id="connectors"></div>
+    </section>
+  </div>
+
+  <footer>
+    <p class="foot-note">Built from the 2015 Joint Commission workbooks in this folder (16 chapters, 209 standards, 1,343 requirements). Two chapters were not in the folder: medical staff, and provision of care. The page opens on a sample MLKCH picture. Shuffle is a way to read the scale, not a finding about the hospital.</p>
+  </footer>
+</main>
+
+<dialog id="source-dialog">
+  <div class="dialog-bar">
+    <div>
+      <div class="dialog-file" id="src-file"></div>
+      <h2 id="src-title"></h2>
+    </div>
+    <div class="dialog-actions">
+      <button class="dialog-close" type="button" id="src-back" hidden>Back</button>
+      <button class="dialog-close" type="button" id="src-close">Close</button>
+    </div>
+  </div>
+  <div class="dialog-body" id="src-body"></div>
+</dialog>
+
+<dialog id="gap-dialog" class="gap-dialog">
+  <div class="dialog-bar">
+    <div>
+      <div class="dialog-file">Gap found · Medication use</div>
+      <h2>Insulin pump titration</h2>
+    </div>
+    <button class="dialog-close" type="button" id="gap-close">Close</button>
+  </div>
+  <div class="dialog-body">
+    <div class="gap-block">
+      <span class="req-label">Problem</span>
+      <p>Nurses on different units titrate insulin on smart pumps in different sequences. CDPH flagged it. MLK already wrote one standard: Insulin Pump Titration Policy v2.0.</p>
+    </div>
+    <div class="gap-block">
+      <span class="req-label">Solution</span>
+      <p>Teach that one sequence, tell staff, and require a short check before someone uses a pump on their own.</p>
+    </div>
+    <div class="gap-lift">
+      <div class="gap-lift-scores">
+        <span class="now"><span class="k">Now</span><strong>3/5</strong></span>
+        <span class="gap-arrow" aria-hidden="true">→</span>
+        <span class="next"><span class="k">Projected</span><strong>4/5</strong></span>
+      </div>
+      <div class="gap-act">
+        <span class="gap-agents">
+          <span class="k">Assigned agents</span>
+          <span class="gap-faces">
+            <img src="https://staging.snapskill.io/img/avatars/agents/3.png" alt="A01 Knowledge Creator" title="A01 Knowledge Creator">
+            <img src="https://staging.snapskill.io/img/avatars/agents/2.png" alt="A03 Lesson Author" title="A03 Lesson Author">
+          </span>
+        </span>
+        <a class="gap-go" href="https://staging.snapskill.io/o/mlkch/living-knowledge-demo" target="_blank" rel="noopener noreferrer">Close compliance gap</a>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="sources-data.js"></script>
+<script src="markdown-view.js"></script>
+<script>
+const LABELS = ["", "Not in place", "Major gaps", "Partly in place", "Mostly in place", "Survey ready"];
+
+const CATEGORIES = [
+  {
+    id: "01",
+    title: "People and competence",
+    blurb: "Can the hospital show that the people doing the work are qualified, trained, and allowed to do it?",
+    areas: [
+      {
+        title: "Staff qualifications and competence",
+        evidence: "HR.01.01.01 · HR.01.02.01 · HR.01.02.05 · HR.01.02.07 · HR.01.04.01 · HR.01.05.03 · HR.01.06.01 · HR.01.07.01",
+        levels: [
+          "Licenses, orientation, and proof that people can do their jobs are not on file. Asked for a nurse’s record, the hospital would not have a complete answer.",
+          "Some job requirements or training records exist. License checks, skill sign-offs, or performance reviews are missing or out of date for a lot of people.",
+          "The hospital can show current proof for some roles and not others. Training happens, but a check of the actual job people do is uneven.",
+          "Most staff files would hold up: license checked, orientation done, training kept current, and a recent review of competence. A few departments would still look thin.",
+          "For the people who do the work, the hospital can quickly show qualifications, orientation, current competence, and evaluations."
+        ]
+      },
+      {
+        title: "Nursing leadership and staffing plan",
+        evidence: "NR.01.01.01 · NR.01.02.01 · NR.02.01.01 · NR.02.02.01 · NR.02.03.01",
+        levels: [
+          "There is no clear nurse executive accountable for nursing, and no staffing plan a surveyor could read.",
+          "A nursing leader exists in title. Qualifications, authority, or the written staffing plan would not stand up to questions.",
+          "The nurse executive role is real, and parts of the staffing plan exist. Authority over nursing, or the written plan itself, is still incomplete.",
+          "Nursing leadership and the staffing plan are largely written and in use. A few of the nursing-leadership requirements would still need cleanup.",
+          "A qualified nurse executive directs nursing and the staffing plan is current. Bedside nursing practice is scored under patient safety and care delivery, not here."
+        ]
+      },
+      {
+        title: "Medical staff credentialing and privileging",
+        evidence: "Medical staff chapter was not in the 2015 folder · surveyors still review this in a dedicated session",
+        levels: [
+          "Appointments and privileges are not organized. The hospital could not show who is allowed to perform which procedures.",
+          "Files exist for some physicians. Reappointment, privileges, or the bylaws would fail an hour-long credentialing review.",
+          "Many practitioners are current. Others are expired, their privileges do not match what they do, or the bylaws are out of date.",
+          "The medical staff is organized and most files are current. A sample would still find a privilege or a reappointment gap.",
+          "Bylaws are current, appointments are in date, and privileges match the work people actually do. The detailed 2015 chapter was not in this folder, so this is the shape of the review, not a line-by-line score."
+        ]
+      }
+    ]
+  },
+  {
+    id: "02",
+    title: "Medication system",
+    blurb: "How drugs are chosen, stored, ordered, checked, and given.",
+    areas: [
+      {
+        title: "Medication control",
+        evidence: "MM.01.01.01 · MM.01.01.03 · MM.01.02.01 · MM.02.01.01 · MM.03.01.01 · MM.03.01.03 · MM.03.01.05 · MM.05.01.17 · MM.05.01.19",
+        levels: [
+          "There is no reliable list of high-alert drugs, storage is not controlled, and recalls or expired medication have no clear process.",
+          "A medication policy exists. Storage, temperature logs, emergency drugs, or the high-alert list would not pass a walk-through.",
+          "Some medication rooms and lists are in good shape. Others have expired items, missing logs, or an incomplete look-alike list.",
+          "Selection, storage, and emergency stock are mostly under control. A few locations, or the recall process, would still draw a finding.",
+          "The hospital can show its own high-alert and look-alike lists, secure storage, emergency medications, and a working process for recalls and returns."
+        ]
+      },
+      {
+        title: "Medication use",
+        evidence: "MM.04.01.01 · MM.05.01.01 · MM.05.01.07 · MM.05.01.09 · MM.05.01.11 · MM.05.01.13 · MM.06.01.01 · MM.06.01.03 · MM.06.01.05 · MM.07.01.03 · MM.08.01.01",
+        levels: [
+          "Orders, pharmacist review, labeling, and how drugs are given are not reliable. Following one patient would show breaks.",
+          "The pharmacy has a process on paper. On the unit, orders, labels, or the administration record often do not match it.",
+          "Many doses are ordered, checked, and given correctly. A sample would still find missed pharmacist review, labeling gaps, or weak follow-up when something goes wrong.",
+          "The path from order to dose is solid in most places, including when the pharmacy is closed. A few units or drug types still slip.",
+          "Orders are complete, a pharmacist reviews them, medications are labeled and given as required, and bad reactions and errors are reviewed."
+        ]
+      }
+    ]
+  },
+  {
+    id: "03",
+    title: "Patient safety practices",
+    blurb: "The everyday safety steps surveyors watch. A policy on the shelf is not enough.",
+    areas: [
+      {
+        title: "Identification, medications, alarms, and critical results",
+        evidence: "NPSG.01.01.01 · NPSG.01.03.01 · NPSG.02.03.01 · NPSG.03.04.01 · NPSG.03.05.01 · NPSG.03.06.01 · NPSG.06.01.01",
+        levels: [
+          "Patients are not consistently identified, critical results are slow or untracked, and medication labeling in procedures is informal.",
+          "Policies exist for identifiers, blood thinners, or alarms. What happens on the floor often does not match them.",
+          "Some units do this well. Others miss a second identifier, a callback on a critical result, or safe alarm settings.",
+          "These safety steps are routine, and there are records to show it. A small number of cases would still fail a sample.",
+          "Two identifiers, transfusion checks, critical results, labeling in procedures, blood-thinner safety, medication lists, and alarm safety are in place and can be shown."
+        ]
+      },
+      {
+        title: "Infection steps, suicide risk, and procedures",
+        evidence: "NPSG.07.01.01 · NPSG.07.03.01 · NPSG.07.04.01 · NPSG.07.05.01 · NPSG.07.06.01 · NPSG.15.01.01 · UP.01.01.01 · UP.01.02.01 · UP.01.03.01",
+        levels: [
+          "Hand hygiene, infection steps for lines and surgery, suicide-risk screening, and the pause before a procedure are not dependable.",
+          "Posters and policies exist. Watching the work would show the steps are often skipped.",
+          "Some of this is consistent, such as the pause in the operating room, and some is not, such as catheter care or suicide screening.",
+          "These practices are the norm, and recent checks exist. A few infection-prevention or procedure steps are still uneven.",
+          "Hand hygiene, device infection prevention, suicide-risk screening, and the verify, mark, and time-out steps before a procedure are done and documented."
+        ]
+      }
+    ]
+  },
+  {
+    id: "04",
+    title: "Infection, testing, and tissue",
+    blurb: "The infection program, bedside tests like glucometers, and tissue or organ responsibilities.",
+    areas: [
+      {
+        title: "Infection prevention program",
+        evidence: "IC.01.01.01 · IC.01.01.02 · IC.01.03.01 · IC.01.04.01 · IC.01.05.01 · IC.01.06.01 · IC.02.01.01 · IC.02.02.01 · IC.02.03.01 · IC.02.04.01 · IC.03.01.01",
+        levels: [
+          "No one clearly owns infection prevention, and there is no current plan or risk assessment.",
+          "A plan exists on paper. Tracking infections, cleaning equipment, or offering flu vaccination is not actually running.",
+          "The program is active in some areas. The yearly risk review, readiness for a surge of infectious patients, or proof the plan works is thin.",
+          "Leaders can show the plan, the risks, and recent results. A few practices, such as equipment cleaning or flu-vaccination offers, need tightening.",
+          "A named leader, a current plan, day-to-day precautions, and a review of whether the plan worked are all in place."
+        ]
+      },
+      {
+        title: "Waived testing",
+        evidence: "WT.01.01.01 · WT.02.01.01 · WT.03.01.01 · WT.04.01.01 · WT.05.01.01",
+        levels: [
+          "Bedside tests such as glucometers have no clear owner, no proof of competence, and no quality-control records.",
+          "A CLIA certificate exists. The people performing tests are not all signed off, or quality control is spotty.",
+          "Some devices and some staff are in good standing. The records would not cover every test or every person.",
+          "Competence and quality control are current for most waived tests. A few devices or shifts are behind.",
+          "The certificate holder, trained staff, quality checks, and records are current. This covers waived tests only, not a full laboratory."
+        ]
+      },
+      {
+        title: "Tissue and organ responsibilities",
+        evidence: "TS.01.01.01 · TS.02.01.01 · TS.03.01.01 · TS.03.02.01 · TS.03.03.01",
+        levels: [
+          "The hospital cannot show its organ-procurement agreements, or trace tissue it uses.",
+          "An agreement exists. Tissue handling, the ability to trace it, or follow-up when something goes wrong would not satisfy a review.",
+          "Agreements and basic procedures are in place. Tracing a specific tissue in both directions, or investigating a problem, would be hard.",
+          "Agreements, handling, and most traceability records are in order. A sample might still find a gap.",
+          "Procurement agreements, tissue procedures, two-way traceability, and adverse-event review are in place. If the hospital does not implant tissue, that part is “not applicable,” which is different from a low score."
+        ]
+      }
+    ]
+  },
+  {
+    id: "05",
+    title: "Record and rights",
+    blurb: "Whether the chart tells the story of the stay, and whether patients’ rights are honored.",
+    areas: [
+      {
+        title: "Medical record",
+        evidence: "RC.01.01.01 · RC.01.02.01 · RC.01.03.01 · RC.01.04.01 · RC.01.05.01 · RC.02.01.01 · RC.02.01.03 · RC.02.01.07 · RC.02.03.07 · RC.02.04.01",
+        levels: [
+          "Charts are incomplete, unsigned, or late. Opening a few records would not show the care that was given.",
+          "A record policy exists. Signatures, timing, operative notes, or discharge information fail when records are sampled.",
+          "Many charts are complete. A sample still finds unsigned entries, late notes, verbal orders, or missing discharge information.",
+          "The record usually tells the story of the stay, and the hospital audits its own charts. A minority of records would still be cited.",
+          "Contents, signatures, timing, operative and sedation notes, verbal orders, and discharge information meet the standard, and the hospital can show its own chart audits."
+        ]
+      },
+      {
+        title: "Patient rights",
+        evidence: "RI.01.01.01 · RI.01.01.03 · RI.01.02.01 · RI.01.03.01 · RI.01.03.03 · RI.01.03.05 · RI.01.05.01 · RI.01.06.03 · RI.01.07.01 · RI.02.01.01",
+        levels: [
+          "Patients are not reliably informed, consented, or given a way to complain. End-of-life wishes are not captured.",
+          "Rights and consent policies exist. Signed consents, information people can understand, or follow-up on complaints is inconsistent.",
+          "Consent and rights work for ordinary cases. Research, recordings, abuse concerns, or complaints still have holes.",
+          "Patients can understand their care, consent is documented, and complaints are reviewed. A few situations, such as end-of-life wishes, are uneven.",
+          "Rights, informed consent, end-of-life decisions, protection from abuse, and a working complaint process are in place. Requirements that apply only to services the hospital does not offer should be marked not applicable, not given a low score."
+        ]
+      }
+    ]
+  },
+  {
+    id: "06",
+    title: "Care delivery",
+    blurb: "What a surveyor sees by following one patient through the hospital. This chapter was not in the folder.",
+    areas: [
+      {
+        title: "Provision of care, treatment, and services",
+        evidence: "Provision of care chapter was not in the 2015 folder · this is what patient tracers are mostly about",
+        levels: [
+          "Assessment, the plan of care, restraints, surgery and anesthesia, and discharge coordination would not hold up if a surveyor followed a patient.",
+          "Some care steps are written down. Following one patient across units would show breaks.",
+          "Routine care is documented. Restraint, operative care, or the handoff at discharge still fails when a patient’s path is followed.",
+          "Following patients would show the plan carried out in most cases, with a few breaks between departments.",
+          "Assessment, the plan of care, orders carried out, restraint, operative care, and discharge coordination are consistent. The 2015 chapter file is missing, so this dial stays illustrative until that list is added."
+        ]
+      }
+    ]
+  },
+  {
+    id: "07",
+    title: "Leadership and improvement",
+    blurb: "Whether leaders oversee safety, whether the hospital studies its own performance, and whether its accreditation paperwork is current.",
+    areas: [
+      {
+        title: "Leadership and governance",
+        evidence: "LD.01.01.01 · LD.01.03.01 · LD.01.04.01 · LD.01.05.01 · LD.03.01.01 · LD.04.01.05 · LD.04.03.09 · LD.04.03.11 · LD.04.04.05",
+        levels: [
+          "Board accountability, the chief executive’s role, medical staff reporting, and the safety program are not something the hospital can show in minutes.",
+          "Leaders and a budget exist. Minutes would not show oversight of quality, contracts, or how patients move through the hospital.",
+          "The structure is real. The safety culture, oversight of contracted services, or the patient safety program is only partly evidenced.",
+          "Minutes, bylaws, and the safety program would answer most leadership questions. A few duties, such as contract oversight, are thin.",
+          "The board, the chief executive, and the medical staff can show how they oversee safety, contracts, patient flow, and improvement. This is mostly minutes and policies, not a sample of patients."
+        ]
+      },
+      {
+        title: "Performance improvement",
+        evidence: "PI.01.01.01 · PI.02.01.01 · PI.02.01.03 · PI.03.01.01 · PI.04.01.01",
+        levels: [
+          "The hospital is not collecting or reviewing performance data a surveyor could see for the past year.",
+          "Some numbers exist in spreadsheets. There is no clear analysis, improvement work, or review of staffing effectiveness.",
+          "Data is collected and sometimes discussed. Twelve months of projects and results would be hard to pull together on the morning surveyors arrive.",
+          "Leaders review performance and can show most of the last year. A few required measures or staffing indicators are missing.",
+          "The hospital collects data, analyzes it, improves, and can hand surveyors the last twelve months when they arrive."
+        ]
+      },
+      {
+        title: "Accreditation participation",
+        evidence: "APR.01.01.01 · APR.01.03.01 · APR.04.01.01 · APR.09.01.01 · APR.09.04.01",
+        levels: [
+          "The hospital is not keeping its accreditation information current, and the public has no clear way to raise a concern.",
+          "Accreditation is active, but updates to the application, public notice, or required measure reporting would be a problem.",
+          "The relationship with the accreditor is mostly in order. One or two duties, such as telling the public how to report a concern, are incomplete.",
+          "Filings, public description of accreditation, and a way to report concerns are in place. A small item would still need a fix.",
+          "The hospital keeps its information current, describes its accreditation honestly, and gives patients and staff a way to report concerns. An immediate threat to life is an urgent failure on its own, no matter where this slider sits."
+        ]
+      }
+    ]
+  },
+  {
+    id: "08",
+    title: "Place, utilities, emergencies, and information",
+    blurb: "The building, the equipment, the disaster plan, and the duty to protect patient information.",
+    areas: [
+      {
+        title: "Life safety",
+        evidence: "LS.01.01.01 · LS.01.02.01 · LS.02.01.20 · LS.02.01.30 · LS.02.01.34 · LS.02.01.35 · LS.03.01.20",
+        levels: [
+          "Exits, fire barriers, alarms, or sprinklers would fail a walk-through, and the records are not ready.",
+          "The building can be occupied, but a life-safety surveyor would find repeated problems with corridors, doors, or fire systems.",
+          "Many features comply. A multi-hour walk of the building would still produce findings, or the inspection records would be incomplete.",
+          "The building and the inspection records would pass most of the walk. A few barriers, doors, or construction protections need work.",
+          "Exits, fire and smoke protection, alarms, and sprinklers meet the life safety code for how each area is used, and the records are on hand."
+        ]
+      },
+      {
+        title: "Environment of care",
+        evidence: "EC.02.01.01 · EC.02.02.01 · EC.02.03.03 · EC.02.03.05 · EC.02.04.01 · EC.02.04.03 · EC.02.05.01 · EC.02.05.07 · EC.04.01.01",
+        levels: [
+          "Fire drills, equipment maintenance, utilities, and emergency power are not documented in a way the hospital could produce.",
+          "Plans exist. Drills, generator tests, or medical-equipment maintenance are late or missing for many items.",
+          "Some systems are on schedule. A year of drills, utility tests, and equipment maintenance would have clear holes.",
+          "The environment-of-care records would answer most questions. A few tests, or the yearly review of the plans, are behind.",
+          "Safety, hazardous materials, fire drills, equipment, utilities, emergency power, and medical gas are maintained, and the hospital reviews each year whether those plans worked."
+        ]
+      },
+      {
+        title: "Emergency management",
+        evidence: "EM.1.01.01 · EM.02.01.01 · EM.02.02.01 · EM.02.02.13 · EM.03.01.03",
+        levels: [
+          "There is no current hazard analysis or emergency plan a leader could walk a surveyor through.",
+          "A plan exists and is outdated. Communications, staffing during a disaster, or practice exercises have not been tested.",
+          "The plan covers some emergencies. Drills, the write-up of what was learned, or privileges for volunteer practitioners are incomplete.",
+          "The plan, the hazard analysis, and recent exercises are largely in place. One or two pieces, such as utilities or volunteer practitioners, are thin.",
+          "The hospital has a current emergency plan, has practiced it, and can show what it learned. The source file is labeled emergency medicine; the requirements are emergency preparedness."
+        ]
+      },
+      {
+        title: "Information privacy, security, and continuity",
+        evidence: "IM.01.01.01 · IM.01.01.03 · IM.02.01.01 · IM.02.01.03 · IM.02.02.03",
+        levels: [
+          "Privacy, security, and downtime plans for health information are not defined, or are not followed.",
+          "Policies exist. Who can see a record, what happens when systems are down, or how records are retrieved would worry a surveyor.",
+          "Everyday access to records works. Downtime, privacy practices, or security monitoring would not fully meet the standard.",
+          "Information is protected and available in normal operations, with a workable downtime plan. A few security or retrieval expectations remain.",
+          "The hospital plans how information is managed, can keep going during downtime, protects privacy, and can retrieve records in a useful form."
+        ]
+      }
+    ]
+  }
+];
+
+const root = document.getElementById("categories");
+const overview = document.getElementById("overview");
+const kpi = document.getElementById("kpi-avg");
+const RADAR = { cx: 278, cy: 156, r: 108 };
+const radarEdges = [];
+const radarNodes = [];
+const radarGrads = [];
+
+function polar(i, dist) {
+  const angle = -Math.PI / 2 + (i / CATEGORIES.length) * Math.PI * 2;
+  return [RADAR.cx + Math.cos(angle) * dist, RADAR.cy + Math.sin(angle) * dist];
+}
+
+function labelLines(title) {
+  if (title.length <= 22) return [title];
+  const words = title.split(" ");
+  const lines = [];
+  let line = "";
+  words.forEach(word => {
+    const next = line ? line + " " + word : word;
+    if (next.length > 22 && line) {
+      lines.push(line);
+      line = word;
+    } else line = next;
+  });
+  if (line) lines.push(line);
+  return lines;
+}
+
+function buildRadar() {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "8 -4 520 316");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Radar chart of the eight compliance areas");
+  for (let level = 1; level <= 5; level++) {
+    const ring = document.createElementNS(ns, "polygon");
+    ring.setAttribute("class", "radar-ring");
+    ring.setAttribute("points", CATEGORIES.map((_, i) => polar(i, RADAR.r * level / 5).join(",")).join(" "));
+    svg.appendChild(ring);
+  }
+  CATEGORIES.forEach((_, i) => {
+    const outer = polar(i, RADAR.r);
+    const spoke = document.createElementNS(ns, "line");
+    spoke.setAttribute("class", "radar-spoke");
+    spoke.setAttribute("x1", RADAR.cx);
+    spoke.setAttribute("y1", RADAR.cy);
+    spoke.setAttribute("x2", outer[0]);
+    spoke.setAttribute("y2", outer[1]);
+    svg.appendChild(spoke);
+  });
+  const shape = document.createElementNS(ns, "polygon");
+  shape.id = "radar-shape";
+  shape.setAttribute("class", "radar-shape");
+  const ideal = document.createElementNS(ns, "polygon");
+  ideal.id = "radar-ideal";
+  ideal.setAttribute("class", "radar-ideal");
+  const idealPoints = CATEGORIES.map((_, i) => polar(i, RADAR.r * 4 / 5).join(",")).join(" ");
+  ideal.setAttribute("points", idealPoints);
+  svg.appendChild(ideal);
+  const idealHit = document.createElementNS(ns, "polygon");
+  idealHit.id = "radar-ideal-hit";
+  idealHit.setAttribute("class", "radar-ideal-hit");
+  idealHit.setAttribute("points", idealPoints);
+  svg.appendChild(idealHit);
+  svg.appendChild(shape);
+  const defs = document.createElementNS(ns, "defs");
+  svg.appendChild(defs);
+  CATEGORIES.forEach((_, i) => {
+    const grad = document.createElementNS(ns, "linearGradient");
+    grad.id = "radar-grad-" + i;
+    grad.setAttribute("gradientUnits", "userSpaceOnUse");
+    [0, 1].forEach(offset => {
+      const stop = document.createElementNS(ns, "stop");
+      stop.setAttribute("offset", offset);
+      grad.appendChild(stop);
+    });
+    defs.appendChild(grad);
+    radarGrads.push(grad);
+    const edge = document.createElementNS(ns, "line");
+    edge.setAttribute("class", "radar-edge");
+    edge.setAttribute("stroke", "url(#radar-grad-" + i + ")");
+    svg.appendChild(edge);
+    radarEdges.push(edge);
+  });
+  CATEGORIES.forEach(() => {
+    const node = document.createElementNS(ns, "circle");
+    node.setAttribute("class", "radar-node");
+    node.setAttribute("r", "3.5");
+    svg.appendChild(node);
+    radarNodes.push(node);
+  });
+  CATEGORIES.forEach((cat, i) => {
+    const angle = -Math.PI / 2 + (i / CATEGORIES.length) * Math.PI * 2;
+    const cos = Math.cos(angle);
+    const at = polar(i, RADAR.r + 18);
+    const lines = labelLines(cat.title);
+    const goingUp = Math.sin(angle) < -0.15;
+    const lineH = 16;
+    const startY = goingUp ? at[1] - (lines.length - 1) * lineH : at[1];
+    const link = document.createElementNS(ns, "a");
+    link.setAttribute("href", "#cat-" + cat.id);
+    const text = document.createElementNS(ns, "text");
+    text.setAttribute("class", "radar-label");
+    text.setAttribute("text-anchor", cos > 0.4 ? "start" : cos < -0.4 ? "end" : "middle");
+    lines.forEach((line, li) => {
+      const span = document.createElementNS(ns, "tspan");
+      span.setAttribute("x", at[0]);
+      span.setAttribute("y", startY + li * lineH);
+      span.textContent = line;
+      text.appendChild(span);
+    });
+    link.appendChild(text);
+    svg.appendChild(link);
+  });
+  overview.appendChild(svg);
+}
+
+/* Bar overview, kept if we want it back instead of the radar.
+overview.innerHTML = CATEGORIES.map(cat =>
+  '<a class="ov-row" href="#cat-' + cat.id + '"><span class="ov-num">' + cat.id + '</span><span class="ov-name">' + cat.title +
+  '</span><span class="ov-track"><span class="ov-fill"></span></span><span class="ov-score"></span></a>'
+).join("");
+*/
+buildRadar();
+
+function reserveCopyHeights() {
+  document.querySelectorAll(".area").forEach(area => {
+    const copy = area.querySelector(".area-copy p");
+    const shown = copy.textContent;
+    let max = 0;
+    area.dataset.levels.split("||").forEach(text => {
+      copy.textContent = text;
+      max = Math.max(max, copy.offsetHeight);
+    });
+    copy.style.minHeight = max + "px";
+    copy.textContent = shown;
+  });
+}
+
+function streamCopy(el, text) {
+  if (el.dataset.full === text) return;
+  if (el._stream) clearTimeout(el._stream);
+  el.dataset.full = text;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!el.textContent || reduce) {
+    el.textContent = text;
+    el.classList.remove("is-streaming");
+    el._stream = null;
+    return;
+  }
+  let i = 0;
+  el.classList.add("is-streaming");
+  const tick = () => {
+    i += 1;
+    el.textContent = text.slice(0, i);
+    if (i < text.length) el._stream = setTimeout(tick, 11);
+    else {
+      el._stream = null;
+      el.classList.remove("is-streaming");
+    }
+  };
+  el.textContent = "";
+  tick();
+}
+
+function paint(areaEl, score) {
+  const pill = areaEl.querySelector(".score-pill");
+  const meter = areaEl.querySelector(".meter");
+  const copy = areaEl.querySelector(".area-copy p");
+  pill.className = "score-pill s" + score;
+  pill.textContent = score + " / 5 · " + LABELS[score].toUpperCase();
+  meter.className = "meter s" + score;
+  meter.style.setProperty("--score", score);
+  meter.dataset.score = score;
+  meter.setAttribute("aria-valuenow", score);
+  meter.setAttribute("aria-valuetext", score + " of 5, " + LABELS[score]);
+  streamCopy(copy, areaEl.dataset.levels.split("||")[score - 1]);
+}
+
+function scoreFromPointer(meter, event) {
+  const rect = meter.getBoundingClientRect();
+  const pad = 9;
+  const usable = Math.max(rect.width - 18, 1);
+  const x = Math.min(Math.max(event.clientX - rect.left - pad, 0), usable);
+  return 1 + Math.round((x / usable) * 4);
+}
+
+function band(avg) {
+  return Math.min(5, Math.max(1, Math.round(avg)));
+}
+
+function levelColor(level) {
+  if (level <= 2) return "var(--crit)";
+  if (level === 3) return "var(--warn)";
+  return "var(--good)";
+}
+
+function paintRadar(pts, avgs) {
+  const shape = document.getElementById("radar-shape");
+  if (!shape) return;
+  shape.setAttribute("points", pts.map(p => p.join(",")).join(" "));
+  pts.forEach((pt, i) => {
+    const next = pts[(i + 1) % pts.length];
+    const edge = radarEdges[i];
+    edge.setAttribute("x1", pt[0]);
+    edge.setAttribute("y1", pt[1]);
+    edge.setAttribute("x2", next[0]);
+    edge.setAttribute("y2", next[1]);
+    const grad = radarGrads[i];
+    grad.setAttribute("x1", pt[0]);
+    grad.setAttribute("y1", pt[1]);
+    grad.setAttribute("x2", next[0]);
+    grad.setAttribute("y2", next[1]);
+    const stops = grad.querySelectorAll("stop");
+    stops[0].setAttribute("stop-color", levelColor(band(avgs[i])));
+    stops[1].setAttribute("stop-color", levelColor(band(avgs[(i + 1) % avgs.length])));
+    const node = radarNodes[i];
+    node.setAttribute("cx", pt[0]);
+    node.setAttribute("cy", pt[1]);
+    node.setAttribute("fill", levelColor(band(avgs[i])));
+  });
+}
+
+function countUp(el, to, digits, ms) {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const text = digits ? to.toFixed(digits) : Math.round(to).toLocaleString("en-US");
+  if (reduce) { el.textContent = text; return; }
+  const start = performance.now();
+  const step = now => {
+    const t = Math.min(1, (now - start) / ms);
+    const e = 1 - Math.pow(1 - t, 3);
+    const value = to * e;
+    el.textContent = digits ? value.toFixed(digits) : Math.round(value).toLocaleString("en-US");
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+let radarPlayed = false;
+function averages() {
+  const avgs = [];
+  document.querySelectorAll(".category").forEach(cat => {
+    const meters = [...cat.querySelectorAll(".meter")];
+    const avg = meters.reduce((sum, m) => sum + Number(m.dataset.score), 0) / meters.length;
+    avgs.push(avg);
+    cat.querySelector(".cat-avg").textContent = (scoreMode.value === "mlk" ? "MLK average " : "Preview average ") + avg.toFixed(1) + " / 5";
+  });
+  const pts = avgs.map((avg, i) => polar(i, RADAR.r * (avg / 5)));
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!radarPlayed && !reduce) {
+    radarPlayed = true;
+    const origin = avgs.map((_, i) => polar(i, 0));
+    const started = performance.now();
+    const frame = now => {
+      const t = Math.min(1, (now - started) / 900);
+      const e = 1 - Math.pow(1 - t, 3);
+      paintRadar(pts.map((pt, i) => [
+        origin[i][0] + (pt[0] - origin[i][0]) * e,
+        origin[i][1] + (pt[1] - origin[i][1]) * e
+      ]), avgs);
+      if (t < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  } else paintRadar(pts, avgs);
+  const all = [...document.querySelectorAll(".meter")];
+  const avg = all.reduce((sum, m) => sum + Number(m.dataset.score), 0) / all.length;
+  if (!kpi.dataset.ready) {
+    kpi.dataset.ready = "1";
+    countUp(kpi, avg, 1, 900);
+    countUp(document.getElementById("kpi-areas"), 8, 0, 700);
+    countUp(document.getElementById("kpi-reqs"), 1343, 0, 1100);
+  } else kpi.textContent = avg.toFixed(1);
+}
+
+function setScore(area, score) {
+  paint(area, score);
+  averages();
+}
+
+function assign(randomize) {
+  document.querySelectorAll(".area").forEach(area => {
+    const meter = area.querySelector(".meter");
+    const title = area.querySelector("h4").textContent;
+    const score = randomize ? (1 + Math.floor(Math.random() * 5)) : (MLK_SCORES[title] || Number(meter.dataset.score));
+    paint(area, score);
+  });
+  scoreMode.value = randomize ? "preview" : "mlk";
+  syncScoreMode();
+  averages();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+const dialog = document.getElementById("source-dialog");
+const srcFile = document.getElementById("src-file");
+const srcTitle = document.getElementById("src-title");
+const srcBody = document.getElementById("src-body");
+const srcBack = document.getElementById("src-back");
+const docStack = [];
+
+function syncBack() {
+  srcBack.hidden = docStack.length === 0;
+}
+
+function openDialog() {
+  if (!dialog.open) dialog.showModal();
+  document.documentElement.classList.add("dialog-open");
+  srcBody.scrollTop = 0;
+  syncBack();
+}
+function showDocChrome(isDoc) {
+  dialog.classList.toggle("is-doc", isDoc);
+}
+dialog.addEventListener("close", () => {
+  document.documentElement.classList.remove("dialog-open");
+  docStack.length = 0;
+  syncBack();
+});
+
+function openStandard(code) {
+  const item = SOURCE_DATA.standards[code];
+  if (!item) return openNote(code);
+  srcFile.textContent = item.file;
+  srcTitle.textContent = item.code;
+  showDocChrome(false);
+  const docIcon = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.25" d="M4.25 2.25h5.1L12 4.9v8.85H4.25V2.25z"/><path fill="none" stroke="currentColor" stroke-width="1.25" d="M9.1 2.4V5.1H11.8"/></svg>';
+  const rows = item.eps.map(ep => {
+    const text = String(ep.text).replace(/^\s*\d+\s*[.)]?\s*/, "");
+    return '<div class="src-row"><p>' + escapeHtml(text) + '</p><p class="src-cite"><span class="src-k">sources</span><span class="src-pill">' +
+      docIcon + escapeHtml(item.code) + " Part " + escapeHtml(ep.n) + "</span></p></div>";
+  }).join("");
+  const requirement = item.requirement
+    ? '<p class="req"><span class="req-label">What the standard requires</span>' + escapeHtml(item.requirement) + "</p>"
+    : "";
+  srcBody.innerHTML =
+    requirement +
+    rows +
+    '<p class="clip-note">Cell text from that workbook. Longer cells are shortened in the middle of a sentence.</p>';
+  openDialog();
+}
+
+function openNote(text) {
+  srcFile.textContent = "Not in the 2015 folder";
+  srcTitle.textContent = "No workbook passage";
+  showDocChrome(false);
+  srcBody.innerHTML = "<p>" + escapeHtml(text) + "</p><p class=\"clip-note\">Medical staff and provision of care are named on the index sheet and the chapter files were not included, so there is no passage to open.</p>";
+  openDialog();
+}
+
+function showDoc(name, md, focusCode) {
+  srcFile.textContent = name;
+  showDocChrome(true);
+  srcBody.innerHTML = '<div class="md-body">' + renderMarkdown(md) + "</div>";
+  openDialog();
+  if (focusCode) {
+    const hit = [...srcBody.querySelectorAll(".mark")].find(el => el.textContent === focusCode);
+    if (hit) hit.scrollIntoView({ block: "center" });
+  }
+}
+
+function openDoc(name, focusCode) {
+  if (!/^[\w.-]+\.md$/.test(name)) return;
+  const cached = SOURCE_DATA.docs[name];
+  if (cached) {
+    showDoc(name, cached, focusCode);
+    return;
+  }
+  srcFile.textContent = name;
+  showDocChrome(true);
+  srcBody.innerHTML = "<p>Opening this document.</p>";
+  openDialog();
+  fetch(name)
+    .then(response => {
+      if (!response.ok) throw new Error("missing");
+      return response.text();
+    })
+    .then(md => {
+      SOURCE_DATA.docs[name] = md;
+      if (srcFile.textContent === name) showDoc(name, md, focusCode);
+    })
+    .catch(() => {
+      if (srcFile.textContent === name) srcBody.innerHTML = "<p>This document is not available.</p>";
+    });
+}
+
+const API_LABEL = { yes: "Yes", no: "No", file: "File only", unknown: "Unknown" };
+const CLASS_LABEL = { w: "Workforce", f: "Facility", m: "Mixed", p: "Patient" };
+const KNOWN_LABEL = {
+  yes: "Connected",
+  named: "Not confirmed",
+  example: "Not connected",
+  file: "On file",
+};
+
+function feedStatus(feed) {
+  if (feed.known === "example" && feed.api === "file") return { key: "file", label: "On file" };
+  return { key: feed.known, label: KNOWN_LABEL[feed.known] || "" };
+}
+
+function feedStatusHtml(feed, tag) {
+  const status = feedStatus(feed);
+  const dot = status.key === "yes" ? '<span class="live-dot" aria-hidden="true"></span>' : "";
+  return "<" + tag + ' class="feed-status feed-status--' + status.key + '">' + dot + escapeHtml(status.label) + "</" + tag + ">";
+}
+const FEED_TYPE = {
+  "Electronic health record": "EHR",
+  "Learning management system": "LMS",
+  "Competency system": "Competency",
+  "Learning and competency system": "LMS",
+  "Human resources system": "HRIS",
+  "Staffing plan": "Staffing plan",
+  "Workforce management system": "WFM",
+  "Credentialing system": "Credentialing",
+  "Pharmacy policy set": "Pharmacy policy",
+  "Environmental monitoring": "Environmental monitoring",
+  "Automated dispensing cabinet": "ADC",
+  "Quality audit record": "Quality audit",
+  "Hand-hygiene monitoring": "Hand hygiene",
+  "Infection prevention plan": "Infection plan",
+  "National infection reporting": "Infection reporting",
+  "Laboratory certificate": "Lab certificate",
+  "Point-of-care middleware": "POC testing",
+  "Donation agreements": "Donation agreements",
+  "Policy management system": "Policy system",
+  "Safety and risk system": "Safety and risk",
+  "Governance record": "Governance",
+  "Experience and quality reporting": "Quality reporting",
+  "Accreditation record": "Accreditation",
+  "Life-safety inspection record": "Life safety",
+  "Maintenance management system": "CMMS",
+  "Emergency management system": "Emergency management",
+  "Privacy and security policies": "Privacy and security",
+};
+
+const EHR_ABOUT = {
+  kind: "Electronic health record",
+  about: "The hospital chart for orders, results, documentation, and medication administration.",
+  scope: "Information Technology and Health Information Management · Hospital-wide",
+  link: "Read-only app, or a rates report",
+  how: "There is no login to their database. The hospital approves an app on their own chart, or their analysts send a scheduled file of rates. The app asks for records when it needs them. It is not a live stream. Training completions, inspection logs, and board minutes are not in the chart.",
+};
+
+const FEEDS = {
+  "Staff qualifications and competence": [
+    { name: "SnapSkill", href: "https://snapskill.ai", known: "yes", api: "yes", klass: "w",
+      kind: "Learning management system",
+      about: "Records assigned training, completion, and expiration for the workforce.",
+      scope: "Education or Staff Development · Hospital-wide",
+      link: "Scheduled export",
+      how: "Completions can be exported: person, course, date, and expiration. This system does not read the chart. A completed course is not the same as someone being observed doing the skill.",
+      ask: "A read export of training completions: person, course, completed date, and expiration. Staff already sign in here with MLK credentials.",
+      gate: "Workforce confidentiality. SOC 2 if required of vendors." },
+    { name: "Dossier", href: "https://www.dossier.com", known: "named", api: "no", klass: "w",
+      kind: "Competency system",
+      about: "Records a demonstrated skill, who assessed it, and when it expires.",
+      scope: "Nursing Education or Staff Development · Clinical departments",
+      link: "Scheduled file",
+      how: "No public interface was found. The practical path is a file the vendor already gives customers: person, skill, result, assessor, and expiration. A live connection waits until their tenant is confirmed.",
+      ask: "A scheduled file from Dossier: person, skill, result, assessor, and expiration. No public API was found, so ask for the export, not an API key.",
+      gate: "Workforce confidentiality. SOC 2 if required of vendors." },
+    { name: "HealthStream", href: "https://www.healthstream.com/", known: "yes", api: "unknown", klass: "w",
+      kind: "Learning and competency system",
+      about: "Assigns courses and can record a demonstrated skill for the workforce.",
+      scope: "Education or Staff Development · Hospital-wide",
+      link: "Scheduled export",
+      how: "MLKCH uses HealthStream alongside Dossier. Ask which records live in each. A file of person, course or skill, date, and expiration is the practical path until the tenant interface is confirmed.",
+      ask: "Education or staff development, for a HealthStream export of person, course or skill, completed date, and expiration. MLKCH uses this alongside Dossier.",
+      gate: "Workforce confidentiality. SOC 2 if required of vendors." },
+    { name: "UKG", href: "https://www.ukg.com/", known: "yes", api: "file", klass: "w",
+      kind: "Human resources system",
+      about: "Holds job, professional license, and performance review for employees.",
+      scope: "Human Resources · Hospital-wide",
+      link: "Secure file transfer",
+      how: "UKG is the HR source of truth. A file of license, job, and last evaluation arrives by secure file transfer. Payroll is not part of the score.",
+      ask: "Human resources, for the UKG file of license, verification date, job, and last evaluation. Payroll is not needed.",
+      gate: "Workforce confidentiality." },
+  ],
+  "Nursing leadership and staffing plan": [
+    { name: "The staffing-plan file", known: "example", api: "file", klass: "f",
+      kind: "Staffing plan",
+      about: "The written nurse staffing plan and the nurse executive’s credentials.",
+      scope: "Nursing Administration · Hospital nursing",
+      link: "Document drop",
+      how: "A current PDF from nursing leadership. There is nothing to connect. The written plan is separate from a live scheduling system.",
+      ask: "The current nurse staffing plan and the nurse executive’s credentials, as a PDF or from the share where nursing leadership keeps them. Ask the CNO’s office who owns that file.",
+      gate: "Facility document." },
+    { name: "UKG", href: "https://www.ukg.com/", known: "yes", api: "file", klass: "w",
+      kind: "Workforce management system",
+      about: "Schedules staff and can report hours or headcount by unit.",
+      scope: "Nursing and the staffing office · Hospital-wide, used most by nursing",
+      link: "Unit report",
+      how: "UKG sends a file of hours or headcount by unit. That is enough for live ratios. The written staffing plan is a separate document.",
+      ask: "Nursing or the staffing office, for the UKG unit report: hours or headcount by unit. Not payroll.",
+      gate: "Workforce." },
+  ],
+  "Medical staff credentialing and privileging": [
+    { name: "symplr", href: "https://www.symplr.com/", known: "example", api: "unknown", klass: "p",
+      kind: "Credentialing system",
+      about: "Tracks appointment, clinical privileges, and expiration for physicians and other privileged practitioners.",
+      scope: "Medical Staff Services · Hospital-wide for privileged practitioners",
+      link: "Limited export",
+      how: "The useful extract is practitioner, privileges, and expiration. Peer-review notes and practitioner databank reports stay out even if the product has an interface. A folder of PDFs is a common substitute.",
+      ask: "The medical staff office, for appointment, privilege set, and expiration only. symplr is a common credentialing system. Ask which one they use, or for the folder if it is still PDFs.",
+      gate: "Privileged-practitioner records." },
+  ],
+  "Medication control": [
+    { name: "Pharmacy policy folder", known: "example", api: "file", klass: "f",
+      kind: "Pharmacy policy set",
+      about: "Approved medication-management policies, including high-alert and look-alike lists.",
+      scope: "Pharmacy · Department",
+      link: "Document drop",
+      how: "Current policy PDFs. The score needs the version and the approval date, not a new pharmacy system.",
+      ask: "Pharmacy, for the medication-management policies and the hospital high-alert and look-alike lists. A current PDF is enough.",
+      gate: "Facility document." },
+    { name: "SmartSense", href: "https://www.smartsense.co/", known: "example", api: "unknown", klass: "f",
+      kind: "Environmental monitoring",
+      about: "Logs temperature and expiration for medication storage.",
+      scope: "Pharmacy · Medication storage areas",
+      link: "Sensor export or a log",
+      how: "A file of location, reading, and date. Sensors can be current. A clipboard is only as fresh as the last check. A spreadsheet is as likely as a vendor connection.",
+      ask: "Whoever logs medication-room temperature and expiration. Ask for the log or the sensor export: location, reading, date. SmartSense is one vendor hospitals use. A spreadsheet is just as likely.",
+      gate: "Facility." },
+  ],
+  "Medication use": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "The CTO’s office, for a read-only Oracle Health (Cerner) app on their tenant, or a scheduled report of order, review, and administration rates. They went live on Cerner. FHIR exists. Their tenant still has to turn an app on.",
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
+    { name: "BD Pyxis", href: "https://www.bd.com/en-us/products-and-solutions/products/product-families/pyxis-medstation-es-system", known: "example", api: "unknown", klass: "p",
+      kind: "Automated dispensing cabinet",
+      about: "Locked cabinets on units that record which medication was removed.",
+      scope: "Pharmacy, used by Nursing · Point of care",
+      link: "Through the chart",
+      how: "Cabinets usually already send what was removed into the electronic health record. Read those events from the chart. A direct connection to the cabinet vendor is a separate, slower project.",
+      ask: "Ask whether dispense and administration already land in Oracle Health. Pyxis and Omnicell are the usual cabinets.",
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
+  ],
+  "Identification, medications, alarms, and critical results": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "The same Oracle Health access as medication use: two-identifier documentation, transfusion match, critical-result timing, and medication reconciliation, as rates.",
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
+    { name: "Audit spreadsheet or form", known: "example", api: "file", klass: "m",
+      kind: "Quality audit record",
+      about: "Observation rounds for practices that are not already in the chart, such as time-out or patient identification.",
+      scope: "Quality, often with Nursing · Unit level",
+      link: "A form, not a system",
+      how: "Someone records unit, pass or fail, and date. There is no product to connect. Leave patient names off the sheet and the result stays a rate.",
+      ask: "Quality, for the observation rounds that are not in the chart. Ask who keeps the time-out or identifier audit, and for unit, pass/fail, and date. No patient names.",
+      gate: "Mixed. Unit and result only." },
+  ],
+  "Infection steps, suicide risk, and procedures": [
+    { name: "BioVigil", href: "https://www.biovigil.com/", known: "example", api: "unknown", klass: "f",
+      kind: "Hand-hygiene monitoring",
+      about: "Records whether people clean their hands, usually as a unit pass rate.",
+      scope: "Infection Prevention · Clinical areas",
+      link: "Export or paper rounds",
+      how: "Apps in this category usually export a unit pass rate. Paper rounds have no interface. The score only needs the rate.",
+      ask: "Infection prevention, for hand-hygiene observation results: unit and pass rate. BioVigil is one app hospitals use. Paper rounds are common. Ask which they have.",
+      gate: "Facility." },
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Oracle Health, for suicide-risk screening, line and catheter bundles, and the procedure time-out, as a rate. Not the note.",
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
+  ],
+  "Infection prevention program": [
+    { name: "Infection plan documents", known: "example", api: "file", klass: "f",
+      kind: "Infection prevention plan",
+      about: "The risk assessment, the prevention plan, and who is accountable.",
+      scope: "Infection Prevention · Hospital-wide program",
+      link: "Document drop",
+      how: "The risk assessment and the plan, as PDFs. Surveillance rates are a separate request and are not in these documents.",
+      ask: "The infection prevention owner, for the risk assessment, the plan, and who is accountable. A PDF.",
+      gate: "Facility." },
+    { name: "NHSN", href: "https://www.cdc.gov/nhsn/", known: "example", api: "no", klass: "m",
+      kind: "National infection reporting",
+      about: "The federal system hospitals use to submit infection rates.",
+      scope: "Infection Prevention · External reporting, not the internal chart",
+      link: "The rates they already file",
+      how: "Hospitals submit infection rates into this federal system. It is not a practical system to read back from. Ask infection prevention for the monthly rates they already file.",
+      ask: "Infection prevention, for the monthly rates they already report. NHSN is where Medicare hospitals file. It is not a practical read API. A local tool such as VigiLanz may hold the list. Ask for the rate, not the list.",
+      gate: "Mixed. Rates only." },
+  ],
+  "Waived testing": [
+    { name: "CLIA certificate and competency", known: "named", api: "file", klass: "w",
+      kind: "Laboratory certificate",
+      about: "The federal testing certificate and the list of people allowed to perform waived tests.",
+      scope: "Laboratory · Department",
+      link: "Certificate plus a competency export",
+      how: "The certificate is a PDF. Who may perform the test comes from the learning or competency export, not from a laboratory interface.",
+      ask: "The lab director named on the CLIA certificate, for the certificate PDF, plus who is allowed to run waived tests from Dossier or SnapSkill.",
+      gate: "Facility and workforce." },
+    { name: "Telcor", href: "https://www.telcor.com/", known: "example", api: "unknown", klass: "m",
+      kind: "Point-of-care middleware",
+      about: "Connects bedside test devices and their quality-control results.",
+      scope: "Laboratory point-of-care · Nursing units",
+      link: "Through the chart, or a device log",
+      how: "Bedside devices often pass quality-control results into the chart. That path is the one to use. A paper log is possible. The patient result is a separate request.",
+      ask: "Whoever runs glucometer quality control. Ask for device, pass/fail, and date. Telcor (RALS) is a common middleware into the EHR. A paper log is possible.",
+      gate: "Facility. Device quality control." },
+  ],
+  "Tissue and organ responsibilities": [
+    { name: "OPO and tissue-bank agreements", known: "example", api: "file", klass: "f",
+      kind: "Donation agreements",
+      about: "Contracts with the organ procurement organization and tissue banks.",
+      scope: "Organ-donation coordinator or Medical Staff Services · Hospital-wide",
+      link: "Document drop",
+      how: "Contract PDFs. They are renewed over years, not a live feed.",
+      ask: "The organ-donation coordinator or medical staff office, for the agreements with the organ procurement organization and the tissue banks.",
+      gate: "A contract." },
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "example", api: "unknown", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Only if they implant tissue: ask perioperative services which system traces an implant to a patient. Often it is the EHR or a log. Confirm they implant before asking.",
+      gate: "Patient data. HIPAA agreement." },
+  ],
+  "Medical record": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "yes", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Health information management and the CTO, for Oracle Health rates: signed entries, verbal-order sign-off, operative notes, and discharge information. A pointer back to the chart, not a copy of the note.",
+      gate: "Patient data. HIPAA agreement and SOC 2 Type II." },
+  ],
+  "Patient rights": [
+    { name: "PolicyStat", href: "https://www.policystat.com/", known: "example", api: "file", klass: "f",
+      kind: "Policy management system",
+      about: "Stores the current approved policy, its version, and the approval date.",
+      scope: "Quality, Risk, or Administration · Hospital-wide",
+      link: "Version and approval date",
+      how: "An export or a shared folder of the current PDF is enough. The policy editor does not need to be rebuilt. The signed consent in the chart is separate.",
+      ask: "Whoever owns policies, for the consent, grievance, and patient-rights policies: current version and approval date. PolicyStat is a common policy system. SharePoint or a shared drive is just as likely. Ask where theirs live.",
+      gate: "A policy document." },
+    { name: "RLDatix", href: "https://www.rldatix.com/", known: "example", api: "file", klass: "m",
+      kind: "Safety and risk system",
+      about: "Records grievances, incidents, and claims.",
+      scope: "Patient Relations and Risk Management · Hospital-wide",
+      link: "A monthly count",
+      how: "The case file names patients. The score uses a count by month. A spreadsheet is as common as a risk system, and either one can be a file.",
+      ask: "Patient relations or risk, for a monthly count of grievances. RLDatix is a common risk system. A spreadsheet is common too.",
+      gate: "Mixed. A monthly count." },
+  ],
+  "Provision of care, treatment, and services": [
+    { name: "Oracle Health", href: "https://www.oracle.com/health/", known: "example", api: "yes", klass: "p",
+      ...EHR_ABOUT,
+      ask: "Not yet. The workbook is missing. When it exists, ask for the same Oracle Health read as the medical record: assessment, orders carried out, restraint, and discharge coordination, as rates. Policies from the policy owner.",
+      gate: "Patient data. HIPAA agreement." },
+  ],
+  "Leadership and governance": [
+    { name: "Board and leadership files", known: "example", api: "file", klass: "f",
+      kind: "Governance record",
+      about: "Minutes, organization chart, budget approval, and the contract list.",
+      scope: "Chief Executive’s office or the board clerk · Hospital-wide",
+      link: "Document drop",
+      how: "Minutes, the organization chart, budget approval, and the contract list, as files. Redact any minute that names a patient or a peer-review case before it is sent.",
+      ask: "The CEO’s office or the board clerk, for twelve months of governing-body minutes, the org chart, the budget approval, and the contract list. Ask where those files live.",
+      gate: "Documents." },
+  ],
+  "Performance improvement": [
+    { name: "Press Ganey", href: "https://www.pressganey.com/", known: "example", api: "file", klass: "m",
+      kind: "Experience and quality reporting",
+      about: "Collects survey results and the performance measures shown to surveyors.",
+      scope: "Quality · Hospital-wide",
+      link: "The report they already show",
+      how: "A copy of the rates they already give surveyors is a file or a login. It is not a connection into the surveyor’s system.",
+      ask: "Quality, for twelve months of the performance measures they already show surveyors, including ORYX or Accelerate PI if they use it. Press Ganey is a common survey vendor, not necessarily theirs. Ask for the rate and what it measures.",
+      gate: "Mixed. Rates only." },
+  ],
+  "Accreditation participation": [
+    { name: "Accreditation file", known: "example", api: "file", klass: "f",
+      kind: "Accreditation record",
+      about: "The Joint Commission application and how patients and staff report a concern.",
+      scope: "Accreditation or Quality · Hospital-wide",
+      link: "Document drop",
+      how: "The application and the concern-reporting path, as documents. Nothing to connect.",
+      ask: "The accreditation or quality lead, for the current Joint Commission application and the path patients and staff use to report a concern.",
+      gate: "Documents." },
+  ],
+  "Life safety": [
+    { name: "Facilities inspection files", known: "example", api: "file", klass: "f",
+      kind: "Life-safety inspection record",
+      about: "Fire-alarm, sprinkler, extinguisher, and life-safety drawing inspections.",
+      scope: "Facilities · Building-wide",
+      link: "Filed PDFs",
+      how: "Inspection companies usually email the report. Their portals rarely offer a connection the hospital can hand over. The useful record is what was inspected, the date, the next due date, and the file.",
+      ask: "Facilities, for fire-alarm, sprinkler, extinguisher, and life-safety drawing records: what was inspected, the date, the next due date, and the PDF. These usually arrive from the inspection vendor by email.",
+      gate: "Facility." },
+  ],
+  "Environment of care": [
+    { name: "Nuvolo", href: "https://www.nuvolo.com/", known: "example", api: "file", klass: "f",
+      kind: "Maintenance management system",
+      about: "Work orders for equipment maintenance, fire drills, generator tests, and medical-gas inspections.",
+      scope: "Facilities and Biomedical Engineering · Hospital-wide",
+      link: "Report or spreadsheet",
+      how: "A maintenance system can usually export work orders and due dates. If the record is still a spreadsheet, that file is the interface. The fire-alarm vendor does not need to be replaced.",
+      ask: "Facilities or biomedical engineering, for fire drills, generator tests, medical-equipment maintenance, and medical-gas inspections. Nuvolo is one CMMS hospitals use. Ask what they use, or for the spreadsheets if that is still the record.",
+      gate: "Facility." },
+  ],
+  "Emergency management": [
+    { name: "Veoci", href: "https://www.veoci.com/", known: "example", api: "file", klass: "f",
+      kind: "Emergency management system",
+      about: "Holds the hazard analysis, the emergency plan, and exercise write-ups.",
+      scope: "Emergency Management · Hospital-wide",
+      link: "Export or the plan file",
+      how: "Products in this category have an admin export. A Word file on a shared drive does not. The plan changes on a cycle of years, so a file is enough.",
+      ask: "Emergency management, for the hazard vulnerability analysis, the emergency operations plan, and the last exercise write-up. Veoci is one product hospitals buy. Word on a share drive is common. Ask which they have.",
+      gate: "Facility." },
+  ],
+  "Information privacy, security, and continuity": [
+    { name: "Information-management policies", known: "example", api: "file", klass: "f",
+      kind: "Privacy and security policies",
+      about: "Approved policies for privacy, security, downtime, and retrieving records.",
+      scope: "Privacy Officer and Information Security · Hospital-wide",
+      link: "Document drop",
+      how: "The policies are documents. The log of who opened a chart is a different system and is not part of this score.",
+      ask: "The privacy or information-security officer, for the policies on privacy, security, downtime, and retrieving records. Not the access log of who opened a chart.",
+      gate: "A policy document." },
+  ],
+};
+
+function feedChip(kind, text) {
+  return '<span class="feed-chip feed-chip--' + kind + '">' + escapeHtml(text) + "</span>";
+}
+
+const FEED_LOGO = {
+  "SnapSkill": "logos/snapskill.png",
+  "Dossier": "logos/dossier.png",
+  "HealthStream": "logos/healthstream.png",
+  "UKG": "logos/ukg.png",
+  "symplr": "logos/symplr.png",
+  "SmartSense": "logos/smartsense.png",
+  "BD Pyxis": "logos/pyxis.png",
+  "BioVigil": "logos/biovigil.png",
+  "NHSN": "logos/nhsn.png",
+  "Telcor": "logos/telcor.png",
+  "RLDatix": "logos/rldatix.png",
+  "Press Ganey": "logos/pressganey.png",
+  "Nuvolo": "logos/nuvolo.png",
+  "Veoci": "logos/veoci.png",
+};
+
+function feedType(feed) {
+  return FEED_TYPE[feed.kind] || feed.kind;
+}
+
+function feedLogo(feed) {
+  const src = FEED_LOGO[feed.name];
+  if (!src) return "";
+  return '<img class="feed-logo" src="' + src + '" alt="" width="28" height="28">';
+}
+
+function feedName(feed) {
+  const label = escapeHtml(feed.name);
+  if (!feed.href) return label;
+  return '<a href="' + feed.href + '" target="_blank" rel="noopener noreferrer">' + label + "</a>";
+}
+
+function feedProduct(feed) {
+  if (feed.known === "example" && !FEED_LOGO[feed.name]) return "";
+  return '<p class="feed-product">' + feedLogo(feed) + '<span class="feed-source-name">' + feedName(feed) + "</span></p>";
+}
+
+function groupFeeds(feeds) {
+  const groups = [];
+  const byType = new Map();
+  feeds.forEach(feed => {
+    const type = feedType(feed);
+    let group = byType.get(type);
+    if (!group) {
+      group = { type: type, feeds: [] };
+      byType.set(type, group);
+      groups.push(group);
+    }
+    group.feeds.push(feed);
+  });
+  return groups;
+}
+
+function feedFacts(feeds) {
+  const abouts = [...new Set(feeds.map(feed => feed.about))];
+  const scopes = [...new Set(feeds.map(feed => feed.scope))];
+  let html = "";
+  if (abouts.length === 1) {
+    html += '<p class="feed-fact"><span class="feed-k">What</span>' + escapeHtml(feeds[0].kind + ". " + feeds[0].about) + "</p>";
+  }
+  if (scopes.length === 1) {
+    html += '<p class="feed-fact"><span class="feed-k">Who</span>' + escapeHtml(scopes[0]) + "</p>";
+  }
+  return html ? '<div class="feed-facts">' + html + "</div>" : "";
+}
+
+function feedSources(feeds) {
+  const abouts = new Set(feeds.map(feed => feed.about));
+  const scopes = new Set(feeds.map(feed => feed.scope));
+  return '<ul class="feed-sources">' + feeds.map(feed =>
+    '<li class="feed-source">' +
+    feedLogo(feed) +
+    '<span class="feed-source-name">' + feedName(feed) +
+    (abouts.size > 1 ? '<span class="feed-source-note">' + escapeHtml(feed.about) + "</span>" : "") +
+    (scopes.size > 1 ? '<span class="feed-source-note">' + escapeHtml(feed.scope) + "</span>" : "") +
+    "</span>" +
+    feedStatusHtml(feed, "span") +
+    "</li>"
+  ).join("") + "</ul>";
+}
+
+function openFeed(title) {
+  const feeds = FEEDS[title];
+  srcFile.textContent = "Live sources";
+  srcTitle.textContent = title;
+  showDocChrome(false);
+  if (!feeds) {
+    srcBody.innerHTML = "<p>No access note for this topic yet.</p>";
+    openDialog();
+    return;
+  }
+  srcBody.innerHTML =
+    groupFeeds(feeds).map(group => {
+      const many = group.feeds.length > 1;
+      return '<article class="feed">' +
+        '<div class="feed-top"><div>' +
+        '<div class="feed-where">Live source</div>' +
+        "<h3>" + escapeHtml(group.type) + "</h3>" +
+        (many ? "" : feedProduct(group.feeds[0])) +
+        "</div>" +
+        (many ? "" : feedStatusHtml(group.feeds[0], "p")) +
+        "</div>" +
+        (many ? feedSources(group.feeds) : "") +
+        feedFacts(group.feeds) +
+        "</article>";
+    }).join("");
+  openDialog();
+}
+
+CATEGORIES.forEach(cat => {
+  const article = document.createElement("article");
+  article.className = "category";
+  article.id = "cat-" + cat.id;
+  const n = cat.areas.length;
+  article.innerHTML =
+    '<header class="category-head"><div class="category-title"><span class="cat-num">' + cat.id +
+    '</span><h3>' + cat.title + '</h3></div><span class="count">' + n + " " +
+    (n === 1 ? "TOPIC" : "TOPICS") + '<span class="cat-avg"></span></span></header>';
+
+  cat.areas.forEach(area => {
+    const block = document.createElement("div");
+    block.className = "area";
+    block.dataset.levels = area.levels.join("||");
+    block.innerHTML =
+      '<div class="area-top"><h4>' + area.title + '</h4><div class="area-badges">' +
+      '<button type="button" class="source-link">Data source</button>' +
+      '<span class="score-pill"></span>' +
+      '<div class="meter" role="slider" tabindex="0" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" aria-label="Preview score for ' + area.title + '">' +
+      '<div class="meter-fill"></div><div class="meter-thumb"></div></div>' +
+      '</div></div><div class="area-copy"><p></p></div>';
+    const evidence = document.createElement("div");
+    evidence.className = "evidence";
+    const label = document.createElement("span");
+    label.className = "evidence-label";
+    label.textContent = "STANDARDS";
+    evidence.appendChild(label);
+    area.evidence.split(" · ").forEach(part => {
+      const code = part.trim();
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "src" + (SOURCE_DATA.standards[code] ? "" : " note");
+      btn.textContent = code;
+      btn.addEventListener("click", () => SOURCE_DATA.standards[code] ? openStandard(code) : openNote(code));
+      evidence.appendChild(btn);
+    });
+    block.querySelector(".source-link").addEventListener("click", () => openFeed(area.title));
+    if (area.title === "Medication use") {
+      block.classList.add("has-gap");
+      const gap = document.createElement("button");
+      gap.type = "button";
+      gap.className = "gap-note";
+      gap.setAttribute("aria-label", "Gap found");
+      gap.innerHTML =
+        '<span class="gap-dot" aria-hidden="true"></span>' +
+        '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 1.6 15 14.2H1L8 1.6zm0 4.2c-.4 0-.7.3-.7.7v3.2c0 .4.3.7.7.7s.7-.3.7-.7V6.5c0-.4-.3-.7-.7-.7zm0 6.1a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6z"/></svg>' +
+        "Gap found";
+      gap.addEventListener("click", () => {
+        document.getElementById("gap-dialog").showModal();
+        document.documentElement.classList.add("dialog-open");
+      });
+      block.appendChild(gap);
+    }
+    block.appendChild(evidence);
+    article.appendChild(block);
+  });
+
+  const details = document.createElement("details");
+  details.className = "source-details";
+  details.innerHTML = '<summary>What this area is asking</summary><div class="source-detail-body"><p>' +
+    cat.blurb + ' The line-by-line requirements are in the <a href="03-Compliance-Scorecard.md" data-doc="03-Compliance-Scorecard.md">Scorecard Methodology</a>.</p></div>';
+  article.appendChild(details);
+  root.appendChild(article);
+});
+
+let drag = null;
+root.addEventListener("pointerdown", event => {
+  const meter = event.target.closest(".meter");
+  if (!meter || event.button > 0) return;
+  event.preventDefault();
+  const area = meter.closest(".area");
+  drag = { meter, area, pointerId: event.pointerId };
+  try { meter.setPointerCapture(event.pointerId); } catch (err) { /* pointer already released */ }
+  setScore(area, scoreFromPointer(meter, event));
+});
+function moveDrag(event) {
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  event.preventDefault();
+  setScore(drag.area, scoreFromPointer(drag.meter, event));
+}
+function endDrag(event) {
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  try { drag.meter.releasePointerCapture(event.pointerId); } catch (err) { /* already released */ }
+  drag = null;
+}
+window.addEventListener("pointermove", moveDrag);
+window.addEventListener("pointerup", endDrag);
+window.addEventListener("pointercancel", endDrag);
+
+root.addEventListener("keydown", event => {
+  const meter = event.target.closest(".meter");
+  if (!meter) return;
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  event.preventDefault();
+  const current = Number(meter.dataset.score);
+  const next = event.key === "ArrowRight" ? Math.min(5, current + 1) : Math.max(1, current - 1);
+  setScore(meter.closest(".area"), next);
+});
+
+document.addEventListener("click", event => {
+  const link = event.target.closest("[data-doc]");
+  if (!link) return;
+  event.preventDefault();
+  const next = link.getAttribute("data-doc");
+  if (dialog.open && srcBody.querySelector(".md-body") && srcFile.textContent && srcFile.textContent !== next) {
+    docStack.push({ name: srcFile.textContent, scroll: srcBody.scrollTop });
+  }
+  openDoc(next);
+});
+
+srcBack.addEventListener("click", () => {
+  const prev = docStack.pop();
+  if (!prev || !SOURCE_DATA.docs[prev.name]) {
+    syncBack();
+    return;
+  }
+  showDoc(prev.name, SOURCE_DATA.docs[prev.name]);
+  srcBody.scrollTop = prev.scroll;
+});
+
+const tip = document.createElement("div");
+tip.className = "tip";
+tip.hidden = true;
+dialog.appendChild(tip);
+
+function placeTip(anchor, html) {
+  tip.innerHTML = html;
+  tip.hidden = false;
+  const rect = anchor.getBoundingClientRect();
+  const width = tip.offsetWidth;
+  const height = tip.offsetHeight;
+  let left = Math.min(rect.left, window.innerWidth - width - 12);
+  let top = rect.bottom + 8;
+  if (left < 12) left = 12;
+  if (top + height > window.innerHeight - 12) top = Math.max(12, rect.top - height - 8);
+  tip.style.left = left + "px";
+  tip.style.top = top + "px";
+}
+
+function hideTip() {
+  tip.hidden = true;
+  tip.innerHTML = "";
+}
+
+srcBody.addEventListener("mouseover", event => {
+  const cell = event.target.closest(".feed-cell--tip");
+  if (!cell) return;
+  if (cell.dataset.gate) {
+    placeTip(cell, '<span class="tip-k">Requires</span><p class="tip-v">' + cell.dataset.gate + "</p>");
+    return;
+  }
+  placeTip(cell,
+    '<span class="tip-k">How</span><p class="tip-v"><strong>' + cell.dataset.link + "</strong> " + cell.dataset.how + "</p>");
+});
+srcBody.addEventListener("mouseout", event => {
+  const from = event.target.closest(".feed-cell--tip");
+  if (!from) return;
+  const next = event.relatedTarget && event.relatedTarget.closest && event.relatedTarget.closest(".feed-cell--tip");
+  if (next === from) return;
+  hideTip();
+});
+dialog.addEventListener("close", hideTip);
+
+document.getElementById("src-close").addEventListener("click", () => dialog.close());
+const gapDialog = document.getElementById("gap-dialog");
+document.getElementById("gap-close").addEventListener("click", () => gapDialog.close());
+gapDialog.addEventListener("close", () => {
+  if (!dialog.open) document.documentElement.classList.remove("dialog-open");
+});
+const scoreMode = { value: "mlk" };
+const MLK_SCORES = {
+  "Staff qualifications and competence": 4,
+  "Nursing leadership and staffing plan": 4,
+  "Medical staff credentialing and privileging": 3,
+  "Medication control": 4,
+  "Medication use": 3,
+  "Identification, medications, alarms, and critical results": 3,
+  "Infection steps, suicide risk, and procedures": 4,
+  "Infection prevention program": 4,
+  "Waived testing": 3,
+  "Tissue and organ responsibilities": 4,
+  "Medical record": 4,
+  "Patient rights": 3,
+  "Provision of care, treatment, and services": 2,
+  "Leadership and governance": 4,
+  "Performance improvement": 4,
+  "Accreditation participation": 5,
+  "Life safety": 4,
+  "Environment of care": 3,
+  "Emergency management": 4,
+  "Information privacy, security, and continuity": 4,
+};
+
+function syncScoreMode() {
+  const mlk = scoreMode.value === "mlk";
+  document.getElementById("kpi-label").textContent = mlk ? "MLK average" : "Preview average";
+  document.getElementById("live-pill").lastChild.textContent = mlk ? "MLKCH Connected View" : "Illustrative · not a live score";
+  document.getElementById("mlk-stats").classList.toggle("is-on", mlk);
+}
+
+const radarTip = document.createElement("div");
+radarTip.className = "tip";
+radarTip.hidden = true;
+document.body.appendChild(radarTip);
+const idealRing = document.getElementById("radar-ideal-hit");
+idealRing.addEventListener("mouseenter", () => {
+  radarTip.hidden = false;
+  radarTip.innerHTML = '<span class="tip-k">Baseline</span><p class="tip-v">Ideal for a compliant system. Score 4.</p>';
+  const rect = idealRing.getBoundingClientRect();
+  radarTip.style.left = Math.min(rect.left, window.innerWidth - 292) + "px";
+  radarTip.style.top = (rect.top - 8) + "px";
+});
+idealRing.addEventListener("mouseleave", () => { radarTip.hidden = true; });
+
+document.getElementById("reshuffle").addEventListener("click", () => assign(true));
+document.getElementById("mlk-stats").addEventListener("click", () => assign(false));
+assign(false);
+
+function renderConnectors() {
+  const rows = new Map();
+  Object.entries(FEEDS).forEach(([topic, feeds]) => {
+    feeds.forEach(feed => {
+      const key = feed.name + "|" + feed.kind;
+      let row = rows.get(key);
+      if (!row) {
+        row = { feed: feed, topics: [] };
+        rows.set(key, row);
+      }
+      row.topics.push(topic);
+    });
+  });
+  const rank = { yes: 0, named: 1, file: 2, example: 3 };
+  const list = [...rows.values()].sort((a, b) => {
+    const diff = (rank[feedStatus(a.feed).key] ?? 9) - (rank[feedStatus(b.feed).key] ?? 9);
+    return diff || a.feed.name.localeCompare(b.feed.name);
+  });
+  const topicLimit = 3;
+  document.getElementById("connectors").innerHTML = list.map(row => {
+    const extra = row.topics.slice(topicLimit);
+    const pills = row.topics.map((topic, i) =>
+      "<li" + (i >= topicLimit ? ' class="feed-topic-extra" hidden' : "") + ">" + escapeHtml(topic) + "</li>"
+    ).join("");
+    const more = extra.length
+      ? '<li class="feed-topics-more"><button type="button" class="feed-more" aria-expanded="false">and ' + extra.length + " more</button></li>"
+      : "";
+    return '<article class="feed"><div class="feed-top"><div>' +
+      '<div class="feed-where">' + escapeHtml(feedType(row.feed)) + "</div>" +
+      "<h3>" + feedLogo(row.feed) + feedName(row.feed) + "</h3></div>" +
+      feedStatusHtml(row.feed, "p") + "</div>" +
+      feedFacts([row.feed]) +
+      '<ul class="feed-topics">' + pills + more + "</ul></article>";
+  }).join("");
+}
+
+document.getElementById("connectors").addEventListener("click", event => {
+  const btn = event.target.closest(".feed-more");
+  if (!btn) return;
+  const list = btn.closest(".feed-topics");
+  const open = btn.getAttribute("aria-expanded") !== "true";
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  list.querySelectorAll(".feed-topic-extra").forEach(item => { item.hidden = !open; });
+  const count = list.querySelectorAll(".feed-topic-extra").length;
+  btn.textContent = open ? "Show less" : "and " + count + " more";
+});
+
+function showView(name) {
+  if (name !== "method" && name !== "connectors") name = "live";
+  document.querySelectorAll(".view").forEach(view => {
+    view.hidden = view.id !== "view-" + name;
+  });
+  document.querySelectorAll(".views button").forEach(btn => {
+    btn.setAttribute("aria-selected", btn.dataset.view === name ? "true" : "false");
+  });
+}
+
+document.querySelector(".views").addEventListener("click", event => {
+  const btn = event.target.closest("button");
+  if (!btn) return;
+  showView(btn.dataset.view);
+  window.scrollTo(0, 0);
+});
+renderConnectors();
+showView(location.hash.replace("#", ""));
+reserveCopyHeights();
+let copyResize;
+window.addEventListener("resize", () => {
+  clearTimeout(copyResize);
+  copyResize = setTimeout(reserveCopyHeights, 120);
+});
+</script>
+</body>
+</html>
