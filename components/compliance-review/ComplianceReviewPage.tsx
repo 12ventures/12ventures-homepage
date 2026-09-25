@@ -12,7 +12,10 @@ const ComplianceReviewPage: React.FC<{ variant?: 'mlkch' }> = ({ variant }) => {
   }, [title]);
 
   return (
-    <ComplianceReviewPasswordGate>
+    <ComplianceReviewPasswordGate
+      kicker={mlkch ? 'Joint Commission' : 'The Joint Commission'}
+      heading={mlkch ? 'Real-Time Compliance' : 'Live Assessment'}
+    >
       <div className="flex flex-col" style={{ height: '100vh', background: '#0b1220' }}>
         <iframe
           title={title}
