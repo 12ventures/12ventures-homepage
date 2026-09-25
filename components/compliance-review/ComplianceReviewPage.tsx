@@ -4,7 +4,7 @@ import ComplianceReviewPasswordGate from './ComplianceReviewPasswordGate';
 const ComplianceReviewPage: React.FC<{ variant?: 'mlkch' }> = ({ variant }) => {
   const mlkch = variant === 'mlkch';
   const title = mlkch
-    ? 'Joint Commission Live Assessment · MLKCH'
+    ? 'Joint Commission Real-Time Compliance · MLKCH'
     : 'Joint Commission Live Assessment';
 
   useEffect(() => {

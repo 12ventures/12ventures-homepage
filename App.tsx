@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { CalculatorModalProvider } from './contexts/CalculatorModalContext';
 import VenturesHome from './components/VenturesHome';
@@ -281,7 +281,8 @@ const App: React.FC = () => {
           <Route path="/noci/execution-roadmap" element={<NociExecutionRoadmapPage />} />
 
           <Route path="/joint-commission-live-assessment" element={<ComplianceReviewPage />} />
-          <Route path="/joint-commission-live-assessment-mlkch" element={<ComplianceReviewPage variant="mlkch" />} />
+          <Route path="/joint-commission-real-time-compliance" element={<ComplianceReviewPage variant="mlkch" />} />
+          <Route path="/joint-commission-live-assessment-mlkch" element={<Navigate to="/joint-commission-real-time-compliance" replace />} />
 
           {/* AI 2 Production (working name) */}
           <Route
