@@ -281,6 +281,7 @@ const App: React.FC = () => {
           <Route path="/noci/execution-roadmap" element={<NociExecutionRoadmapPage />} />
 
           <Route path="/joint-commission-live-assessment" element={<ComplianceReviewPage />} />
+          <Route path="/joint-commission-live-assessment-mlkch" element={<ComplianceReviewPage variant="mlkch" />} />
 
           {/* AI 2 Production (working name) */}
           <Route

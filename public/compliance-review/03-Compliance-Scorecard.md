@@ -1,4 +1,4 @@
-# Compliance scorecard and category model
+# Scorecard Methodology
 
 This is the category model for hospital compliance readiness: a small set of domains, a score, a status word, and the evidence underneath. Two numbers are defined on purpose, because only one of them can be calculated from these workbooks.
 
