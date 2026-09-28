@@ -78,6 +78,11 @@
   .views button[aria-selected="true"] { color:var(--ink); background:var(--surface-2); }
   .views button:hover { color:var(--ink); }
   .view[hidden] { display:none; }
+  body.is-graph { height:100dvh; overflow:hidden; display:flex; flex-direction:column; }
+  body.is-graph .wrap { flex:1; min-height:0; max-width:none; width:100%; padding:0; display:flex; flex-direction:column; }
+  body.is-graph #view-graph { flex:1; min-height:0; display:flex; }
+  body.is-graph footer { display:none; }
+  .graph-frame { flex:1; width:100%; min-height:0; border:0; background:transparent; }
   .connector-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .connector-grid .feed { margin:0; padding:18px 18px 16px; border-radius:14px;
     background:linear-gradient(180deg, color-mix(in srgb, #8eb4e0 8%, var(--surface-2)), var(--surface) 82%);
@@ -305,6 +310,24 @@
   .src-pill { display:inline-flex; align-items:center; gap:5px; font-family:ui-monospace,monospace; font-size:11px; font-weight:650;
     color:var(--ink); background:color-mix(in srgb, var(--accent) 10%, transparent);
     border:1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius:999px; padding:3px 8px 3px 6px; }
+  button.src-pill { appearance:none; cursor:pointer; }
+  button.src-pill:hover { background:color-mix(in srgb, var(--accent) 20%, transparent); }
+  dialog.is-sheet { width:min(1440px, calc(100vw - 32px)); }
+  dialog.is-sheet .dialog-body { padding:0; overflow:hidden; background:#0e1624; }
+  .sheet-scroll { overflow:auto; max-height:calc(100dvh - 148px); padding:14px 16px 18px; overscroll-behavior:contain;
+    scrollbar-width:thin; scrollbar-color:#34506e transparent; }
+  .sheet-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; line-height:1.45;
+    background:#10192a; }
+  .sheet-table th, .sheet-table td { text-align:left; vertical-align:top; padding:8px 10px; min-width:0;
+    border-right:1px solid #3a5170; border-bottom:1px solid #3a5170; background:#10192a; color:var(--ink);
+    white-space:pre-wrap; overflow-wrap:anywhere; }
+  .sheet-table tr:first-child th, .sheet-table tr:first-child td { border-top:1px solid #3a5170; }
+  .sheet-table tr th:first-child, .sheet-table tr td:first-child { border-left:1px solid #3a5170; }
+  .sheet-table tr.sheet-band td { background:#1b2c42; }
+  .sheet-table tr.sheet-head th { background:#2c4666; color:#fff; font-weight:700; font-size:11.5px; letter-spacing:.02em; }
+  .sheet-table tr.sheet-section td { background:#17283a; color:#d5e2f0; font-weight:650; }
+  .sheet-table tr.sheet-hit td { background:#1d4a38; color:#fff; }
+  .sheet-table tr.sheet-hit td:first-child { box-shadow:inset 3px 0 0 var(--good); }
   .clip-note { color:var(--ink-faint); font-size:12px; margin:8px 0 0; }
   .md-body h2, .md-body h3, .md-body h4 { font-family:Georgia,serif; margin:1.1em 0 .35em; color:var(--ink); }
   dialog.is-doc .dialog-file, dialog.is-doc #src-title { display:none; }
@@ -440,6 +463,7 @@
         <button type="button" data-view="live" aria-selected="true">Live assessment</button>
         <button type="button" data-view="method" aria-selected="false">Methodology</button>
         <button type="button" data-view="connectors" aria-selected="false">Connectors</button>
+        <button type="button" data-view="graph" aria-selected="false">Knowledge graph</button>
       </nav>
     </div>
   </div>
@@ -491,6 +515,10 @@
         <article class="doc"><h3><a href="02-How-Hospital-Audits-Work.md" data-doc="02-How-Hospital-Audits-Work.md">How a hospital accreditation survey actually works</a></h3><p>What happens when surveyors arrive, why the preparation feels long, and what the hospital has to hand them.</p></article>
       </div>
     </section>
+  </div>
+
+  <div class="view" id="view-graph" hidden>
+    <iframe class="graph-frame" id="graph-frame" title="Knowledge graph"></iframe>
   </div>
 
   <div class="view" id="view-connectors" hidden>
@@ -561,6 +589,7 @@
 
 <script src="sources-data.js"></script>
 <script src="markdown-view.js"></script>
+<script src="workbook-view.js"></script>
 <script>
 const LABELS = ["", "Not in place", "Major gaps", "Partly in place", "Mostly in place", "Survey ready"];
 
@@ -1161,6 +1190,7 @@ function showDocChrome(isDoc) {
 }
 dialog.addEventListener("close", () => {
   document.documentElement.classList.remove("dialog-open");
+  dialog.classList.remove("is-sheet");
   docStack.length = 0;
   syncBack();
 });
@@ -1174,8 +1204,9 @@ function openStandard(code) {
   const docIcon = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.25" d="M4.25 2.25h5.1L12 4.9v8.85H4.25V2.25z"/><path fill="none" stroke="currentColor" stroke-width="1.25" d="M9.1 2.4V5.1H11.8"/></svg>';
   const rows = item.eps.map(ep => {
     const text = String(ep.text).replace(/^\s*\d+\s*[.)]?\s*/, "");
-    return '<div class="src-row"><p>' + escapeHtml(text) + '</p><p class="src-cite"><span class="src-k">sources</span><span class="src-pill">' +
-      docIcon + escapeHtml(item.code) + " Part " + escapeHtml(ep.n) + "</span></p></div>";
+    return '<div class="src-row"><p>' + escapeHtml(text) + '</p><p class="src-cite"><span class="src-k">sources</span><button type="button" class="src-pill" data-file="' +
+      escapeHtml(item.file) + '" data-code="' + escapeHtml(item.code) + '" data-ep="' + escapeHtml(ep.n) + '">' +
+      docIcon + escapeHtml(item.code) + " Part " + escapeHtml(ep.n) + "</button></p></div>";
   }).join("");
   const requirement = item.requirement
     ? '<p class="req"><span class="req-label">What the standard requires</span>' + escapeHtml(item.requirement) + "</p>"
@@ -1184,13 +1215,105 @@ function openStandard(code) {
     requirement +
     rows +
     '<p class="clip-note">Cell text from that workbook. Longer cells are shortened in the middle of a sentence.</p>';
+  dialog.classList.remove("is-sheet");
   openDialog();
+}
+
+function renderSheet(found) {
+  const hitRow = found.hit >= 0 ? found.rows[found.hit] : null;
+  const body = found.rows.filter((row) => row.some((cell) => String(cell || "").trim()));
+  let cmsCol = -1;
+  body.some((row) => {
+    const index = row.findIndex((cell) => String(cell || "").trim() === "CMS");
+    if (index >= 0) cmsCol = index;
+    return index >= 0;
+  });
+  const others = Math.max(1, found.width - (found.epCol >= 0 ? 1 : 0) - (cmsCol >= 0 ? 1 : 0));
+  const otherWidth = (58 / others).toFixed(2);
+  let cols = "<colgroup>";
+  for (let c = 0; c < found.width; c += 1) {
+    const width = c === found.epCol ? "30%" : c === cmsCol ? "12%" : otherWidth + "%";
+    cols += '<col style="width:' + width + '">';
+  }
+  cols += "</colgroup>";
+  let band = 0;
+  let html = '<div class="sheet-scroll"><table class="sheet-table">' + cols + "<tbody>";
+  body.forEach((row) => {
+    const header = row.some((cell) => String(cell || "").trim() === "Elements of Performance");
+    const label = String(row[0] || "").trim();
+    const section = !header && (label === "STANDARD" || /^[A-Z]{1,6}\.\d/.test(label));
+    const hit = hitRow && row === hitRow;
+    let cls = "";
+    if (hit) cls = "sheet-hit";
+    else if (header) cls = "sheet-head";
+    else if (section) cls = "sheet-section";
+    else {
+      cls = band % 2 ? "sheet-band" : "";
+      band += 1;
+    }
+    if (section) {
+      const text = row.map((cell) => String(cell || "").trim()).filter(Boolean).join("   ");
+      html += '<tr class="' + cls + '"><td colspan="' + found.width + '">' + escapeHtml(text) + "</td></tr>";
+      return;
+    }
+    html += "<tr" + (cls ? ' class="' + cls + '"' : "") + ">";
+    for (let c = 0; c < found.width; c += 1) {
+      const tag = header ? "th" : "td";
+      const cellClass = [c === found.epCol ? "sheet-ep" : "", c === cmsCol ? "sheet-cms" : ""].filter(Boolean).join(" ");
+      html += "<" + tag + (cellClass ? ' class="' + cellClass + '"' : "") + ">" + escapeHtml(row[c] || "") + "</" + tag + ">";
+    }
+    html += "</tr>";
+  });
+  html += "</tbody></table></div>";
+  if (found.hit < 0) html = '<p class="clip-note">That part is not on its own row in this sheet.</p>' + html;
+  return html;
+}
+
+function rememberDialog() {
+  docStack.push({
+    html: srcBody.innerHTML,
+    file: srcFile.textContent,
+    title: srcTitle.textContent,
+    scroll: srcBody.scrollTop,
+    doc: dialog.classList.contains("is-doc"),
+    sheet: dialog.classList.contains("is-sheet")
+  });
+  syncBack();
+}
+
+async function openWorkbook(file, code, ep) {
+  rememberDialog();
+  showDocChrome(false);
+  dialog.classList.add("is-sheet");
+  const title = code + " · Part " + ep;
+  srcFile.textContent = file;
+  srcTitle.textContent = title;
+  srcBody.innerHTML = "<p>Opening this workbook.</p>";
+  openDialog();
+  try {
+    const rows = await WorkbookSheet.load("workbooks/" + encodeURIComponent(file));
+    if (srcTitle.textContent !== title) return;
+    const found = WorkbookSheet.block(rows, code, ep);
+    if (!found) {
+      srcBody.innerHTML = "<p>This standard is not in that workbook.</p>";
+      return;
+    }
+    srcBody.innerHTML = renderSheet(found);
+    const hit = srcBody.querySelector(".sheet-hit");
+    const scroller = srcBody.querySelector(".sheet-scroll");
+    if (hit && scroller) {
+      scroller.scrollTop = Math.max(0, hit.offsetTop - scroller.clientHeight / 2 + hit.offsetHeight / 2);
+    }
+  } catch (err) {
+    if (srcTitle.textContent === title) srcBody.innerHTML = "<p>This workbook could not be opened.</p>";
+  }
 }
 
 function openNote(text) {
   srcFile.textContent = "Not in the 2015 folder";
   srcTitle.textContent = "No workbook passage";
   showDocChrome(false);
+  dialog.classList.remove("is-sheet");
   srcBody.innerHTML = "<p>" + escapeHtml(text) + "</p><p class=\"clip-note\">Medical staff and provision of care are named on the index sheet and the chapter files were not included, so there is no passage to open.</p>";
   openDialog();
 }
@@ -1811,12 +1934,33 @@ document.addEventListener("click", event => {
 
 srcBack.addEventListener("click", () => {
   const prev = docStack.pop();
-  if (!prev || !SOURCE_DATA.docs[prev.name]) {
+  if (!prev) {
+    syncBack();
+    return;
+  }
+  if (prev.html != null) {
+    srcFile.textContent = prev.file;
+    srcTitle.textContent = prev.title;
+    showDocChrome(!!prev.doc);
+    dialog.classList.toggle("is-sheet", !!prev.sheet);
+    srcBody.innerHTML = prev.html;
+    srcBody.scrollTop = prev.scroll || 0;
+    syncBack();
+    return;
+  }
+  if (!SOURCE_DATA.docs[prev.name]) {
     syncBack();
     return;
   }
   showDoc(prev.name, SOURCE_DATA.docs[prev.name]);
+  dialog.classList.remove("is-sheet");
   srcBody.scrollTop = prev.scroll;
+});
+
+srcBody.addEventListener("click", event => {
+  const pill = event.target.closest("button.src-pill");
+  if (!pill || !srcBody.contains(pill)) return;
+  openWorkbook(pill.dataset.file, pill.dataset.code, pill.dataset.ep);
 });
 
 const tip = document.createElement("div");
@@ -1965,13 +2109,19 @@ document.getElementById("connectors").addEventListener("click", event => {
 });
 
 function showView(name) {
-  if (name !== "method" && name !== "connectors") name = "live";
+  if (name !== "method" && name !== "connectors" && name !== "graph") name = "live";
+  document.body.classList.toggle("is-graph", name === "graph");
   document.querySelectorAll(".view").forEach(view => {
     view.hidden = view.id !== "view-" + name;
   });
   document.querySelectorAll(".views button").forEach(btn => {
     btn.setAttribute("aria-selected", btn.dataset.view === name ? "true" : "false");
   });
+  if (name === "graph") {
+    const frame = document.getElementById("graph-frame");
+    if (!frame.getAttribute("src")) frame.src = "../mlkch/knowledge-graph.html";
+    else if (frame.contentWindow) frame.contentWindow.dispatchEvent(new Event("resize"));
+  }
 }
 
 document.querySelector(".views").addEventListener("click", event => {
