@@ -12,9 +12,9 @@
     "condition": null
   },
   {
-    "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|jpeg|js|png|txt|svg|woff|woff2|ttf|map|json|webp|html|xlsx)$)([^.]+$)/>",
+    "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|jpeg|js|png|txt|svg|woff|woff2|ttf|map|json|webp|html)$)([^.]+$)/>",
     "target": "/index.html",
-    "status": "200",
+    "status": "404-200",
     "condition": null
   }
 ]
