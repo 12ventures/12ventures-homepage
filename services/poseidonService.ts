@@ -4,8 +4,8 @@
  */
 export const DASHBOARD_TZ = 'America/Los_Angeles';
 
-const POSEIDON_API_BASE_URL = import.meta.env.PROD 
-  ? 'https://api.poseidonai.12ventures.io' 
+const POSEIDON_API_BASE_URL = import.meta.env.PROD
+  ? 'https://agentic-voice-stats-e55tw.ondigitalocean.app'
   : 'http://localhost:8001';
 
 /** YYYY-MM-DD for an instant in the dashboard (hospital) timezone. */
