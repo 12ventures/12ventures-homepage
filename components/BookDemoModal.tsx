@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, X } from 'lucide-react';
 import { useBackdropDismiss } from '../hooks/useBackdropDismiss';
 import { openCalendarBooking } from '../utils/calendar';
+import { demoBookingUrl } from '../utils/snapskillAnalytics';
 
 export interface ValueProp {
   stat: string;
@@ -47,7 +48,7 @@ const BookDemoModal: React.FC<BookDemoModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('https://api.snapskill.io/api/v1/analytics/demo-booking', {
+      const res = await fetch(demoBookingUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

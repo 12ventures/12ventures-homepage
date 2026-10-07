@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useBrand } from '../contexts/BrandingContext';
 import { useBackdropDismiss } from '../hooks/useBackdropDismiss';
 import { openCalendarBooking } from '../utils/calendar';
+import { demoBookingUrl } from '../utils/snapskillAnalytics';
 
 interface LeadMagnetModalProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ const LeadMagnetModal: React.FC<LeadMagnetModalProps> = ({ isOpen, onClose, hasS
     setError(null);
 
     try {
-      const response = await fetch('https://api.snapskill.io/api/v1/analytics/demo-booking', {
+      const response = await fetch(demoBookingUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

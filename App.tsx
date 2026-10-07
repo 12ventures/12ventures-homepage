@@ -67,8 +67,8 @@ const App: React.FC = () => {
                   <VenturesHome />
                 </BrandLayout>
               ) : (
-                <BrandLayout initialBrandId="otterworks">
-                  <LandingPage />
+                <BrandLayout initialBrandId="otterworks" showDevMenu={false}>
+                  <VenturesHome variant="otterworks" />
                 </BrandLayout>
               )
             }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { isOtterworksHost, OTTERWORKS_PAGE_TITLE } from '../utils/host';
 
 export type Brand = {
   id: string;
@@ -132,6 +133,10 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children, in
   useEffect(() => {
     if (currentBrand.id === '12-ventures') {
       document.title = '12 VENTURES | Applied AI | Measurable Results';
+      return;
+    }
+    if (isOtterworksHost()) {
+      document.title = OTTERWORKS_PAGE_TITLE;
       return;
     }
     document.title = `${currentBrand.name} - ${currentBrand.subtitle ?? 'Modernize Workforce Learning'}`;

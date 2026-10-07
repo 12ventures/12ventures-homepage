@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ShimmerText from './mlkch/ShimmerText';
+import { OTTERWORKS_PAGE_TITLE } from '../utils/host';
 
 // ─── Video URL ──────────────────────────────────────────────────────────────
 const BG_VIDEO_URL: string | null = 'https://games.dreambox.gg/videos/intel_org.mp4';
@@ -38,13 +39,50 @@ const PAGE_GRADIENT = `
 const VIDEO_EDGE_MASK =
   'radial-gradient(ellipse 40% 62% at 50% 50%, black 16%, rgba(0,0,0,0.55) 52%, transparent 78%)';
 
-const PAGE_TITLE = '12 VENTURES | Applied AI | Measurable Results';
+type VenturesHomeVariant = '12-ventures' | 'otterworks';
+
+const VARIANT_CONFIG: Record<
+  VenturesHomeVariant,
+  {
+    pageTitle: string;
+    logoUrl: string;
+    logoAlt: string;
+    headline: string;
+    shimmer: string | null;
+    footerName: string;
+  }
+> = {
+  '12-ventures': {
+    pageTitle: '12 VENTURES | Applied AI | Measurable Results',
+    logoUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
+    logoAlt: '12 Ventures',
+    headline: 'Building Intelligent Organizations',
+    shimmer: 'AI Transformation\u00a0\u00a0·\u00a0\u00a0Scalable Results',
+    footerName: '12 VENTURES',
+  },
+  otterworks: {
+    pageTitle: OTTERWORKS_PAGE_TITLE,
+    logoUrl: 'https://i.imgur.com/0yz7xSE.png',
+    logoAlt: 'OtterWorks',
+    headline: 'Applied AI Solutions • Scalable Results',
+    shimmer: null,
+    footerName: 'OTTERWORKS',
+  },
+};
+
+export type { VenturesHomeVariant };
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-const VenturesHome: React.FC = () => {
+interface VenturesHomeProps {
+  variant?: VenturesHomeVariant;
+}
+
+const VenturesHome: React.FC<VenturesHomeProps> = ({ variant = '12-ventures' }) => {
+  const config = VARIANT_CONFIG[variant];
+  const copyrightYear = new Date().getFullYear();
   const videoRef        = useRef<HTMLVideoElement>(null);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const scrubTargetRef  = useRef(0);
@@ -55,14 +93,14 @@ const VenturesHome: React.FC = () => {
     const previousTitle = document.title;
     // Defer so this wins over BrandingProvider's default title on mount
     const id = window.setTimeout(() => {
-      document.title = PAGE_TITLE;
+      document.title = config.pageTitle;
     }, 0);
 
     return () => {
       window.clearTimeout(id);
       document.title = previousTitle;
     };
-  }, []);
+  }, [config.pageTitle]);
 
   // ── 1. Deferred load — text renders first, video loads after ────────────
   useEffect(() => {
@@ -243,45 +281,83 @@ const VenturesHome: React.FC = () => {
       {/* ── Foreground text ───────────────────────────────────────────── */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
         <div
-          className="mb-14"
+          className={variant === 'otterworks' ? 'mb-10 md:mb-12' : 'mb-14'}
           style={{ animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.1s both' }}
         >
-          <img
-            src="https://games.dreambox.gg/icons/12venturesLogoNew.png"
-            alt="12 Ventures"
-            className="w-[120px] md:w-[140px] opacity-90"
-            style={{ filter: 'drop-shadow(0 2px 16px rgba(0,0,0,0.8))' }}
-          />
+          {variant === 'otterworks' ? (
+            <div className="relative inline-flex items-center justify-center px-10 py-6 md:px-12 md:py-7">
+              <div
+                className="absolute inset-0 pointer-events-none rounded-[28px]"
+                style={{
+                  background:
+                    'radial-gradient(ellipse 88% 78% at 50% 50%, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.28) 48%, transparent 72%)',
+                }}
+              />
+              <img
+                src={config.logoUrl}
+                alt={config.logoAlt}
+                width={360}
+                height={80}
+                className="relative z-[1] block w-[min(300px,78vw)] md:w-[360px] h-auto object-contain object-center opacity-95"
+                style={{
+                  filter:
+                    'drop-shadow(0 1px 2px rgba(0,0,0,0.95)) drop-shadow(0 4px 18px rgba(0,0,0,0.85)) drop-shadow(0 10px 36px rgba(0,0,0,0.55))',
+                }}
+              />
+            </div>
+          ) : (
+            <img
+              src={config.logoUrl}
+              alt={config.logoAlt}
+              className="w-[120px] md:w-[140px] opacity-90"
+              style={{ filter: 'drop-shadow(0 2px 16px rgba(0,0,0,0.8))' }}
+            />
+          )}
         </div>
 
-        <h1
-          className="text-[2.2rem] sm:text-5xl md:text-[3.25rem] text-white"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-            letterSpacing: '-0.025em',
-            lineHeight: 1.1,
-            textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 4px 20px rgba(0,0,0,0.7), 0 8px 48px rgba(0,0,0,0.5)',
-            animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.25s both',
-          }}
-        >
-          Building Intelligent Organizations
-        </h1>
-
-        <div
-          className="mt-8"
-          style={{
-            filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.9)) drop-shadow(0 4px 16px rgba(0,0,0,0.7))',
-            animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.45s both',
-          }}
-        >
-          <ShimmerText
-            as="p"
-            className="text-[13px] md:text-sm tracking-[0.18em] uppercase font-normal"
+        {variant === 'otterworks' ? (
+          <div
+            className="otter-home-tagline"
+            style={{
+              animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.25s both',
+            }}
           >
-            AI Transformation&nbsp;&nbsp;·&nbsp;&nbsp;Scalable Results
-          </ShimmerText>
-        </div>
+            <h1 className="text-shimmer-otter text-[15px] sm:text-base md:text-[17px] tracking-[0.16em] uppercase font-normal">
+              {config.headline}
+            </h1>
+          </div>
+        ) : (
+          <h1
+            className="text-[2.2rem] sm:text-5xl md:text-[3.25rem] text-white"
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 500,
+              letterSpacing: '-0.025em',
+              lineHeight: 1.1,
+              textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 4px 20px rgba(0,0,0,0.7), 0 8px 48px rgba(0,0,0,0.5)',
+              animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.25s both',
+            }}
+          >
+            {config.headline}
+          </h1>
+        )}
+
+        {config.shimmer && (
+          <div
+            className="mt-8"
+            style={{
+              filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.9)) drop-shadow(0 4px 16px rgba(0,0,0,0.7))',
+              animation: 'appear 1s cubic-bezier(0.22,1,0.36,1) 0.45s both',
+            }}
+          >
+            <ShimmerText
+              as="p"
+              className="text-[13px] md:text-sm tracking-[0.18em] uppercase font-normal"
+            >
+              {config.shimmer}
+            </ShimmerText>
+          </div>
+        )}
       </div>
 
       <footer className="absolute bottom-0 inset-x-0 z-10 pb-6 md:pb-8 text-center pointer-events-none">
@@ -289,7 +365,7 @@ const VenturesHome: React.FC = () => {
           className="text-[11px] md:text-xs text-white/30 font-normal tracking-wide"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          © {new Date().getFullYear()} 12 VENTURES. All rights reserved.
+          © {copyrightYear} {config.footerName}. All rights reserved.
         </p>
       </footer>
 

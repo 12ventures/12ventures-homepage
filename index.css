@@ -137,6 +137,33 @@
   100% { background-position: -100% 50%; }
 }
 
+/* OtterWorks home tagline — shadow on wrapper, not on clipped text */
+.otter-home-tagline {
+  filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.72));
+}
+
+/* OtterWorks home — brighter baseline, same shimmer sweep */
+.text-shimmer-otter {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.58) 0%,
+    rgba(255, 255, 255, 0.58) 40%,
+    rgba(255, 255, 255, 0.94) 50%,
+    rgba(255, 255, 255, 0.58) 60%,
+    rgba(255, 255, 255, 0.58) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation-name: text-shimmer;
+  animation-duration: 2.8s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
 /* ── MLKCH dashboard intro cascade ─────────────────────────────── */
 .mlkch-intro {
   opacity: 0;
