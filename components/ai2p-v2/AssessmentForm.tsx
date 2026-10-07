@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { demoBookingUrl } from '../../utils/snapskillAnalytics';
 
 interface FormState {
   name: string;
@@ -39,7 +40,7 @@ const AssessmentForm: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await fetch('https://api.snapskill.io/api/v1/analytics/demo-booking', {
+      const res = await fetch(demoBookingUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

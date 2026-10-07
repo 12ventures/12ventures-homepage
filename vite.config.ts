@@ -8,6 +8,13 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '/snapskill-api': {
+            target: 'https://api.snapskill.io',
+            changeOrigin: true,
+            rewrite: (p) => p.replace(/^\/snapskill-api/, ''),
+          },
+        },
       },
       plugins: [react()],
       define: {

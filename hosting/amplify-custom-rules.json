@@ -1,5 +1,11 @@
 [
   {
+    "source": "/snapskill-api/<*>",
+    "target": "https://api.snapskill.io/<*>",
+    "status": "200",
+    "condition": null
+  },
+  {
     "source": "/haven/store/product/<*>",
     "target": "https://api-staging.snapskill.io/haven/store/product/<*>",
     "status": "200",

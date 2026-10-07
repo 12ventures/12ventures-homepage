@@ -59,6 +59,10 @@
         if (window.location.pathname.indexOf('/o/sarh/voice-ai/production-dashboard') !== -1) {
           document.documentElement.classList.add('sarh-dashboard-page');
         }
+        var host = window.location.hostname;
+        if (host.indexOf('otterworks.ai') !== -1 || host.indexOf('otterworks.io') !== -1) {
+          document.title = 'OTTERWORKS | Applied AI Solutions \u2022 Scalable Results';
+        }
       })();
     </script>
     <style>
