@@ -25,6 +25,7 @@ import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
 import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
 import MeridaWellness from './components/MeridaWellness';
 import SarhProductionDashboard from './components/sarh/SarhProductionDashboard';
+import SarhProductionDashboardDemo from './components/sarh/SarhProductionDashboardDemo';
 import NociHubPage from './components/noci/NociHubPage';
 import NociTechnicalAssessmentPage from './components/noci/NociReadinessPage';
 import NociExecutiveSummaryPage from './components/noci/NociExecutiveSummaryPage';
@@ -272,6 +273,14 @@ const App: React.FC = () => {
           <Route
             path="/o/sarh/voice-ai/production-dashboard"
             element={<SarhProductionDashboard />}
+          />
+          <Route
+            path="/production-dashboard-demo"
+            element={<SarhProductionDashboardDemo />}
+          />
+          <Route
+            path="/o/sarh/voice-ai/production-dashboard-demo"
+            element={<SarhProductionDashboardDemo />}
           />
 
           {/* NociApp deliverables (shared password gate) */}
