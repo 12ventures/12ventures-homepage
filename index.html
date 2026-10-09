@@ -56,7 +56,10 @@
     </script>
     <script>
       (function () {
-        if (window.location.pathname.indexOf('/o/sarh/voice-ai/production-dashboard') !== -1) {
+        if (
+          window.location.pathname.indexOf('/o/sarh/voice-ai/production-dashboard') !== -1 ||
+          window.location.pathname.indexOf('/production-dashboard-demo') !== -1
+        ) {
           document.documentElement.classList.add('sarh-dashboard-page');
         }
         var host = window.location.hostname;
