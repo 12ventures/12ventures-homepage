@@ -786,6 +786,65 @@
   text-transform: capitalize;
 }
 
+@keyframes od-demo-active-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes od-demo-active-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-8px);
+  }
+}
+
+@keyframes od-demo-history-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    background-color: rgba(52, 211, 153, 0.14);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+}
+
+.od-active-item.od-demo-active-in {
+  animation: od-demo-active-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center top;
+}
+
+.od-active-item.od-demo-active-out {
+  animation: od-demo-active-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  transform-origin: center top;
+}
+
+/* <tr> animations are ignored in most browsers — animate cells instead */
+.od-table tbody tr.od-demo-history-pending > td {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.od-table tbody tr.od-demo-history-in > td {
+  animation: od-demo-history-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.od-active-section.od-demo-section-in {
+  animation: od-demo-active-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* ── Call History (always expanded) ── */
 .od-history-section {
   border-radius: 16px;

@@ -56,6 +56,12 @@ import {
   getCallDurationSeconds,
   getDisplayOutcomeStatus,
 } from './callHistoryUtils';
+import {
+  buildVideoDemoActiveCall,
+  buildVideoDemoHistoryCall,
+  VIDEO_DEMO_CALL_ID,
+  type VideoDemoPhase,
+} from './operatorDashboardVideoDemo';
 import { getOdChartTheme } from './operatorDashboardChartTheme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Toaster, toast } from 'sonner';
@@ -425,8 +431,13 @@ function isInsightsFilterAvailable(
   return toInsightsPeriod(period) !== null;
 }
 
+interface OperatorDashboardProps {
+  /** Timed live → completed call sequence for product video (temporary demo route). */
+  videoDemoMode?: boolean;
+}
+
 // ── Component ──────────────────────────────────────────────────────────
-const OperatorDashboard: React.FC = () => {
+const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ videoDemoMode = false }) => {
   const [period, setPeriod] = useState<DashboardPeriod>('past_7_days');
   const [customRange, setCustomRange] = useState<{ dateFrom: string; dateTo: string } | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
@@ -474,11 +485,40 @@ const OperatorDashboard: React.FC = () => {
   const chartTheme = useMemo(() => getOdChartTheme(effectiveTheme), [effectiveTheme]);
   const [revealed, setRevealed] = useState(false);
   const [peakModalOpen, setPeakModalOpen] = useState(false);
+  const [videoDemoPhase, setVideoDemoPhase] = useState<VideoDemoPhase>('waiting');
+  const [videoDemoHistoryAnimate, setVideoDemoHistoryAnimate] = useState(false);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setRevealed(true));
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    if (!videoDemoMode) return;
+    const showLive = window.setTimeout(() => setVideoDemoPhase('live'), 5000);
+    const startExit = window.setTimeout(() => setVideoDemoPhase('exiting'), 10_000);
+    const complete = window.setTimeout(() => setVideoDemoPhase('completed'), 10_400);
+    return () => {
+      window.clearTimeout(showLive);
+      window.clearTimeout(startExit);
+      window.clearTimeout(complete);
+    };
+  }, [videoDemoMode]);
+
+  useEffect(() => {
+    if (!videoDemoMode || videoDemoPhase !== 'completed') {
+      setVideoDemoHistoryAnimate(false);
+      return;
+    }
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setVideoDemoHistoryAnimate(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, [videoDemoMode, videoDemoPhase]);
 
   // ── Data fetching ─────────────────────────────────────────────────────
   // refreshHistory controls whether we re-walk every page of
@@ -577,13 +617,14 @@ const OperatorDashboard: React.FC = () => {
     setLoading(true);
     pollCountRef.current = 0;
     void fetchAll();
+    if (videoDemoMode) return;
     intervalRef.current = window.setInterval(() => {
       pollCountRef.current += 1;
       const refreshHistory = pollCountRef.current % POLL_HISTORY_EVERY_N_TICKS === 0;
       void fetchAll(false, refreshHistory);
     }, 30_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [videoDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch when filters change (skip mount — covered by the effect above)
   const skipFilterFetchRef = useRef(true);
@@ -663,6 +704,22 @@ const OperatorDashboard: React.FC = () => {
     () => filterCallsInDateKeyRange(allCalls, periodRange),
     [allCalls, periodRange],
   );
+
+  const displayActiveCalls = useMemo(() => {
+    if (!videoDemoMode) return activeCalls;
+    if (videoDemoPhase === 'live' || videoDemoPhase === 'exiting') {
+      return [buildVideoDemoActiveCall()];
+    }
+    return activeCalls.filter((c) => c.id !== VIDEO_DEMO_CALL_ID);
+  }, [activeCalls, videoDemoMode, videoDemoPhase]);
+
+  const displayHistoryCalls = useMemo(() => {
+    if (!videoDemoMode || videoDemoPhase !== 'completed') return historyCalls;
+    const demo = buildVideoDemoHistoryCall();
+    const rest = historyCalls.filter((c) => c.id !== VIDEO_DEMO_CALL_ID);
+    return [demo, ...rest];
+  }, [historyCalls, videoDemoMode, videoDemoPhase]);
+
   const chartCalls = historyCalls;
   const dailyCallCounts = useMemo(
     () => buildDailyCallCounts(historyCalls, periodRange),
@@ -764,14 +821,14 @@ const OperatorDashboard: React.FC = () => {
           <FiPhone size={14} />
           Call History · {filterLabel}
           <CallHistoryStatusBreakdown
-            calls={historyCalls}
+            calls={displayHistoryCalls}
             periodLabel={filterLabel}
           />
         </div>
       </div>
 
       <div className="od-history-body">
-        {historyCalls.length === 0 ? (
+        {displayHistoryCalls.length === 0 ? (
           <p className="od-empty">No calls in this period.</p>
         ) : (
           <div className="od-table-wrap">
@@ -787,11 +844,21 @@ const OperatorDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {historyCalls.map((call) => {
+                {displayHistoryCalls.map((call) => {
                   const displayStatus = getDisplayOutcomeStatus(call);
                   const durationSeconds = getCallDurationSeconds(call);
+                  const isDemoHistoryRow =
+                    videoDemoMode && call.id === VIDEO_DEMO_CALL_ID && videoDemoPhase === 'completed';
+                  const demoHistoryClass = isDemoHistoryRow
+                    ? videoDemoHistoryAnimate
+                      ? 'od-demo-history-in'
+                      : 'od-demo-history-pending'
+                    : undefined;
                   return (
-                    <tr key={call.id}>
+                    <tr
+                      key={call.id}
+                      className={demoHistoryClass}
+                    >
                       <td className="od-td-time">
                         <span>{fmtDateTime(call.started_at)}</span>
                         <span className="od-td-rel">{getRelativeTime(call.started_at)}</span>
@@ -919,10 +986,10 @@ const OperatorDashboard: React.FC = () => {
           </p>
         </div>
         <div className="od-header-actions">
-          {activeCalls.length > 0 && (
+          {displayActiveCalls.length > 0 && (
             <span className="od-live-badge">
               <span className="od-live-dot" />
-              {activeCalls.length} Live
+              {displayActiveCalls.length} Live
             </span>
           )}
           <button
@@ -1015,20 +1082,31 @@ const OperatorDashboard: React.FC = () => {
       )}
 
       {/* ── Active calls strip (only when active) ── */}
-      {activeCalls.length > 0 && (
-        <div className="od-active-section od-reveal" style={odReveal(2)}>
+      {displayActiveCalls.length > 0 && (
+        <div
+          className={`od-active-section od-reveal${videoDemoMode && videoDemoPhase === 'live' ? ' od-demo-section-in' : ''}`}
+          style={odReveal(2)}
+        >
           <div className="od-active-header">
             <span className="od-active-title">
               <FiPhone size={14} />
               Active Now
             </span>
             <span className="od-active-count">
-              <AnimatedNumber value={activeCalls.length} delay={countAnimDelay(2)} duration={700} />
+              <AnimatedNumber value={displayActiveCalls.length} delay={countAnimDelay(2)} duration={700} />
             </span>
           </div>
           <div className="od-active-list">
-            {activeCalls.map(call => (
-              <div key={call.id} className="od-active-item">
+            {displayActiveCalls.map(call => {
+              const isDemoCall = videoDemoMode && call.id === VIDEO_DEMO_CALL_ID;
+              const demoAnimClass =
+                isDemoCall && videoDemoPhase === 'exiting'
+                  ? 'od-demo-active-out'
+                  : isDemoCall && videoDemoPhase === 'live'
+                    ? 'od-demo-active-in'
+                    : '';
+              return (
+              <div key={call.id} className={`od-active-item${demoAnimClass ? ` ${demoAnimClass}` : ''}`}>
                 <span className="od-active-dot" />
                 <div className="od-active-info">
                   <div className="od-active-flow">{call.flow_name}</div>
@@ -1038,7 +1116,8 @@ const OperatorDashboard: React.FC = () => {
                 </div>
                 <span className="od-active-status">{call.status}</span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -1057,10 +1136,10 @@ const OperatorDashboard: React.FC = () => {
           <div className="od-metric-value">
             <AnimatedNumber value={totalCalls} delay={countAnimDelay(4)} />
           </div>
-          {activeCalls.length > 0 && (
+          {displayActiveCalls.length > 0 && (
             <span className="od-metric-badge">
               <FiArrowUp size={10} />
-              Active <AnimatedNumber value={activeCalls.length} delay={countAnimDelay(4) + 80} duration={600} />
+              Active <AnimatedNumber value={displayActiveCalls.length} delay={countAnimDelay(4) + 80} duration={600} />
             </span>
           )}
         </div>
