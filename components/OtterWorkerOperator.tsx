@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import BookDemoModal from './BookDemoModal';
+import YouTubeFacade from './YouTubeFacade';
 
 const YOUTUBE_ID = 'JsexF9nHtJ4';
-const EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1&color=white&iv_load_policy=3`;
+const HEADLINE = '24/7 AI Operators. Instant Workforce Capacity.';
 
 const VALUE_PROPS = [
   { stat: '100% Coverage', label: 'For patient and employee calls and communications' },
@@ -126,26 +127,23 @@ const OtterWorkerOperator: React.FC = () => {
             </div>
           </div>
 
-          {/* Video */}
-          <div className="flex-shrink-0 md:flex-1 md:min-h-0 md:flex md:items-center md:justify-center ow-fade-in ow-d-200">
-            <div
-              className="rounded-2xl overflow-hidden w-full"
-              style={{
-                aspectRatio: '2694/1440',
-                maxHeight: '100%',
-                border: '1px solid rgba(255,255,255,0.05)',
-                boxShadow: '0 0 40px rgba(56,189,248,0.08)',
-              }}
-            >
-              <iframe
-                src={EMBED_URL}
-                title="OtterWorker I — Operator"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                className="w-full h-full"
-                style={{ border: 'none', display: 'block' }}
-              />
+          {/* Headline + video */}
+          <div className="flex flex-col gap-4 md:flex-1 md:min-h-0">
+            <h2 className="flex-shrink-0 text-xl md:text-2xl font-bold tracking-tight text-white leading-snug ow-fade-up ow-d-100">
+              {HEADLINE}
+            </h2>
+            <div className="flex-shrink-0 md:flex-1 md:min-h-0 md:flex md:items-center md:justify-center ow-fade-in ow-d-200">
+              <div
+                className="rounded-2xl overflow-hidden w-full"
+                style={{
+                  aspectRatio: '2694/1440',
+                  maxHeight: '100%',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  boxShadow: '0 0 40px rgba(56,189,248,0.08)',
+                }}
+              >
+                <YouTubeFacade videoId={YOUTUBE_ID} title="OtterWorker I — Operator" />
+              </div>
             </div>
           </div>
 
