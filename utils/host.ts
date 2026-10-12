@@ -1,5 +1,7 @@
 export const OTTERWORKS_PAGE_TITLE =
-  'OTTERWORKS | Applied AI Solutions • Scalable Results';
+  'OTTERWORKS | Production AI · Scalable Results';
+
+export const VENTURES_PAGE_TITLE = '12 VENTURES | Applied AI · Measurable Results';
 
 export function is12VenturesHost(hostname = window.location.hostname): boolean {
   return hostname.includes('12ventures.io');

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ShimmerText from './mlkch/ShimmerText';
-import { OTTERWORKS_PAGE_TITLE } from '../utils/host';
+import { OTTERWORKS_PAGE_TITLE, VENTURES_PAGE_TITLE } from '../utils/host';
 
 // ─── Video URL ──────────────────────────────────────────────────────────────
 const BG_VIDEO_URL: string | null = 'https://games.dreambox.gg/videos/intel_org.mp4';
@@ -53,7 +53,7 @@ const VARIANT_CONFIG: Record<
   }
 > = {
   '12-ventures': {
-    pageTitle: '12 VENTURES | Applied AI | Measurable Results',
+    pageTitle: VENTURES_PAGE_TITLE,
     logoUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
     logoAlt: '12 Ventures',
     headline: 'Building Intelligent Organizations',
@@ -64,7 +64,7 @@ const VARIANT_CONFIG: Record<
     pageTitle: OTTERWORKS_PAGE_TITLE,
     logoUrl: 'https://i.imgur.com/0yz7xSE.png',
     logoAlt: 'OtterWorks',
-    headline: 'Applied AI Solutions • Scalable Results',
+    headline: 'Production AI\u00a0\u00a0·\u00a0\u00a0Scalable Results',
     shimmer: null,
     footerName: 'OTTERWORKS',
   },

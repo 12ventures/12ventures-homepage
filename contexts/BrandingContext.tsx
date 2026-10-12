@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { isOtterworksHost, OTTERWORKS_PAGE_TITLE } from '../utils/host';
+import { isOtterworksHost, OTTERWORKS_PAGE_TITLE, VENTURES_PAGE_TITLE } from '../utils/host';
 
 export type Brand = {
   id: string;
@@ -16,7 +16,7 @@ export const brands: Brand[] = [
   {
     id: '12-ventures',
     name: '12 Ventures',
-    subtitle: 'Applied AI | Measurable Results',
+    subtitle: 'Applied AI · Measurable Results',
     logoUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
     mascotUrl: 'https://games.dreambox.gg/icons/12venturesLogoNew.png',
     wallpaperUrl: '/images/otter-wallpaper.png',
@@ -132,7 +132,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children, in
 
   useEffect(() => {
     if (currentBrand.id === '12-ventures') {
-      document.title = '12 VENTURES | Applied AI | Measurable Results';
+      document.title = VENTURES_PAGE_TITLE;
       return;
     }
     if (isOtterworksHost()) {
