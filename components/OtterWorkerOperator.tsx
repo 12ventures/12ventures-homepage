@@ -27,6 +27,11 @@ const FULL_TITLE = 'OTTERWORKER I';
 const CHAR_DELAY = 75;
 const CYCLE_INTERVAL = 3300;
 
+type OtterWorkerOperatorProps = {
+  /** A/B title. Defaults to the branded "OTTERWORKER I" + Operator pill. */
+  title?: string;
+};
+
 const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperClass?: string }> = ({
   onClick, className = '', wrapperClass = '',
 }) => (
@@ -41,33 +46,35 @@ const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperCla
   </div>
 );
 
-const OtterWorkerOperator: React.FC = () => {
+const OtterWorkerOperator: React.FC<OtterWorkerOperatorProps> = ({ title = FULL_TITLE }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [typedCount, setTypedCount] = useState(0);
   const [pillVisible, setPillVisible] = useState(false);
   const [cycleIdx, setCycleIdx] = useState(0);
+  const showPill = title === FULL_TITLE;
 
   useEffect(() => {
-    if (typedCount < FULL_TITLE.length) {
+    if (typedCount < title.length) {
       const t = setTimeout(() => setTypedCount(c => c + 1), CHAR_DELAY);
       return () => clearTimeout(t);
-    } else {
+    } else if (showPill) {
       const t = setTimeout(() => setPillVisible(true), 120);
       return () => clearTimeout(t);
     }
-  }, [typedCount]);
+  }, [typedCount, title, showPill]);
 
   useEffect(() => {
     const t = setInterval(() => setCycleIdx(i => (i + 1) % OPERATOR_USES.length), CYCLE_INTERVAL);
     return () => clearInterval(t);
   }, []);
 
-  const isTyping = typedCount < FULL_TITLE.length;
-  const part1 = FULL_TITLE.slice(0, Math.min(typedCount, 11));
-  const part2 = typedCount > 12 ? FULL_TITLE.slice(12) : '';
+  const isTyping = typedCount < title.length;
+  // The branded title types "OTTERWORKER", then a gap, then "I". Alternate titles type straight through.
+  const part1 = showPill ? title.slice(0, Math.min(typedCount, 11)) : title.slice(0, typedCount);
+  const part2 = showPill && typedCount > 12 ? title.slice(12) : '';
 
   return (
-    <div className="min-h-screen md:h-screen bg-[#060B14] text-white font-sans flex flex-col">
+    <div className="h-[100dvh] min-h-[560px] bg-[#060B14] text-white font-sans flex flex-col">
       {modalOpen && (
         <BookDemoModal
           onClose={() => setModalOpen(false)}
@@ -82,13 +89,13 @@ const OtterWorkerOperator: React.FC = () => {
       <div className="flex flex-col md:flex-row flex-1">
 
         {/* ── Left / main content ── */}
-        <div className="flex flex-col w-full md:w-[58%] px-6 md:px-8 pt-10 pb-8 md:h-full md:justify-between gap-5 md:gap-0">
+        <div className="flex flex-col flex-1 min-h-0 md:flex-none w-full md:w-[58%] px-5 md:px-8 pt-8 md:pt-10 pb-5 md:pb-8 md:h-full md:justify-between gap-3 md:gap-0">
 
           {/* Title row */}
           <div className="flex-shrink-0">
             <div className="flex items-center justify-between gap-3">
               <div className="relative inline-block min-w-0 flex-shrink">
-                {pillVisible && (
+                {showPill && pillVisible && (
                   <span
                     className="ow-pill-in absolute -top-5 right-0 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"
                     style={{ background: '#3b82f6', boxShadow: '0 0 12px rgba(59,130,246,0.5)' }}
@@ -115,7 +122,7 @@ const OtterWorkerOperator: React.FC = () => {
           </div>
 
           {/* Mobile-only cycling text */}
-          <div className="md:hidden flex-shrink-0 -mt-2">
+          <div className="md:hidden flex-shrink-0">
             <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-1">Operators For</p>
             <div className="relative overflow-hidden" style={{ height: '1.6rem' }}>
               <p
@@ -128,39 +135,41 @@ const OtterWorkerOperator: React.FC = () => {
           </div>
 
           {/* Headline + video */}
-          <div className="flex flex-col gap-4 md:flex-1 md:min-h-0">
-            <h2 className="flex-shrink-0 text-xl md:text-2xl font-bold tracking-tight text-white leading-snug ow-fade-up ow-d-100">
+          {/* Takes whatever height is left; the player scales to fit it (16:9) so nothing scrolls. */}
+          <div
+            className="flex-1 min-h-[140px] md:min-h-0 flex flex-col items-start justify-center gap-2 md:gap-4 [--reserve:3.75rem] md:[--reserve:5rem]"
+            style={{ containerType: 'size' }}
+          >
+            <h2 className="flex-shrink-0 text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white leading-snug ow-fade-up ow-d-100">
               {HEADLINE}
             </h2>
-            <div className="flex-shrink-0 md:flex-1 md:min-h-0 md:flex md:items-center md:justify-center ow-fade-in ow-d-200">
-              <div
-                className="rounded-2xl overflow-hidden w-full"
-                style={{
-                  aspectRatio: '2694/1440',
-                  maxHeight: '100%',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  boxShadow: '0 0 40px rgba(56,189,248,0.08)',
-                }}
-              >
-                <YouTubeFacade videoId={YOUTUBE_ID} title="OtterWorker I — Operator" />
-              </div>
+            <div
+              className="rounded-2xl overflow-hidden flex-shrink-0 ow-fade-in ow-d-200"
+              style={{
+                width: 'min(100cqw, calc((100cqh - var(--reserve)) * 16 / 9))',
+                aspectRatio: '16 / 9',
+                border: '1px solid rgba(255,255,255,0.05)',
+                boxShadow: '0 0 40px rgba(56,189,248,0.08)',
+              }}
+            >
+              <YouTubeFacade videoId={YOUTUBE_ID} title="OtterWorker I — Operator" />
             </div>
           </div>
 
           {/* Value props */}
           <div className="flex-shrink-0">
-            <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-3 ow-fade-up ow-d-300">
+            <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-2 md:mb-3 ow-fade-up ow-d-300">
               Why Leaders Choose OtterWorker I • Operator
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
             {VALUE_PROPS.map((item, i) => (
               <div
                 key={item.label}
-                className={`rounded-xl px-3 py-4 text-center ow-fade-up ow-d-${400 + i * 100}`}
+                className={`rounded-xl px-2 py-2.5 md:px-3 md:py-4 text-center ow-fade-up ow-d-${400 + i * 100}`}
                 style={{ background: '#0F1A2E', border: '1px solid rgba(56,130,246,0.15)' }}
               >
-                <p className="text-xl font-black text-blue-400 mb-1">{item.stat}</p>
-                <p className="text-[11px] text-gray-400 leading-snug">{item.label}</p>
+                <p className="text-base md:text-xl font-black text-blue-400 md:mb-1 leading-tight">{item.stat}</p>
+                <p className="hidden md:block text-[11px] text-gray-400 leading-snug">{item.label}</p>
               </div>
             ))}
             </div>
@@ -169,7 +178,7 @@ const OtterWorkerOperator: React.FC = () => {
           {/* Mobile-only CTA */}
           <DemoButton
             onClick={() => setModalOpen(true)}
-            className="w-full py-4 text-base"
+            className="w-full py-3.5 text-base"
             wrapperClass="md:hidden ow-fade-up ow-d-800"
           />
 

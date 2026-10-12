@@ -173,6 +173,24 @@ const App: React.FC = () => {
             }
           />
 
+          {/* A/B: plain titles, no product pill */}
+          <Route
+            path="/operator-b"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <OtterWorkerOperator title="AI OPERATOR" />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/learn-b"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <OtterWorkerLearn title="AI LEARNER" />
+              </BrandLayout>
+            }
+          />
+
           {/* OtterWorker Operator (classic) */}
           <Route
             path="/operator-classic"

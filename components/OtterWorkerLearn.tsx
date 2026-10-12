@@ -23,6 +23,11 @@ const FULL_TITLE = 'OTTERWORKER I';
 const CHAR_DELAY = 75;
 const CYCLE_INTERVAL = 3300;
 
+type OtterWorkerLearnProps = {
+  /** A/B title. Defaults to the branded "OTTERWORKER I" + Learn pill. */
+  title?: string;
+};
+
 const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperClass?: string }> = ({
   onClick, className = '', wrapperClass = '',
 }) => (
@@ -37,30 +42,32 @@ const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperCla
   </div>
 );
 
-const OtterWorkerLearn: React.FC = () => {
+const OtterWorkerLearn: React.FC<OtterWorkerLearnProps> = ({ title = FULL_TITLE }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [typedCount, setTypedCount] = useState(0);
   const [pillVisible, setPillVisible] = useState(false);
   const [cycleIdx, setCycleIdx] = useState(0);
+  const showPill = title === FULL_TITLE;
 
   useEffect(() => {
-    if (typedCount < FULL_TITLE.length) {
+    if (typedCount < title.length) {
       const t = setTimeout(() => setTypedCount(c => c + 1), CHAR_DELAY);
       return () => clearTimeout(t);
-    } else {
+    } else if (showPill) {
       const t = setTimeout(() => setPillVisible(true), 120);
       return () => clearTimeout(t);
     }
-  }, [typedCount]);
+  }, [typedCount, title, showPill]);
 
   useEffect(() => {
     const t = setInterval(() => setCycleIdx(i => (i + 1) % LEARN_MODULES.length), CYCLE_INTERVAL);
     return () => clearInterval(t);
   }, []);
 
-  const isTyping = typedCount < FULL_TITLE.length;
-  const part1 = FULL_TITLE.slice(0, Math.min(typedCount, 11));
-  const part2 = typedCount > 12 ? FULL_TITLE.slice(12) : '';
+  const isTyping = typedCount < title.length;
+  // The branded title types "OTTERWORKER", then a gap, then "I". Alternate titles type straight through.
+  const part1 = showPill ? title.slice(0, Math.min(typedCount, 11)) : title.slice(0, typedCount);
+  const part2 = showPill && typedCount > 12 ? title.slice(12) : '';
 
   return (
     <div className="min-h-screen md:h-screen bg-[#060B14] text-white font-sans flex flex-col">
@@ -85,7 +92,7 @@ const OtterWorkerLearn: React.FC = () => {
             {/* Title + header CTA (desktop only side-by-side) */}
             <div className="flex items-center justify-between gap-3">
               <div className="relative inline-block min-w-0 flex-shrink">
-                {pillVisible && (
+                {showPill && pillVisible && (
                   <span
                     className="ow-pill-in absolute -top-5 right-0 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"
                     style={{ background: '#3b82f6', boxShadow: '0 0 12px rgba(59,130,246,0.5)' }}
