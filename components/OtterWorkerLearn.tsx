@@ -7,7 +7,7 @@ const YOUTUBE_ID = 'RecA_Rg3788';
 const HEADLINE = 'AI Workforce Training. Proven Outcomes.';
 
 const VALUE_PROPS = [
-  { stat: '+40%', label: 'Higher Competency' },
+  { stat: '+57%', label: 'Higher Competency' },
   { stat: '2×', label: 'Faster Time to Floor' },
   { stat: '$1M+', label: 'Annual ROI' },
   { stat: '100%', label: 'Compliance by Default' },
