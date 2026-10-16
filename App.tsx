@@ -20,6 +20,7 @@ import MetricDashboard from './components/prismahealth/MetricDashboard';
 
 import OtterWorkerOperator from './components/OtterWorkerOperator';
 import OtterWorkerLearn from './components/OtterWorkerLearn';
+import ComplianceLanding from './components/ComplianceLanding';
 import OtterWorkerOperatorOld from './components/OtterWorkerOperator_old';
 import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
 import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
@@ -159,6 +160,16 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="otterworks">
                 <OtterWorkerOperator />
+              </BrandLayout>
+            }
+          />
+
+          {/* 12 Ventures Health · Compliance */}
+          <Route
+            path="/compliance"
+            element={
+              <BrandLayout initialBrandId="12-ventures">
+                <ComplianceLanding />
               </BrandLayout>
             }
           />
