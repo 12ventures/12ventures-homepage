@@ -16,6 +16,8 @@ interface BookDemoModalProps {
   valueProps: ValueProp[];
   sourceUrl: string;
   email: string;
+  /** Small label above "Book a Demo". Defaults to "OtterWorker I · {product}". */
+  kicker?: string;
 }
 
 interface FormState {
@@ -32,6 +34,7 @@ const BookDemoModal: React.FC<BookDemoModalProps> = ({
   valueProps,
   sourceUrl,
   email,
+  kicker,
 }) => {
   const [form, setForm] = useState<FormState>({
     firstName: '', lastName: '', businessEmail: '', useCase: '',
@@ -132,7 +135,7 @@ const BookDemoModal: React.FC<BookDemoModalProps> = ({
             >
               <div>
                 <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-2">
-                  OtterWorker I · {product}
+                  {kicker ?? `OtterWorker I · ${product}`}
                 </p>
                 <h2 className="text-2xl font-black leading-tight">Book a Demo</h2>
               </div>
