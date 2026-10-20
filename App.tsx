@@ -196,7 +196,7 @@ const App: React.FC = () => {
             path="/ai-learn"
             element={
               <BrandLayout initialBrandId="otterworks">
-                <OtterWorkerLearn video={{ src: '/videos/ai-learn-2.mp4', poster: '/images/ai_learn_video_poster.jpg' }} />
+                <OtterWorkerLearn video={{ src: '/videos/ai-learn-3.mp4', poster: '/images/ai_learn_video_poster.jpg' }} />
               </BrandLayout>
             }
           />
