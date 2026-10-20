@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import BookDemoModal from './BookDemoModal';
 import YouTubeFacade from './YouTubeFacade';
+import VideoFacade from './VideoFacade';
 
 const YOUTUBE_ID = 'RecA_Rg3788';
 const HEADLINE = 'AI Workforce Training. Proven Outcomes.';
@@ -26,6 +27,8 @@ const CYCLE_INTERVAL = 3300;
 type OtterWorkerLearnProps = {
   /** A/B title. Defaults to the branded "OTTERWORKER I" + Learn pill. */
   title?: string;
+  /** Self-hosted video for the /ai-* pages; without it the YouTube embed plays. */
+  video?: { src: string; poster: string };
 };
 
 const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperClass?: string }> = ({
@@ -42,7 +45,7 @@ const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperCla
   </div>
 );
 
-const OtterWorkerLearn: React.FC<OtterWorkerLearnProps> = ({ title = FULL_TITLE }) => {
+const OtterWorkerLearn: React.FC<OtterWorkerLearnProps> = ({ title = FULL_TITLE, video }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [typedCount, setTypedCount] = useState(0);
   const [pillVisible, setPillVisible] = useState(false);
@@ -146,7 +149,9 @@ const OtterWorkerLearn: React.FC<OtterWorkerLearnProps> = ({ title = FULL_TITLE 
                   boxShadow: '0 0 40px rgba(56,189,248,0.08)',
                 }}
               >
-                <YouTubeFacade videoId={YOUTUBE_ID} title="OtterWorker I — Learn" />
+                {video
+                ? <VideoFacade src={video.src} poster={video.poster} title="OtterWorker I — Learn" />
+                : <YouTubeFacade videoId={YOUTUBE_ID} title="OtterWorker I — Learn" />}
               </div>
             </div>
           </div>

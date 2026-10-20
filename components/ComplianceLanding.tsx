@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Play } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 import BookDemoModal from './BookDemoModal';
 import YouTubeFacade from './YouTubeFacade';
+import VideoFacade from './VideoFacade';
 
 // Set a YouTube ID once the video is uploaded; until then the self-hosted MP4 plays.
 const YOUTUBE_ID = '';
@@ -55,47 +56,6 @@ const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperCla
     </button>
   </div>
 );
-
-/** Poster + play button for the self-hosted video; the file only loads after a click. */
-const VideoFacade: React.FC<{ src: string; poster: string; title: string }> = ({ src, poster, title }) => {
-  const [playing, setPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  if (playing) {
-    return (
-      <video
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        title={title}
-        controls
-        autoPlay
-        playsInline
-        onEnded={() => setPlaying(false)}
-        className="w-full h-full bg-black"
-        style={{ display: 'block', objectFit: 'contain' }}
-      />
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => setPlaying(true)}
-      aria-label={`Play video: ${title}`}
-      className="group relative w-full h-full block"
-    >
-      <img src={poster} alt="" className="w-full h-full object-cover" />
-      <span className="absolute inset-0 flex items-center justify-center">
-        <span
-          className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full transition-transform group-hover:scale-110"
-          style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.35)' }}
-        >
-          <Play className="w-7 h-7 md:w-8 md:h-8 text-white ml-1" fill="currentColor" />
-        </span>
-      </span>
-    </button>
-  );
-};
 
 const ComplianceLanding: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
