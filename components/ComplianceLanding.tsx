@@ -5,11 +5,12 @@ import YouTubeFacade from './YouTubeFacade';
 
 // Set a YouTube ID once the video is uploaded; until then the self-hosted MP4 plays.
 const YOUTUBE_ID = '';
-const VIDEO_SRC = '/videos/12-ventures-health-compliance.mp4';
-const VIDEO_POSTER = '/images/compliance_video_poster.jpg';
+const VIDEO_SRC = '/videos/ai-compliance-v4.mp4';
+const VIDEO_POSTER = '/images/ai_compliance_video_poster.jpg';
 const BANNER_SRC = '/images/compliance_banner.png';
 
-const HEADLINE = 'AI Compliance Automation for Health Systems.';
+const HEADLINE = 'Continuous Compliance · Complete Visibility';
+const VENTURES_LOGO = 'https://games.dreambox.gg/icons/12venturesLogoNew.png';
 
 const VALUE_PROPS = [
   { stat: 'Always Compliant', label: 'Every standard, monitored live' },
@@ -28,11 +29,18 @@ const COMPLIANCE_USES = [
   'Policy + Training Gap Detection',
 ];
 
-const FULL_TITLE = '12 VENTURES HEALTH';
-const SPLIT = 11; // "12 VENTURES" | "HEALTH"
-const CHAR_DELAY = 75;
+const FULL_TITLE = 'AI Compliance for Health Systems';
+// Same light-to-sky-blue gradient the video uses for the product name
+const TITLE_GRADIENT: React.CSSProperties = {
+  background: 'linear-gradient(180deg, #e4f4ff 0%, #a9dbff 45%, #6cbcff 100%)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  color: 'transparent',
+  filter: 'drop-shadow(0 0 18px rgba(90, 170, 255, 0.3))',
+  paddingBottom: '0.08em',
+};
+const CHAR_DELAY = 45;
 const CYCLE_INTERVAL = 3300;
-const HEALTH_COLOR = '#7fd6b6';
 
 const DemoButton: React.FC<{ onClick: () => void; className?: string; wrapperClass?: string }> = ({
   onClick, className = '', wrapperClass = '',
@@ -95,7 +103,7 @@ const ComplianceLanding: React.FC = () => {
   const [cycleIdx, setCycleIdx] = useState(0);
 
   useEffect(() => {
-    document.title = '12 Ventures Health | AI Compliance Automation for Health Systems';
+    document.title = 'AI Compliance for Health Systems | Powered by 12 VENTURES';
   }, []);
 
   useEffect(() => {
@@ -110,9 +118,6 @@ const ComplianceLanding: React.FC = () => {
   }, []);
 
   const isTyping = typedCount < FULL_TITLE.length;
-  // Types "12 VENTURES", then a gap, then "HEALTH" in the brand accent.
-  const part1 = FULL_TITLE.slice(0, Math.min(typedCount, SPLIT));
-  const part2 = typedCount > SPLIT + 1 ? FULL_TITLE.slice(SPLIT + 1, typedCount) : '';
 
   return (
     <div className="h-[100dvh] min-h-[560px] bg-[#060B14] text-white font-sans flex flex-col">
@@ -120,10 +125,10 @@ const ComplianceLanding: React.FC = () => {
         <BookDemoModal
           onClose={() => setModalOpen(false)}
           product="Compliance"
-          kicker="12 Ventures Health · Compliance"
-          tagline="Continuous compliance. Complete visibility."
+          kicker="AI Compliance for Health Systems"
+          tagline="Continuous compliance · Complete visibility"
           valueProps={MODAL_VALUE_PROPS}
-          sourceUrl="12 Ventures Health Compliance Page"
+          sourceUrl="AI Compliance Page"
           email=""
         />
       )}
@@ -133,25 +138,21 @@ const ComplianceLanding: React.FC = () => {
         {/* ── Left / main content ── */}
         <div className="flex flex-col flex-1 min-h-0 md:flex-none w-full md:w-[58%] px-5 md:px-8 pt-8 md:pt-10 pb-5 md:pb-8 md:h-full md:justify-between gap-3 md:gap-0">
 
-          {/* Title row */}
-          <div className="flex-shrink-0">
-            <div className="flex items-center justify-between gap-3">
-              <div className="relative inline-block min-w-0 flex-shrink">
-                <h1
-                  className="font-black tracking-tight leading-none"
-                  style={{ fontSize: 'clamp(2rem, 3.8vw, 3.75rem)' }}
-                >
-                  {part1}
-                  {part2 && <span style={{ marginLeft: 'clamp(0.5rem, 1vw, 1rem)', color: HEALTH_COLOR }}>{part2}</span>}
-                  {isTyping && <span className="ow-cursor" style={{ height: '0.8em' }} />}
-                </h1>
-              </div>
-              {/* Header button — only at xl+ to avoid overlap at mid-range */}
-              <DemoButton
-                onClick={() => setModalOpen(true)}
-                className="py-2 px-4 text-sm"
-                wrapperClass="hidden xl:block flex-shrink-0 ow-fade-in ow-d-900"
-              />
+          {/* Title row — the product leads; 12 VENTURES is a small "powered by" mark */}
+          {/* inline-flex + items-end right-aligns "Powered by" under the title; the untyped rest is
+              rendered invisibly so the title's width (and the mark's position) stays fixed while typing */}
+          <div className="flex-shrink-0 inline-flex flex-col items-end self-start max-w-full">
+            <h1
+              className="font-bold tracking-tight leading-tight"
+              style={{ fontSize: 'clamp(1.75rem, 2.9vw, 3rem)', ...TITLE_GRADIENT }}
+            >
+              {FULL_TITLE.slice(0, typedCount)}
+              {isTyping && <span className="ow-cursor" style={{ height: '0.8em' }} />}
+              <span className="invisible" aria-hidden="true">{FULL_TITLE.slice(typedCount)}</span>
+            </h1>
+            <div className="mt-2 flex items-center gap-2 ow-fade-in ow-d-900">
+              <span className="text-[11px] text-white/50">Powered by</span>
+              <img src={VENTURES_LOGO} alt="12 VENTURES" className="h-[9px] md:h-[10px] w-auto opacity-80" />
             </div>
           </div>
 
@@ -187,15 +188,15 @@ const ComplianceLanding: React.FC = () => {
               }}
             >
               {YOUTUBE_ID
-                ? <YouTubeFacade videoId={YOUTUBE_ID} title="12 Ventures Health — AI Compliance Automation" />
-                : <VideoFacade src={VIDEO_SRC} poster={VIDEO_POSTER} title="12 Ventures Health — AI Compliance Automation" />}
+                ? <YouTubeFacade videoId={YOUTUBE_ID} title="AI Compliance for Health Systems" />
+                : <VideoFacade src={VIDEO_SRC} poster={VIDEO_POSTER} title="AI Compliance for Health Systems" />}
             </div>
           </div>
 
           {/* Value props */}
           <div className="flex-shrink-0">
             <p className="text-[10px] font-bold tracking-widest text-blue-400 uppercase mb-2 md:mb-3 ow-fade-up ow-d-300">
-              Why Leaders Choose 12 Ventures Health
+              Why Leaders Choose AI Compliance
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
             {VALUE_PROPS.map((item, i) => (
@@ -223,7 +224,7 @@ const ComplianceLanding: React.FC = () => {
         <div className="hidden md:block flex-1 relative ow-fade-in ow-d-300">
           {/* Image layer */}
           <div className="absolute inset-0 overflow-hidden">
-            <img src={BANNER_SRC} alt="12 Ventures Health" className="w-full h-full object-cover object-top" />
+            <img src={BANNER_SRC} alt="AI Compliance for Health Systems" className="w-full h-full object-cover object-top" />
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #060B14, rgba(6,11,20,0.15) 50%, transparent)' }} />
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, #060B14 0%, transparent 40%)' }} />
           </div>

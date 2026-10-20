@@ -164,9 +164,9 @@ const App: React.FC = () => {
             }
           />
 
-          {/* 12 Ventures Health · Compliance */}
+          {/* AI Compliance for Health Systems */}
           <Route
-            path="/compliance"
+            path="/ai-compliance"
             element={
               <BrandLayout initialBrandId="12-ventures">
                 <ComplianceLanding />

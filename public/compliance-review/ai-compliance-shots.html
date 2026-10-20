@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<meta name="robots" content="noindex">
+<title>Compliance Hub · Video Shots</title>
+<!--
+  Recording surface for the AI Compliance video (v3). Not linked from the site.
+  Every shot is a pure function of time: ?shot=<name>&t=<seconds>, or window.seek(t).
+  ?play=1 plays the shot in real time (looping) for previewing in a browser.
+  Shots: hub, connectors, readiness, gap
+-->
+<style>
+  :root {
+    color-scheme: dark;
+    --paper:#070d19; --surface:#0e1729; --surface-2:#142036; --surface-3:#1a2942;
+    --ink:#eaf1fb; --ink-soft:#a6b6cc; --ink-faint:#6b7f99;
+    --line:#1f2e46; --line-strong:#2d4262;
+    --accent:#5aa8ff; --accent-2:#7fd6ff;
+    --crit:#f0645a; --warn:#e9b040; --good:#3fd18b; --good-soft:#3fd18b22;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:var(--paper); }
+  body { color:var(--ink); font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  .num { font-variant-numeric:tabular-nums; }
+  .mono { font-family:"Cascadia Mono",Consolas,ui-monospace,monospace; }
+
+  #stage { position:fixed; inset:0; width:1440px; height:810px; overflow:hidden;
+    background:
+      radial-gradient(ellipse 70% 60% at 100% 0%, #2f7bff1f, transparent 60%),
+      radial-gradient(ellipse 70% 60% at 0% 100%, #2f7bff17, transparent 60%), var(--paper); }
+  #world { position:absolute; left:0; top:0; width:1440px; height:810px; transform-origin:0 0; }
+  .view { position:absolute; inset:0; display:none; }
+  .view.on { display:block; }
+
+  /* ── App chrome ── */
+  .bar { position:absolute; left:0; right:0; top:0; height:78px; display:flex; align-items:center; gap:18px; padding:0 28px;
+    border-bottom:1px solid var(--line); background:linear-gradient(180deg,#0e172966,#0e172900); }
+  .bar::before { content:""; position:absolute; left:0; right:0; top:0; height:3px; background:linear-gradient(90deg,var(--accent),#5aa8ff55 55%,transparent); }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .mark { width:40px; height:40px; border-radius:11px; display:grid; place-items:center;
+    background:linear-gradient(140deg,#2f7bff,#3fd1c1); box-shadow:0 6px 18px #2f7bff55; }
+  .mark svg { width:22px; height:22px; }
+  .brand .eb { font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+  .brand h1 { margin:2px 0 0; font-size:24px; font-weight:650; letter-spacing:-.01em; line-height:1.1; }
+  .tabs { margin-left:auto; display:flex; gap:4px; padding:4px; border-radius:999px; border:1px solid var(--line-strong); background:#0b1424aa; }
+  .tabs span { font-size:13px; font-weight:600; color:var(--ink-soft); padding:7px 15px; border-radius:999px; }
+  .tabs span.sel { color:var(--ink); background:var(--surface-3); }
+  .live { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; font-size:12.5px; font-weight:700; letter-spacing:.06em;
+    color:var(--good); background:var(--good-soft); border:1px solid #3fd18b55; }
+  .live .dot { width:8px; height:8px; border-radius:50%; background:var(--good); box-shadow:0 0 0 0 #3fd18b88; }
+
+  .mod { position:absolute; background:linear-gradient(180deg,#111c31,#0d1627); border:1px solid var(--line); border-radius:16px;
+    box-shadow:inset 0 1px 0 #ffffff0d, 0 14px 34px #02060f66; }
+  .mod-h { display:flex; align-items:center; justify-content:space-between; padding:14px 18px 0; }
+  .mod-t { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); font-weight:700; }
+  .chip { font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 9px; border-radius:999px; color:var(--accent); background:#5aa8ff1a; border:1px solid #5aa8ff44; }
+
+  /* KPIs */
+  .kpi { padding:16px 18px; }
+  .kpi .k { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); font-weight:700; }
+  .kpi .v { font-size:34px; font-weight:650; line-height:1.1; margin-top:8px; letter-spacing:-.01em; }
+  .kpi .v small { font-size:15px; color:var(--ink-soft); font-weight:600; margin-left:3px; }
+  .kpi .d { margin-top:6px; font-size:12px; font-weight:650; color:var(--good); }
+  .kpi svg.spark { position:absolute; right:16px; bottom:16px; width:92px; height:34px; }
+
+  /* Radar */
+  .radar text { fill:#dfe8f5; font-size:12.5px; font-weight:600; }
+  .radar .ring { fill:none; stroke:#2a3d5c; stroke-width:1; }
+  .radar .spoke { stroke:#2a3d5c; stroke-width:1; }
+  .radar .shape { fill:#5aa8ff2a; stroke:#7fbaff; stroke-width:1.6; stroke-linejoin:round; }
+  .radar .ideal { fill:none; stroke:#8ea4bc; stroke-width:1.2; stroke-dasharray:3 4; opacity:.55; }
+
+  /* Score tiles */
+  .score { padding:13px 15px 14px; }
+  .score .n { font-size:13.5px; font-weight:650; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .score .row { display:flex; align-items:center; gap:10px; margin-top:11px; }
+  .score .lab { font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; }
+  .score .val { margin-left:auto; font-size:20px; font-weight:650; }
+  .score .val small { font-size:12px; color:var(--ink-faint); }
+  .track { position:relative; height:8px; margin-top:10px; border-radius:99px; background:#1d2b44; }
+  .fill { position:absolute; left:0; top:0; bottom:0; border-radius:99px; }
+  .knob { position:absolute; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:#fff; border:3px solid; }
+  .gp { position:absolute; right:12px; top:11px; display:none; align-items:center; gap:6px; font-size:10.5px; font-weight:800; letter-spacing:.1em;
+    text-transform:uppercase; padding:4px 9px; border-radius:999px; }
+
+  /* Activity feed */
+  .feed { position:absolute; left:16px; right:16px; top:52px; bottom:14px; overflow:hidden; }
+  .ev { position:absolute; left:0; right:0; height:56px; display:flex; align-items:center; gap:12px; padding:0 12px; border-radius:12px;
+    background:#0b1424; border:1px solid var(--line); }
+  .ev .ic { width:30px; height:30px; flex:0 0 30px; border-radius:9px; display:grid; place-items:center; font-size:11px; font-weight:800; color:#fff; }
+  .ev .tx { min-width:0; flex:1; }
+  .ev .t1 { font-size:13px; font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ev .t2 { font-size:11.5px; color:var(--ink-faint); margin-top:2px; white-space:nowrap; }
+  .ev .ok { font-size:10.5px; font-weight:800; letter-spacing:.08em; color:var(--good); background:var(--good-soft); padding:4px 8px; border-radius:99px; }
+
+  /* Gap card */
+  #gapcard { position:absolute; width:560px; padding:22px 24px 22px; display:none; border-color:#2d4262; }
+  #gapcard .eb { font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:800; color:var(--crit); display:flex; align-items:center; gap:8px; }
+  #gapcard h3 { margin:8px 0 4px; font-size:23px; font-weight:650; letter-spacing:-.01em; }
+  #gapcard p { margin:0; color:var(--ink-soft); font-size:14px; line-height:1.45; }
+  .proj { margin-top:18px; padding:14px 16px; border-radius:12px; background:#0a1322; border:1px solid var(--line); }
+  .proj .lbl { display:flex; justify-content:space-between; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:700; color:var(--ink-faint); }
+  .proj .track { height:10px; margin-top:12px; }
+  .proj .nums { display:flex; justify-content:space-between; margin-top:7px; font-size:11px; color:var(--ink-faint); padding:0 2px; }
+  .cta { margin-top:16px; display:flex; align-items:center; gap:14px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:#04101f; padding:11px 18px; border-radius:999px;
+    background:linear-gradient(135deg,#5aa8ff,#7fd6ff); box-shadow:0 8px 24px #5aa8ff44; }
+  .agents { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--ink-soft); }
+  .av { width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-size:10.5px; font-weight:800; color:#fff; border:2px solid #0d1627; }
+  .av + .av { margin-left:-10px; }
+  .steps { margin-top:16px; display:none; flex-direction:column; gap:9px; }
+  .st { display:flex; align-items:center; gap:12px; font-size:14px; font-weight:600; color:var(--ink-soft); }
+  .st .b { width:22px; height:22px; border-radius:50%; border:2px solid #2d4262; display:grid; place-items:center; flex:0 0 22px; }
+  .st .b svg { width:12px; height:12px; opacity:0; }
+  .st.done { color:var(--ink); }
+  .st.done .b { background:var(--good); border-color:var(--good); }
+  .st.done .b svg { opacity:1; }
+  .st.run .b { border-color:var(--accent); border-top-color:transparent; }
+  .deploy { display:none; align-items:center; gap:10px; margin-top:16px; padding:10px 14px; border-radius:12px; font-size:13.5px; font-weight:700;
+    color:var(--accent-2); background:#5aa8ff14; border:1px solid #5aa8ff44; }
+
+  /* ── Connectors ── */
+  .ctitle { position:absolute; left:64px; top:112px; display:none; } /* the tab already says Connectors; keeps the corner free for the video's cycle tracker */
+  .ctitle h2 { margin:0; font-size:34px; font-weight:650; letter-spacing:-.01em; }
+  .ctitle p { margin:6px 0 0; color:var(--ink-soft); font-size:15px; }
+  .grid { position:absolute; top:244px; width:612px; display:grid; grid-template-columns:repeat(3,192px); gap:34px 18px; }
+  .rowlab { position:absolute; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); font-weight:700; white-space:nowrap; }
+  /* Logo cards are full white tiles (like the light Connect page) floating on the dark board */
+  .tile { position:relative; height:150px; border-radius:22px; background:#ffffff; border:2px solid #ffffff;
+    box-shadow:0 18px 38px #02060f99; display:grid; place-items:center; }
+  .plate { width:100%; height:100%; display:grid; place-items:center; }
+  .plate img { max-width:128px; max-height:70px; object-fit:contain; display:block; }
+  .tile .nm { position:absolute; bottom:12px; left:0; right:0; text-align:center; font-size:12px; font-weight:600; color:var(--ink-soft); }
+  .tile .plus { position:absolute; right:-9px; top:-9px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+    background:#1a2942; border:1px solid #2d4262; color:#c9d6e8; box-shadow:0 4px 12px #0008; }
+  .tile .plus .p { display:grid; place-items:center; width:16px; height:16px; }
+  .tile .plus svg { width:16px; height:16px; display:block; }
+  .tile.upload { border:2px dashed #9fb6d6; background:#ffffff; box-shadow:0 18px 38px #02060f99; }
+  .up { display:flex; flex-direction:column; align-items:center; gap:10px; color:#1f3a5f; font-size:14px; font-weight:700; }
+  .up .ui { width:54px; height:54px; border-radius:16px; display:grid; place-items:center; background:#e8f1fd; border:1px solid #b8d2f3; }
+  .ukg { width:84px; height:84px; border-radius:50%; background:#005151; color:#fff; display:grid; place-items:center; font:800 26px/1 "Segoe UI",sans-serif; letter-spacing:.02em; }
+  .hs { font:700 21px/1 "Segoe UI",sans-serif; color:#0b4f8a; letter-spacing:-.01em; }
+  .hs b { color:#00a3a6; font-weight:700; }
+  .oh { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+  .oh img { width:112px; height:auto; max-height:none; }
+  .oh span { font:600 19px/1 "Segoe UI",sans-serif; color:#6b6b6b; margin-left:1px; }
+
+  /* Policies panel */
+  #policies { position:absolute; top:110px; width:600px; height:668px; display:none; padding:20px 22px; }
+  #policies .hd { display:flex; justify-content:space-between; align-items:center; }
+  #policies .hd b { font-size:18px; font-weight:650; }
+  .drop { margin-top:14px; height:104px; border-radius:14px; border:1.5px dashed #3a5680; background:#0a1322; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+  .drop .a { font-size:14px; font-weight:650; }
+  .drop .b { font-size:12px; color:var(--ink-faint); }
+  .docs { margin-top:14px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .doc { height:66px; border-radius:12px; background:#0b1424; border:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:0 11px; }
+  .doc .fi { width:30px; height:36px; flex:0 0 30px; border-radius:5px; position:relative; display:grid; place-items:end center; padding-bottom:4px; font-size:8.5px; font-weight:800; color:#fff; }
+  .doc .fn { font-size:12px; font-weight:600; line-height:1.3; color:#d6e1f0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .doc .pr { position:absolute; left:0; bottom:0; height:3px; border-radius:2px; background:var(--good); }
+</style>
+</head>
+<body>
+<div id="stage"><div id="world">
+
+  <!-- Shared top bar -->
+  <header class="bar">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4.5 5.6v6.1c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V5.6Z"/><path d="m8.6 12.2 2.4 2.4 4.6-4.8"/></svg></div>
+      <div><div class="eb">AI Compliance for Health Systems</div><h1>Compliance Hub</h1></div>
+    </div>
+    <nav class="tabs" id="tabs"><span data-v="hub">Overview</span><span data-v="ready">Readiness</span><span data-v="connectors">Connectors</span><span data-v="graph">Knowledge graph</span></nav>
+    <span class="live"><span class="dot" id="livedot"></span>LIVE</span>
+  </header>
+
+  <!-- ── Hub ── -->
+  <section class="view" id="v-hub"></section>
+
+  <!-- ── Connectors ── -->
+  <section class="view" id="v-connectors">
+    <div class="ctitle" id="ctitle"><h2>Connectors</h2><p>Every system, document, and requirement in one place</p></div>
+    <div class="grid" id="grid"></div>
+    <div class="mod" id="policies">
+      <div class="hd"><b>Policies &amp; documents</b><span class="chip" id="doccount">0 files</span></div>
+      <div class="drop"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7fbaff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg><span class="a">Drop files here</span><span class="b">Policies, spreadsheets, scanned checklists</span></div>
+      <div class="docs" id="docs"></div>
+    </div>
+  </section>
+
+  <!-- ── Knowledge graph (live, recorded in real time) ── -->
+  <section class="view" id="v-graph"><iframe id="gframe" title="Knowledge graph" style="position:absolute;left:0;top:79px;width:1440px;height:731px;border:0;background:transparent"></iframe></section>
+
+</div></div>
+
+<script>
+// ───────────── helpers ─────────────
+const $ = (s, r = document) => r.querySelector(s);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, p) => a + (b - a) * p;
+const E = {
+  lin: (p) => p,
+  io: (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+  out: (p) => 1 - Math.pow(1 - p, 3),
+  back: (p) => { const c = 1.6; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); },
+};
+// progress of t through [a,b], eased
+const seg = (t, a, b, e = E.io) => e(clamp((t - a) / (b - a)));
+const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; };
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#04101f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+const TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
+const LEVELS = ["", "Not in place", "Major gaps", "Partly in place", "Mostly in place", "Survey ready"];
+const levelColor = (s) => (s < 2.6 ? "var(--crit)" : s < 3.6 ? "var(--warn)" : "var(--good)");
+const levelHex = (s) => (s < 2.6 ? "#f0645a" : s < 3.6 ? "#e9b040" : "#3fd18b");
+const mixHex = (a, b, p) => {
+  const pa = a.match(/\w\w/g).map((h) => parseInt(h, 16)), pb = b.match(/\w\w/g).map((h) => parseInt(h, 16));
+  return "#" + pa.map((v, i) => Math.round(lerp(v, pb[i], p)).toString(16).padStart(2, "0")).join("");
+};
+// smooth colour along red → amber → green as the score rises
+const scoreHex = (s) => (s <= 2.4 ? "#f0645a" : s <= 3.1 ? mixHex("f0645a", "e9b040", (s - 2.4) / 0.7) : s <= 3.8 ? mixHex("e9b040", "3fd18b", (s - 3.1) / 0.7) : "#3fd18b");
+
+// ───────────── camera ─────────────
+// Rects are in untransformed world px. focus() frames a rect to fill the 1440x810 stage.
+const world = $("#world");
+const VIEW = { x: 0, y: 0, w: 1440, h: 810 };
+function rectOf(node, pad = 0) {
+  const prev = world.style.transform; world.style.transform = "none";
+  const r = node.getBoundingClientRect(); world.style.transform = prev;
+  return { x: r.left - pad, y: r.top - pad, w: r.width + pad * 2, h: r.height + pad * 2 };
+}
+function fit(r) {
+  // grow the rect to 16:9 around its centre
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  let w = r.w, h = r.h;
+  if (w / h > 16 / 9) h = w * 9 / 16; else w = h * 16 / 9;
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+const mixRect = (a, b, p) => ({ x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p), w: lerp(a.w, b.w, p), h: lerp(a.h, b.h, p) });
+const NOCAM = new URLSearchParams(location.search).has("nocam");
+function camera(r) {
+  if (NOCAM) { world.style.transform = "none"; return; }
+  const f = fit(r), s = 1440 / f.w;
+  world.style.transform = `translate(${-f.x * s}px, ${-f.y * s}px) scale(${s})`;
+}
+// keyframes: [[time, rect], ...] — eased between neighbours
+function camAt(t, keys) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) if (t <= keys[i][0]) return mixRect(keys[i - 1][1], keys[i][1], seg(t, keys[i - 1][0], keys[i][0]));
+  return keys[keys.length - 1][1];
+}
+
+// ───────────── data ─────────────
+const AREAS = [
+  "People and competence", "Medication system", "Patient safety practices", "Infection, testing, and tissue",
+  "Record and rights", "Care delivery", "Leadership and improvement", "Place, utilities, emergencies, and information",
+];
+const SHORT = ["People and competence", "Medication system", "Patient safety practices", "Infection, testing & tissue",
+  "Record and rights", "Care delivery", "Leadership & improvement", "Place, utilities & emergencies"];
+// The live hub state, a "before" (gaps) and an "after" (ready) state
+const S_LIVE = [4.4, 4.2, 4.6, 4.3, 4.1, 4.5, 4.0, 3.9];
+const S_BEFORE = [3.4, 2.2, 3.9, 3.1, 2.6, 3.6, 2.4, 3.0];
+const S_AFTER = [4.6, 4.4, 4.7, 4.3, 4.2, 4.5, 4.1, 4.4];
+
+// ───────────── hub view ─────────────
+const hub = $("#v-hub");
+const M = {};
+function mod(id, x, y, w, h, title, chip) {
+  const m = el("div", "mod"); Object.assign(m.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
+  if (title) m.appendChild(el("div", "mod-h", `<span class="mod-t">${title}</span>${chip ? `<span class="chip">${chip}</span>` : ""}`));
+  hub.appendChild(m); M[id] = m; return m;
+}
+
+// KPI row
+const KPIS = [
+  { k: "Readiness score", v: 4.3, of: "/ 5", dec: 1, d: "▲ 0.6 this quarter", spark: [2.9, 3.1, 3.0, 3.4, 3.6, 3.8, 4.1, 4.3] },
+  { k: "Requirements tracked", v: 1343, dec: 0, d: "16 chapters · 209 standards", spark: null },
+  { k: "Open gaps", v: 6, dec: 0, d: "▼ 31 closed this month", spark: [40, 34, 29, 22, 17, 12, 9, 6], down: true },
+  { k: "Evidence current", v: 97, of: "%", dec: 0, d: "▲ 18 pts since go-live", spark: [72, 76, 81, 85, 88, 92, 95, 97] },
+  { k: "Systems connected", v: 9, dec: 0, d: "Epic · UKG · Workday +6", spark: null },
+];
+KPIS.forEach((k, i) => {
+  const m = mod("kpi" + i, 28 + i * 280, 100, 264, 118);
+  m.classList.add("kpi");
+  m.innerHTML = `<div class="k">${k.k}</div><div class="v num"><span>0</span>${k.of ? `<small>${k.of}</small>` : ""}</div><div class="d">${k.d}</div>`;
+  if (k.spark) {
+    const lo = Math.min(...k.spark), hi = Math.max(...k.spark);
+    const pts = k.spark.map((v, j) => `${(j / (k.spark.length - 1)) * 92},${32 - ((v - lo) / (hi - lo)) * 28}`).join(" ");
+    m.insertAdjacentHTML("beforeend", `<svg class="spark" viewBox="0 0 92 34"><polyline points="${pts}" fill="none" stroke="${k.down ? "#3fd18b" : "#5aa8ff"}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>`);
+  }
+  k.node = m;
+});
+
+// Radar module
+const R = { cx: 238, cy: 282, r: 124 };
+mod("radar", 28, 234, 476, 548, "Readiness by area", "Joint Commission");
+const radar = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg" class="radar" width="476" height="548" style="position:absolute;left:0;top:0"></svg>`, "image/svg+xml").documentElement;
+M.radar.appendChild(document.importNode(radar, true));
+const rsvg = M.radar.querySelector("svg");
+const NS = "http://www.w3.org/2000/svg";
+const svgEl = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / 8;
+const pt = (i, s) => [R.cx + Math.cos(ang(i)) * R.r * (s / 5), R.cy + Math.sin(ang(i)) * R.r * (s / 5)];
+for (let k = 1; k <= 5; k++) rsvg.appendChild(svgEl("polygon", { class: "ring", points: AREAS.map((_, i) => pt(i, k).join(",")).join(" ") }));
+AREAS.forEach((_, i) => { const [x, y] = pt(i, 5); rsvg.appendChild(svgEl("line", { class: "spoke", x1: R.cx, y1: R.cy, x2: x, y2: y })); });
+rsvg.appendChild(svgEl("polygon", { class: "ideal", points: AREAS.map((_, i) => pt(i, 5).join(",")).join(" ") }));
+const rShape = svgEl("polygon", { class: "shape" }); rsvg.appendChild(rShape);
+const rNodes = AREAS.map(() => { const c = svgEl("circle", { r: 5.5 }); rsvg.appendChild(c); return c; });
+const LABEL_LINES = [["People and", "competence"], ["Medication", "system"], ["Patient safety", "practices"], ["Infection, testing,", "and tissue"],
+  ["Record and", "rights"], ["Care", "delivery"], ["Leadership and", "improvement"], ["Place, utilities,", "emergencies"]];
+const rLabels = LABEL_LINES.map((lines, i) => {
+  const [x0, y0] = pt(i, 5), c = Math.cos(ang(i)), sn = Math.sin(ang(i));
+  const x = x0 + c * 16, y = y0 + sn * 22;
+  const t = svgEl("text", { x, y: y - (lines.length - 1) * 7.5 + 4, "text-anchor": Math.abs(c) < 0.2 ? "middle" : c > 0 ? "start" : "end" });
+  lines.forEach((ln, j) => { const s = svgEl("tspan", { x, dy: j ? 15 : 0 }); s.textContent = ln; t.appendChild(s); });
+  rsvg.appendChild(t); return t;
+});
+const rAvg = el("div", "", ""); Object.assign(rAvg.style, { position: "absolute", left: "0", right: "0", bottom: "20px", textAlign: "center" });
+rAvg.innerHTML = `<div class="mod-t" style="letter-spacing:.14em">Average readiness</div><div class="num" style="font-size:30px;font-weight:650;margin-top:4px"><span id="ravg">0.0</span><span style="font-size:14px;color:var(--ink-soft)"> / 5</span></div>`;
+M.radar.appendChild(rAvg);
+function drawRadar(scores, grow = 1) {
+  rShape.setAttribute("points", scores.map((s, i) => pt(i, s * grow).join(",")).join(" "));
+  const avgHex = scoreHex(scores.reduce((a, b) => a + b, 0) / scores.length);
+  rShape.style.fill = avgHex + "2e"; rShape.style.stroke = avgHex;
+  scores.forEach((s, i) => { const [x, y] = pt(i, s * grow); rNodes[i].setAttribute("cx", x); rNodes[i].setAttribute("cy", y); rNodes[i].setAttribute("fill", scoreHex(s)); });
+  $("#ravg").textContent = (scores.reduce((a, b) => a + b, 0) / scores.length * grow).toFixed(1);
+}
+
+// Score tiles (2 x 4)
+const tiles = AREAS.map((a, i) => {
+  const col = i % 2, row = Math.floor(i / 2);
+  const m = mod("score" + i, 520 + col * 272, 234 + row * 140, 260, 128);
+  m.classList.add("score");
+  m.innerHTML = `<div class="n">${SHORT[i]}</div>
+    <div class="row"><span class="lab"></span><span class="val num"><span class="sv">0</span><small> / 5</small></span></div>
+    <div class="track"><div class="fill"></div><div class="knob"></div></div>
+    <span class="gp"></span>`;
+  return m;
+});
+function drawTile(i, s, grow = 1) {
+  const m = tiles[i], c = scoreHex(s), v = s * grow;
+  m.querySelector(".lab").style.opacity = clamp((grow - 0.85) / 0.15);
+  m.querySelector(".lab").textContent = LEVELS[Math.max(1, Math.min(5, Math.round(s)))];
+  m.querySelector(".lab").style.color = c;
+  m.querySelector(".sv").textContent = v.toFixed(1);
+  const p = ((v - 1) / 4) * 100;
+  m.querySelector(".fill").style.cssText = `width:${clamp(p, 0, 100)}%;background:linear-gradient(90deg,${c}88,${c})`;
+  m.querySelector(".knob").style.cssText = `left:${clamp(p, 0, 100)}%;border-color:${c}`;
+}
+
+// Activity feed + trend
+mod("feed", 1072, 234, 340, 548, "Live activity", "Streaming");
+const FEED = [
+  ["EP", "#c8102e", "Epic · Medication admin records", "Synced 2,418 entries", "SYNCED"],
+  ["UK", "#005151", "UKG · License renewals", "14 RN licenses verified", "VERIFIED"],
+  ["AI", "#2f7bff", "Agent closed a gap", "Fire drill log · Life Safety", "CLOSED"],
+  ["WD", "#f38b00", "Workday · Annual competencies", "312 staff up to date", "CURRENT"],
+  ["TJ", "#1f3a68", "Joint Commission · NPSG update", "3 requirements mapped", "MAPPED"],
+  ["AI", "#2f7bff", "Agent assigned training", "Insulin pump titration · 4 units", "ASSIGNED"],
+  ["EP", "#c8102e", "Epic · Restraint documentation", "Evidence attached to PC.03.05", "LINKED"],
+  ["DOC", "#5f6f89", "Policy library · 6 policies", "Reviewed and re-approved", "CURRENT"],
+];
+const feedBox = el("div", "feed"); M.feed.appendChild(feedBox);
+const evs = FEED.map(([ic, bg, t1, t2, ok]) => {
+  const n = el("div", "ev", `<span class="ic" style="background:${bg}">${ic}</span><span class="tx"><div class="t1">${t1}</div><div class="t2">${t2}</div></span><span class="ok">${ok}</span>`);
+  feedBox.appendChild(n); return n;
+});
+// item k enters at time k*gap; newest on top
+function drawFeed(t, start = 0.6, gap = 0.75) {
+  const N = evs.filter((_, k) => t >= start + k * gap).length; // arrived so far
+  const push = N ? seg(t, start + (N - 1) * gap, start + (N - 1) * gap + 0.45, E.io) : 0;
+  evs.forEach((n, k) => {
+    if (k >= N) { n.style.opacity = 0; return; }
+    const newest = k === N - 1;
+    const y = newest ? 0 : N - 1 - k - (1 - push);
+    n.style.top = y * 64 + "px";
+    n.style.opacity = newest ? push : y > 6.2 ? clamp(7.2 - y) : 1;
+    n.style.transform = newest ? `translateY(${(1 - push) * -12}px) scale(${lerp(0.96, 1, push)})` : "none";
+  });
+}
+
+// Gap pill + card (lives on the hub)
+const GAP = 1; // Medication system
+const gp = tiles[GAP].querySelector(".gp");
+const gapcard = el("div", "mod", `
+  <div class="eb"><svg width="14" height="14" viewBox="0 0 24 24" fill="#f0645a"><path d="M12 2 1 21h22Z"/><path d="M12 9v5M12 17.5v.5" stroke="#04101f" stroke-width="2.4" stroke-linecap="round"/></svg>Gap found · Medication system</div>
+  <h3>Insulin pump titration</h3>
+  <p>Units titrate insulin on smart pumps in different sequences. The approved policy isn't being followed everywhere.</p>
+  <div class="proj"><div class="lbl"><span>Readiness</span><span id="gc-lab" style="color:var(--crit)">Major gaps</span></div>
+    <div class="track"><div class="fill" id="gc-fill"></div><div class="knob" id="gc-knob"></div></div>
+    <div class="nums"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div></div>
+  <div class="cta" id="gc-cta"><span class="btn" id="gc-btn">Close compliance gap</span>
+    <span class="agents"><span style="display:flex"><span class="av" style="background:#2f7bff">A1</span><span class="av" style="background:#8a5cf6">A3</span><span class="av" style="background:#0fa58b">A5</span></span>Specialized agents ready</span></div>
+  <div class="deploy" id="gc-deploy"><span class="live" style="padding:3px 8px;font-size:10.5px"><span class="dot"></span>AGENT</span>Agents deployed to close gap</div>
+  <div class="steps" id="gc-steps">
+    <div class="st"><span class="b">${TICK}</span>Titration policy updated · v2.1 approved</div>
+    <div class="st"><span class="b">${TICK}</span>Titration training assigned · 86 nurses</div>
+    <div class="st"><span class="b">${TICK}</span>Competency verified · evidence logged</div>
+  </div>`);
+gapcard.id = "gapcard"; hub.appendChild(gapcard);
+Object.assign(gapcard.style, { left: "610px", top: "236px", height: "auto" });
+
+// ───────────── connectors view ─────────────
+const CONN = [
+  { id: "epic", nm: "Epic", html: '<img src="logos/epic.png" alt="Epic">', row: "Clinical systems · EHR" },
+  { id: "oracle", nm: "Oracle Health", html: '<span class="oh"><img src="logos/oracle.svg" alt="Oracle"><span>Health</span></span>' },
+  { id: "athena", nm: "athenahealth", html: '<img src="logos/athenahealth.png" alt="athenahealth" style="max-height:74px">' },
+  { id: "workday", nm: "Workday", html: '<img src="logos/workday.svg" alt="Workday" style="max-width:118px">', row: "Workforce · training" },
+  { id: "ukg", nm: "UKG", html: '<span class="ukg">UKG</span>' },
+  { id: "hs", nm: "HealthStream", html: '<span class="hs">Health<b>Stream</b></span>' },
+  { id: "tjc", nm: "Joint Commission", html: '<img src="logos/tjc-wide.png" alt="The Joint Commission" style="max-width:120px">', row: "Requirements · documents" },
+  { id: "cms", nm: "CMS", html: '<img src="logos/cms.png" alt="CMS" style="max-width:108px">' },
+  { id: "upload", nm: "", html: "" },
+];
+const grid = $("#grid");
+const ctiles = CONN.map((c) => {
+  const t = el("div", "tile" + (c.id === "upload" ? " upload" : ""));
+  if (c.id === "upload") {
+    t.innerHTML = `<div class="up"><span class="ui"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7fbaff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>Upload documents</div>`;
+    t.querySelector(".ui svg").setAttribute("stroke", "#2f6fd6");
+  } else {
+    t.innerHTML = `<div class="plate">${c.html}</div><span class="plus"><span class="p">${PLUS}</span></span>`;
+  }
+  grid.appendChild(t); c.node = t; return t;
+});
+const rowlabs = CONN.filter((c) => c.row).map((c) => { const n = el("div", "rowlab", c.row); $("#v-connectors").appendChild(n); return n; });
+const DOCS = [
+  ["PDF", "#d64545", "Insulin Pump Titration Policy v2.0.pdf"], ["XLS", "#1f8a4c", "Fire Drill Log 2026.xlsx"], ["PDF", "#d64545", "Restraint and Seclusion Policy.pdf"],
+  ["XLS", "#1f8a4c", "EP Tracer Checklist · Med Mgmt.xlsx"], ["IMG", "#7a5af5", "Crash Cart Check · Scan.jpg"], ["PDF", "#d64545", "Hand Hygiene Audit Q3.pdf"],
+  ["XLS", "#1f8a4c", "Annual Competencies · Nursing.xlsx"], ["PDF", "#d64545", "Emergency Operations Plan.pdf"], ["DOC", "#2f6fd6", "Fall Risk Handoff Procedure.docx"],
+  ["XLS", "#1f8a4c", "Life Safety Inspection Log.xlsx"], ["PDF", "#d64545", "Infection Control Plan 2026.pdf"], ["IMG", "#7a5af5", "Paper Checklist · 4 West.jpg"],
+  ["PDF", "#d64545", "Medication Storage Policy.pdf"], ["XLS", "#1f8a4c", "Restraint Order Audit.xlsx"], ["PDF", "#d64545", "Pain Management Policy.pdf"],
+];
+const docsBox = $("#docs");
+const docEls = DOCS.map(([k, c, n]) => {
+  const d = el("div", "doc", `<span class="fi" style="background:${c}">${k}</span><span class="fn">${n}</span><span class="pr"></span>`);
+  d.style.position = "relative"; docsBox.appendChild(d); return d;
+});
+
+function setTile(i, state, p = 1) {
+  // state: idle | connecting | on ; p = progress of the state change
+  const t = ctiles[i], plus = t.querySelector(".plus");
+  if (!plus) return;
+  const P = plus.querySelector(".p");
+  if (state === "on") {
+    plus.style.background = mixHex("1a2942", "3fd18b", p); plus.style.borderColor = mixHex("2d4262", "3fd18b", p);
+    P.innerHTML = p > 0.35 ? CHECK : PLUS; P.style.transform = `scale(${p > 0.35 ? E.back(clamp((p - 0.35) / 0.65)) : 1 - p / 0.35})`;
+    t.style.borderColor = mixHex("ffffff", "3fd18b", p);
+    t.style.boxShadow = `0 18px 38px #02060f99, 0 0 ${30 * p}px ${mixHex("070d19", "1d6b47", p)}`;
+  } else {
+    plus.style.background = "#1a2942"; plus.style.borderColor = "#2d4262"; P.innerHTML = PLUS; P.style.transform = "scale(1)";
+    t.style.borderColor = ""; t.style.boxShadow = "";
+  }
+}
+
+// ───────────── views & shots ─────────────
+function showView(v) {
+  document.querySelectorAll(".view").forEach((n) => n.classList.toggle("on", n.id === "v-" + v));
+  document.querySelectorAll("#tabs span").forEach((n) => n.classList.toggle("sel", n.dataset.v === (v === "hub" ? "hub" : v)));
+}
+function livePulse(t) {
+  const p = (t % 1.6) / 1.6;
+  $("#livedot").style.boxShadow = `0 0 0 ${p * 9}px rgba(63,209,139,${0.55 * (1 - p)})`;
+  document.querySelectorAll("#gc-deploy .dot").forEach((d) => (d.style.boxShadow = `0 0 0 ${p * 7}px rgba(63,209,139,${0.55 * (1 - p)})`));
+}
+function hubBase(t, scores, grow) {
+  showView("hub");
+  drawRadar(scores, grow);
+  scores.forEach((s, i) => drawTile(i, s, grow));
+  rLabels.forEach((l) => (l.style.opacity = 1));
+  gapcard.style.display = "none"; gp.style.display = "none";
+  Object.values(M).forEach((m) => (m.style.opacity = 1));
+}
+function kpis(t, start) {
+  KPIS.forEach((k, i) => {
+    const p = seg(t, start + i * 0.12, start + 1.4 + i * 0.12, E.out);
+    k.node.querySelector(".v span").textContent = (k.v * p).toLocaleString("en-US", { minimumFractionDigits: k.dec, maximumFractionDigits: k.dec });
+    const pl = k.node.querySelector("polyline"); if (pl) pl.setAttribute("stroke-dashoffset", 1 - seg(t, start + 0.3 + i * 0.12, start + 1.8 + i * 0.12));
+  });
+}
+// gentle "live" wobble so the hub never looks frozen
+const wob = (t, i) => 0.06 * Math.sin(t * 1.3 + i * 1.7);
+
+// Camera keyframes per shot: [time, rect]. Exported via window.camKeys() so the video edit can do
+// the same moves smoothly on a static 4K recording (re-rasterising text per frame makes zooms wobble).
+const CAM = {
+  hub: () => [[0, VIEW], [1.6, VIEW], [8, { x: 70, y: 70, w: 1300, h: 731 }]],
+  readiness: () => [[0, { x: 14, y: 222, w: 1054, h: 593 }], [7, { x: 40, y: 236, w: 1000, h: 562 }]],
+  gap: () => {
+    const tr = rectOf(tiles[GAP]), cx = tr.x + tr.w / 2, cy = tr.y + tr.h / 2;
+    const tileR = { x: cx - 330, y: cy - 186, w: 660, h: 371 }, cardR = { x: 300, y: 190, w: 900, h: 506 };
+    const wide = { x: 420, y: 170, w: 1000, h: 562 };
+    return [[0, tileR], [0.9, tileR], [2.0, cardR], [7.0, cardR], [7.9, tileR], [9.6, tileR], [11, wide]];
+  },
+  connectors: () => [[0, { x: 115, y: 92, w: 1210, h: 680 }], [4.4, { x: 132, y: 98, w: 1176, h: 661 }], [6.0, VIEW], [10, VIEW]],
+  graph: () => [[0, VIEW]],
+};
+window.camKeys = (name) => CAM[name]().map(([t, r]) => [t, fit(r)]);
+
+const SHOTS = {
+  // ⑤ Knowledge graph: real-time layout (not seekable); camera stays wide
+  graph: {
+    dur: 10,
+    render(t) {
+      showView("graph"); livePulse(t); camera(VIEW);
+      const f = $("#gframe"); if (!f.src) f.src = "knowledge-graph-video.html";
+    },
+  },
+  // ① Central hub: dashboard builds, KPIs count, radar grows, feed streams; camera drifts in from the full board to radar + scores
+  hub: {
+    dur: 8,
+    render(t) {
+      const grow = seg(t, 0.2, 1.8, E.out);
+      const scores = S_LIVE.map((s, i) => s + (t > 1.8 ? wob(t - 1.8, i) * seg(t, 1.8, 2.6) : 0));
+      hubBase(t, scores, grow);
+      kpis(t, 0.1);
+      drawFeed(t, 0.9, 0.85);
+      livePulse(t);
+      camera(camAt(t, CAM.hub()));
+    },
+  },
+  // ② Readiness: close on radar + scores; everything moves from gaps (red/amber) to survey ready (green)
+  readiness: {
+    dur: 7,
+    render(t) {
+      const p = seg(t, 1.6, 5.2, E.io);
+      const scores = S_BEFORE.map((s, i) => lerp(s, S_AFTER[i], clamp(p * 1.25 - (i % 4) * 0.07)) + wob(t, i) * 0.4);
+      hubBase(t, scores, 1);
+      kpis(99, 0); drawFeed(99, 0, 1);
+      livePulse(t);
+      camera(camAt(t, CAM.readiness()));
+    },
+  },
+  // ③ Gap: zoom to Medication system's GAP FOUND → card → close gap → agents deployed → steps → red bar to green
+  gap: {
+    dur: 11,
+    render(t) {
+      const before = [...S_AFTER]; before[GAP] = 2.1;
+      const fix = seg(t, 7.6, 9.4, E.io);
+      const scores = before.map((s, i) => (i === GAP ? lerp(2.1, 4.8, fix) : s) + wob(t, i) * 0.3);
+      hubBase(t, scores, 1);
+      kpis(99, 0); drawFeed(99, 0, 1);
+      livePulse(t);
+      // pill on the tile
+      gp.style.display = "inline-flex";
+      const closed = fix > 0.92;
+      gp.innerHTML = closed ? "✓ Gap closed" : "▲ Gap found";
+      gp.style.color = closed ? "#3fd18b" : "#f0645a";
+      gp.style.background = closed ? "#3fd18b1f" : "#f0645a1f";
+      gp.style.border = `1px solid ${closed ? "#3fd18b66" : "#f0645a66"}`;
+      const pulse = t < 1.6 ? 1 + 0.08 * Math.sin(t * 8) * (1 - seg(t, 1.2, 1.6)) : 1;
+      gp.style.transform = `scale(${closed ? E.back(seg(t, 9.1, 9.5, E.lin)) : pulse})`;
+      // card
+      const open = seg(t, 1.5, 2.1, E.out), shut = seg(t, 7.2, 7.7, E.io);
+      gapcard.style.display = open > 0 && shut < 1 ? "block" : "none";
+      gapcard.style.opacity = open * (1 - shut);
+      gapcard.style.transform = `translateY(${(1 - open) * 18 + shut * 10}px) scale(${lerp(0.96, 1, open)})`;
+      const press = seg(t, 3.3, 3.45, E.lin) * (1 - seg(t, 3.5, 3.7, E.lin));
+      $("#gc-btn").style.transform = `scale(${1 - press * 0.06})`;
+      $("#gc-btn").style.filter = `brightness(${1 + press * 0.25})`;
+      const dep = seg(t, 3.6, 4.0, E.out);
+      $("#gc-cta").style.display = dep > 0.5 ? "none" : "flex";
+      $("#gc-cta").style.opacity = 1 - dep * 2;
+      $("#gc-deploy").style.display = dep > 0.5 ? "flex" : "none";
+      $("#gc-steps").style.display = dep > 0.5 ? "flex" : "none";
+      document.querySelectorAll("#gc-steps .st").forEach((s, i) => {
+        const a = 4.2 + i * 0.9;
+        s.className = "st" + (t >= a + 0.7 ? " done" : t >= a ? " run" : "");
+        s.querySelector(".b").style.transform = t >= a && t < a + 0.7 ? `rotate(${(t - a) * 720}deg)` : "none";
+        s.style.opacity = seg(t, a - 0.3, a, E.out) * 0.6 + (t >= a ? 0.4 : 0);
+      });
+      const cs = lerp(2.1, 4.8, seg(t, 4.2, 6.9, E.io));
+      const c = scoreHex(cs), pp = ((cs - 1) / 4) * 100;
+      $("#gc-fill").style.cssText = `width:${pp}%;background:linear-gradient(90deg,${c}88,${c})`;
+      $("#gc-knob").style.cssText = `left:${pp}%;border-color:${c}`;
+      $("#gc-lab").textContent = LEVELS[Math.round(cs)]; $("#gc-lab").style.color = c;
+      // camera: tile → card → tile
+      // everything but the gap tile stays hidden until the gap is closed
+      const bg = seg(t, 9.6, 10.6, E.io);
+      Object.values(M).forEach((m) => { if (m !== tiles[GAP]) m.style.opacity = bg; });
+      camera(camAt(t, CAM.gap()));
+    },
+  },
+  // ④ Connectors: tiles land, connect one by one (Epic first); then Upload opens the documents panel and files stream in
+  connectors: {
+    dur: 10,
+    render(t) {
+      showView("connectors");
+      livePulse(t);
+      const slide = seg(t, 5.0, 6.0, E.io);
+      const gx = lerp((1440 - 612) / 2, 64, slide);
+      grid.style.left = gx + "px";
+      $("#ctitle").style.left = lerp((1440 - 612) / 2, 64, slide) + "px";
+      rowlabs.forEach((n, r) => { n.style.left = gx + "px"; n.style.top = 244 + r * 184 - 24 + "px"; n.style.opacity = 1 - slide; });
+      ctiles.forEach((tile, i) => {
+        const a = seg(t, 0.15 + i * 0.08, 0.75 + i * 0.08, E.out);
+        tile.style.opacity = a; tile.style.transform = `translateY(${(1 - a) * 22}px) scale(${lerp(0.94, 1, a)})`;
+      });
+      // connect order: Epic, Oracle, athena, UKG, Workday, HealthStream, TJC, CMS
+      const order = [0, 1, 2, 4, 3, 5, 6, 7];
+      order.forEach((idx, k) => { const at = 1.3 + k * 0.38; setTile(idx, t >= at ? "on" : "idle", seg(t, at, at + 0.35, E.out)); });
+      // upload tile press
+      const up = ctiles[8], press = seg(t, 4.5, 4.62, E.lin) * (1 - seg(t, 4.66, 4.85, E.lin));
+      up.style.borderColor = mixHex("9fb6d6", "2f7bff", seg(t, 4.3, 4.6) * (1 - slide * 0.6));
+      up.style.transform = `scale(${1 - press * 0.05})`;
+      // policies panel
+      const pol = $("#policies"), pin = seg(t, 5.0, 6.0, E.io);
+      pol.style.display = pin > 0 ? "block" : "none";
+      pol.style.left = lerp(1500, 772, pin) + "px"; pol.style.opacity = pin;
+      let n = 0;
+      docEls.forEach((d, i) => {
+        const a = 6.0 + i * 0.22, p = seg(t, a, a + 0.3, E.out);
+        d.style.opacity = p; d.style.transform = `translateY(${(1 - p) * 12}px)`;
+        d.querySelector(".pr").style.width = seg(t, a + 0.1, a + 0.9, E.out) * 100 + "%";
+        d.querySelector(".pr").style.opacity = 1 - seg(t, a + 1.0, a + 1.3);
+        if (t >= a + 0.9) n++;
+      });
+      $("#doccount").textContent = (n ? n + 312 : 312) + " files";
+      camera(camAt(t, CAM.connectors()));
+    },
+  },
+};
+
+// ───────────── driver ─────────────
+const q = new URLSearchParams(location.search);
+let shot = SHOTS[q.get("shot")] || SHOTS.hub;
+window.SHOTS = SHOTS;
+window.useShot = (name) => { shot = SHOTS[name]; shot.render(0); return shot.dur; };
+window.seek = (t) => shot.render(t);
+const ready = Promise.all([...document.images].map((i) => (i.complete ? 1 : new Promise((r) => (i.onload = i.onerror = r))))).then(() => document.fonts.ready);
+window.shotsReady = ready;
+ready.then(() => {
+  shot.render(Number(q.get("t") || 0));
+  if (q.get("play")) {
+    const t0 = performance.now();
+    const loop = (now) => { shot.render((((now - t0) / 1000) % (shot.dur + 1))); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+});
+</script>
+</body>
+</html>
