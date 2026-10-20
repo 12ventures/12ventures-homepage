@@ -21,6 +21,7 @@ import MetricDashboard from './components/prismahealth/MetricDashboard';
 import OtterWorkerOperator from './components/OtterWorkerOperator';
 import OtterWorkerLearn from './components/OtterWorkerLearn';
 import ComplianceLanding from './components/ComplianceLanding';
+import NotFound from './components/NotFound';
 import OtterWorkerOperatorOld from './components/OtterWorkerOperator_old';
 import OtterWorkerLearnOld from './components/OtterWorkerLearn_old';
 import MLKCHDashboard from './components/mlkch/MLKCHDashboard';
@@ -154,12 +155,20 @@ const App: React.FC = () => {
             }
           />
 
-          {/* OtterWorker Operator */}
+          {/* OtterWorker Operator: /operator keeps the YouTube video; /ai-operator plays the newer self-hosted cut */}
           <Route
             path="/operator"
             element={
               <BrandLayout initialBrandId="otterworks">
                 <OtterWorkerOperator />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/ai-operator"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <OtterWorkerOperator video={{ src: '/videos/ai-operator-2.mp4', poster: '/images/ai_operator_video_poster.jpg' }} />
               </BrandLayout>
             }
           />
@@ -174,12 +183,20 @@ const App: React.FC = () => {
             }
           />
 
-          {/* OtterWorker Learn */}
+          {/* OtterWorker Learn: /learn keeps the YouTube video; /ai-learn plays the newer self-hosted cut */}
           <Route
             path="/learn"
             element={
               <BrandLayout initialBrandId="otterworks">
                 <OtterWorkerLearn />
+              </BrandLayout>
+            }
+          />
+          <Route
+            path="/ai-learn"
+            element={
+              <BrandLayout initialBrandId="otterworks">
+                <OtterWorkerLearn video={{ src: '/videos/ai-learn-2.mp4', poster: '/images/ai_learn_video_poster.jpg' }} />
               </BrandLayout>
             }
           />
@@ -420,6 +437,16 @@ const App: React.FC = () => {
             element={
               <BrandLayout initialBrandId="prisma-health" showDevMenu={false}>
                 <MetricDashboard />
+              </BrandLayout>
+            }
+          />
+
+          {/* Anything else: a proper 404 instead of a blank page */}
+          <Route
+            path="*"
+            element={
+              <BrandLayout initialBrandId="12-ventures" showDevMenu={false}>
+                <NotFound />
               </BrandLayout>
             }
           />
