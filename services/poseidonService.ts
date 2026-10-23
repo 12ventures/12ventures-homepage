@@ -4,9 +4,74 @@
  */
 export const DASHBOARD_TZ = 'America/Los_Angeles';
 
-const POSEIDON_API_BASE_URL = import.meta.env.PROD
-  ? 'https://agentic-voice-stats-e55tw.ondigitalocean.app'
-  : 'http://localhost:8001';
+// Dashboard app (agentic-voice-backend app_dashboard). Locally it runs on :8002
+// (docker compose / AGENTS.md); :8001 is the calls app. VITE_POSEIDON_API_BASE_URL
+// overrides either.
+const POSEIDON_API_BASE_URL: string =
+  (import.meta.env.VITE_POSEIDON_API_BASE_URL as string | undefined) ||
+  (import.meta.env.PROD
+    ? 'https://agentic-voice-stats-e55tw.ondigitalocean.app'
+    : 'http://localhost:8002');
+
+export function getPoseidonApiBaseUrl(): string {
+  return POSEIDON_API_BASE_URL;
+}
+
+/**
+ * Shared SARH passcode. The dashboard app checks it on every request
+ * (X-Dashboard-Passcode header); the browser only keeps what the user typed,
+ * for this tab session. A 401 clears it and re-locks the gate.
+ */
+const SARH_PASSCODE_KEY = 'sarh_dashboard_passcode';
+export const SARH_PASSCODE_INVALID_EVENT = 'sarh-passcode-invalid';
+
+export function getSarhPasscode(): string {
+  try {
+    return sessionStorage.getItem(SARH_PASSCODE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setSarhPasscode(passcode: string | null): void {
+  try {
+    if (passcode) sessionStorage.setItem(SARH_PASSCODE_KEY, passcode);
+    else sessionStorage.removeItem(SARH_PASSCODE_KEY);
+  } catch {
+    /* storage blocked: the gate will just ask again */
+  }
+}
+
+export function sarhPasscodeHeaders(): Record<string, string> {
+  const passcode = getSarhPasscode();
+  return passcode ? { 'X-Dashboard-Passcode': passcode } : {};
+}
+
+function handleUnauthorized(status: number): void {
+  if (status === 401) {
+    setSarhPasscode(null);
+    window.dispatchEvent(new Event(SARH_PASSCODE_INVALID_EVENT));
+  }
+}
+
+export type PasscodeCheckResult = 'ok' | 'wrong' | 'throttled' | 'unavailable';
+
+/** Ask the server whether a passcode is right. */
+export async function checkSarhPasscode(passcode: string): Promise<PasscodeCheckResult> {
+  try {
+    const response = await fetch(`${POSEIDON_API_BASE_URL}/api/dashboard/auth/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passcode }),
+    });
+    if (response.ok) return 'ok';
+    if (response.status === 401) return 'wrong';
+    if (response.status === 429) return 'throttled';
+    return 'unavailable';
+  } catch {
+    return 'unavailable';
+  }
+}
 
 /** YYYY-MM-DD for an instant in the dashboard (hospital) timezone. */
 export function toZonedDateKey(
@@ -534,11 +599,13 @@ class PoseidonService {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...sarhPasscodeHeaders(),
         ...options.headers,
       },
     });
 
     if (!response.ok) {
+      handleUnauthorized(response.status);
       const errorText = await response.text();
       try {
         const errorJson = JSON.parse(errorText);
@@ -653,8 +720,11 @@ class PoseidonService {
     // Restore to drop triage-never-left and <60s calls:
     // params.set('accepted_calls_only', 'true');
     const url = `${this.baseUrl}/api/dashboard/calls/history/export?${params.toString()}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Export failed: ${response.statusText}`);
+    const response = await fetch(url, { headers: sarhPasscodeHeaders() });
+    if (!response.ok) {
+      handleUnauthorized(response.status);
+      throw new Error(`Export failed: ${response.statusText}`);
+    }
     const raw = await response.arrayBuffer();
     const { sanitizeCallsExportXlsx } = await import('../utils/stripXlsxColumn');
     const stripped = sanitizeCallsExportXlsx(raw);
