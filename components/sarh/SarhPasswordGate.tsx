@@ -1,28 +1,51 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Lock, ArrowRight } from 'lucide-react';
+import {
+  checkSarhPasscode,
+  getSarhPasscode,
+  setSarhPasscode,
+  SARH_PASSCODE_INVALID_EVENT,
+} from '../../services/poseidonService';
 
-const ACCESS_CODE = 'sarh2811';
-const SESSION_KEY = 'sarh_production_dashboard_auth';
+// The passcode is checked by the dashboard API (DASHBOARD_PASSCODE on the
+// backend), not stored in this bundle. Without it the API returns no data, and
+// the gate re-locks whenever the API rejects the stored passcode.
+
+const ERROR_MESSAGES = {
+  wrong: 'Incorrect code. Try again.',
+  throttled: 'Too many attempts. Wait a few minutes and try again.',
+  unavailable: "Couldn't reach the dashboard. Check your connection and try again.",
+} as const;
 
 interface SarhPasswordGateProps {
   children: React.ReactNode;
 }
 
 const SarhPasswordGate: React.FC<SarhPasswordGateProps> = ({ children }) => {
-  const [unlocked, setUnlocked] = useState(
-    () => sessionStorage.getItem(SESSION_KEY) === 'true',
-  );
+  const [unlocked, setUnlocked] = useState(() => getSarhPasscode() !== '');
   const [value, setValue] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<keyof typeof ERROR_MESSAGES | null>(null);
+  const [checking, setChecking] = useState(false);
   const [shaking, setShaking] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const relock = () => setUnlocked(false);
+    window.addEventListener(SARH_PASSCODE_INVALID_EVENT, relock);
+    return () => window.removeEventListener(SARH_PASSCODE_INVALID_EVENT, relock);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (value.trim().toLowerCase() === ACCESS_CODE) {
-      sessionStorage.setItem(SESSION_KEY, 'true');
+    const passcode = value.trim();
+    if (!passcode || checking) return;
+    setChecking(true);
+    const result = await checkSarhPasscode(passcode);
+    setChecking(false);
+    if (result === 'ok') {
+      setSarhPasscode(passcode);
       setUnlocked(true);
     } else {
-      setError(true);
+      setError(result);
       setShaking(true);
       setTimeout(() => setShaking(false), 500);
     }
@@ -91,7 +114,7 @@ const SarhPasswordGate: React.FC<SarhPasswordGateProps> = ({ children }) => {
             placeholder="Enter secure code…"
             onChange={(e) => {
               setValue(e.target.value);
-              setError(false);
+              setError(null);
             }}
             className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none"
             style={{
@@ -105,18 +128,19 @@ const SarhPasswordGate: React.FC<SarhPasswordGateProps> = ({ children }) => {
             }}
           />
           {error && (
-            <p className="text-red-400 text-xs">Incorrect code. Try again.</p>
+            <p className="text-red-400 text-xs">{ERROR_MESSAGES[error]}</p>
           )}
           <button
             type="submit"
-            className="w-full font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:opacity-90 hover:scale-[1.02]"
+            disabled={checking}
+            className="w-full font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all hover:opacity-90 hover:scale-[1.02] disabled:opacity-60"
             style={{
               background: 'linear-gradient(135deg, #38bdf8, #22d3ee)',
               color: '#060B14',
               boxShadow: '0 0 28px rgba(56,189,248,0.3)',
             }}
           >
-            <span>Enter Dashboard</span>
+            <span>{checking ? 'Checking…' : 'Enter Dashboard'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>

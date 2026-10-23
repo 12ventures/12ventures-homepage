@@ -165,6 +165,8 @@ function countAnimDelay(revealIdx: number): number {
 // ── Helpers ────────────────────────────────────────────────────────────
 function maskPhone(phone: string | undefined): string {
   if (!phone) return '';
+  // The dashboard API already masks caller phones ("+*******4803").
+  if (phone.includes('*')) return phone.replace(/^\+/, '');
   const digits = phone.replace(/\D/g, '');
   if (digits.length <= 4) return '****';
   return '*'.repeat(digits.length - 4) + digits.slice(-4);
