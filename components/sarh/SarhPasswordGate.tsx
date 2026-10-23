@@ -19,9 +19,10 @@ const ERROR_MESSAGES = {
 
 interface SarhPasswordGateProps {
   children: React.ReactNode;
+  title?: string;
 }
 
-const SarhPasswordGate: React.FC<SarhPasswordGateProps> = ({ children }) => {
+const SarhPasswordGate: React.FC<SarhPasswordGateProps> = ({ children, title = 'Production Dashboard' }) => {
   const [unlocked, setUnlocked] = useState(() => getSarhPasscode() !== '');
   const [value, setValue] = useState('');
   const [error, setError] = useState<keyof typeof ERROR_MESSAGES | null>(null);
@@ -92,7 +93,7 @@ const SarhPasswordGate: React.FC<SarhPasswordGateProps> = ({ children }) => {
               SARH Voice AI
             </p>
             <h1 className="text-xl font-black text-white leading-tight">
-              Production Dashboard
+              {title}
             </h1>
           </div>
           <div
